@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=8">
+  <link rel="stylesheet" href="assets/styles.css?v=9">
   <script defer src="assets/config.js"></script>
-  <script defer src="assets/app.js?v=8"></script>
+  <script defer src="assets/app.js?v=9"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -90,7 +90,7 @@
 
     <section id="view-gol" class="view" aria-label="PremiumGol">
       
-      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag"><svg><use href="#i-clock"></use></svg> Próxima jornada <span class="separator-bullet">•</span> <span>Cartilla de la jornada</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
+      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag"><svg><use href="#i-clock"></use></svg> Cartilla de la jornada <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
   <span class="overline">TUS JUGADAS</span><h3>Resumen de tu jugada</h3>
   <div id="golTabs" class="gol-card-tabs" role="group" aria-label="Seleccionar jugada"><button type="button" data-gol-slot="A" class="active">A</button><button type="button" data-gol-slot="B">B</button><button type="button" data-gol-slot="C">C</button><button type="button" data-gol-slot="D">D</button></div>
   <p class="slot-help" id="golSlotHint">Jugada A · marca local, empate o visita.</p>
@@ -104,12 +104,12 @@
 
     <section id="view-match" class="view" aria-label="Apuestas deportivas">
       
-      <div class="container page-body"><div class="game-toolbar"><div><h2>Próximos encuentros</h2><p>Próximos partidos de fútbol. Selecciona un resultado para añadirlo a tu cupón.</p></div><span class="demo-label"><svg><use href="#i-shield"></use></svg> Cuotas de demostración</span></div><div class="game-layout"><div><div class="match-filter-toolbar"><label class="field-inline"><span>Buscar partido</span><input id="matchSearch" type="search" placeholder="Equipo o partido…" autocomplete="off"></label><label class="field-inline"><span>Liga</span><select id="matchLeague"><option value="all">Todas las ligas</option><option value="Liga Continental">Liga Continental</option><option value="Copa Estelar">Copa Estelar</option></select></label><label class="field-inline"><span>Fecha</span><select id="matchDate"><option value="all">Todas las fechas</option><option value="0">Hoy</option><option value="1">Mañana</option><option value="2">Próximos días</option></select></label><label class="field-inline"><span>Ordenar</span><select id="matchSort"><option value="date">Fecha más próxima</option><option value="league">Liga</option><option value="team">Equipo local</option></select></label></div><p id="matchResultCount" class="filter-result-count" aria-live="polite"></p><div id="matchFixtures" class="market-list"></div></div><aside id="matchBetslip"></aside></div></div>
+      <div class="container page-body"><div class="game-toolbar"><div><h2>Próximos encuentros</h2><p>Próximos partidos de fútbol. Selecciona un resultado para añadirlo a tu cupón.</p></div><span class="demo-label" id="matchSourceLabel"><svg><use href="#i-shield"></use></svg> Cuotas de demostración</span></div><div class="game-layout"><div><div class="match-filter-toolbar"><label class="field-inline"><span>Buscar partido</span><input id="matchSearch" type="search" placeholder="Equipo o partido…" autocomplete="off"></label><label class="field-inline"><span>Liga</span><select id="matchLeague"><option value="all">Todas las ligas</option><option value="Liga Continental">Liga Continental</option><option value="Copa Estelar">Copa Estelar</option></select></label><label class="field-inline"><span>Fecha</span><select id="matchDate"><option value="all">Todas las fechas</option><option value="0">Hoy</option><option value="1">Mañana</option><option value="2">Próximos días</option></select></label><label class="field-inline"><span>Ordenar</span><select id="matchSort"><option value="date">Fecha más próxima</option><option value="league">Liga</option><option value="team">Equipo local</option></select></label></div><p id="matchResultCount" class="filter-result-count" aria-live="polite"></p><div id="matchFixtures" class="market-list"></div></div><aside id="matchBetslip"></aside></div></div>
     </section>
 
     <section id="view-live" class="view" aria-label="Premium Live">
       
-      <div class="container page-body"><div class="game-toolbar"><div><h2>Partidos en vivo</h2><p>Live minuto a minuto. Selecciona las cuotas y sigue el encuentro desde esta plataforma.</p></div><span class="demo-label"><svg><use href="#i-shield"></use></svg> Resultados y cuotas simulados</span></div><div class="game-layout"><div><div class="live-banner"><span class="live-ping"></span><b>EN JUEGO</b><span>Vista previa de la experiencia en vivo</span><svg><use href="#i-pulse"></use></svg></div><div id="liveFixtures" class="market-list"></div></div><aside id="liveBetslip"></aside></div></div>
+      <div class="container page-body"><div class="game-toolbar"><div><h2>Partidos en vivo</h2><p>Live minuto a minuto. Selecciona las cuotas y sigue el encuentro desde esta plataforma.</p></div><span class="demo-label" id="liveSourceLabel"><svg><use href="#i-shield"></use></svg> Resultados y cuotas simulados</span></div><div class="game-layout"><div><div class="live-banner"><span class="live-ping"></span><b>EN JUEGO</b><span>Vista previa de la experiencia en vivo</span><svg><use href="#i-pulse"></use></svg></div><div id="liveFixtures" class="market-list"></div></div><aside id="liveBetslip"></aside></div></div>
     </section>
 
     <section id="view-account" class="view" aria-label="Mi cuenta">
