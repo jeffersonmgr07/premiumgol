@@ -1,4 +1,39 @@
-# PremiumGol — versión 5 (web + Google Apps Script)
+# PremiumGol — actualización de la cartilla y vista deportiva (14 noviembre 2026)
+
+## Cambios ya publicados en GitHub Pages
+- Cartilla PremiumGol con **12 encuentros seleccionados** de la imagen aportada, sin asignar fechas no verificadas.
+- En la cartilla: **L = Local, E = Empate, V = Visita**. El servidor guarda internamente los códigos compatibles `1`, `X` y `2`.
+- Se descartaron provisionalmente Bielorrusia–Albania y Chipre–Montenegro. Esta selección **no es una medición objetiva de dificultad**: es necesario contrastar cuotas y fechas antes de abrir una jornada.
+- Mi cuenta → **Recargar saldo**: S/ 30, 50, 100, 200, 500, 1,000 u otro importe de S/ 30 a S/ 10,000, con dos decimales. Generar una orden registra una **solicitud pendiente**, pero no genera ningún cobro ni acredita saldo.
+- `assets/styles.css` conserva el dorado `#F7C85D` y el blanco `#FFFFFF`; los marcos no aumentaron de espesor.
+
+## Actualizar Google Apps Script (NECESARIO)
+Los archivos de GitHub **no despliegan automáticamente** el Apps Script que está en tu cuenta.
+
+1. Desde la carpeta `apps-script` del repositorio, reemplaza **`Config.gs`**, **`Games.gs`** y **`Main.gs`** en el proyecto de Apps Script correspondiente.
+2. Crea allí dos archivos de tipo *Script* con los nombres exactos **`Topups.gs`** y **`SportsCatalog.gs`**, copiando su contenido. Conserva `Auth.gs`, `ApiSports.gs`, `Admin.gs` y `Bridge.html` sin sobrescribirlos si ya son los mismos.
+3. Ejecuta de nuevo **`setupPremiumGol`**. La función reutiliza `SPREADSHEET_ID` y únicamente crea la pestaña nueva `topup_requests`. **No elimines ni cambies la propiedad SPREADSHEET_ID**.
+4. En **Implementar → Administrar implementaciones → Editar → Nueva versión**, publica el nuevo código. Comprueba que `FRONTEND_ORIGIN` corresponda al origen exacto que usas, sin barra final: `https://premiumgol.website`.
+5. Si ya funcionan las sesiones con Google, conserva tu `GOOGLE_CLIENT_ID` y la URL `/exec` de `assets/config.js`.
+
+### Vista informativa con API-FOOTBALL
+1. Guarda tu clave en las **Propiedades del script** usando la propiedad privada `API_SPORTS_KEY`. Nunca en GitHub.
+2. Añade **`API_SPORTS_CATALOG_MODE` = `preview`**. Sin esa propiedad, el catálogo de Apuestas deportivas y Premium Live continúa con datos ficticios.
+3. Desde el editor, ejecuta `testApiSportsConnection` y luego `testPremiumGolSportsCatalog`, para comprobar si tu suscripción permite recuperar encuentros y cuotas.
+4. Vuelve a publicar **una nueva versión de Apps Script**. La web consulta el catálogo compartido: el buscador, los filtros de liga y fecha, y la selección visual no generan una solicitud nueva al proveedor por cada clic.
+
+El modo `preview` usa `fixtures?next=50`, `odds` para el día actual y siguiente (primera página), `fixtures?live=all` y `odds/live`. Los resultados de próximos encuentros se almacenan hasta 3 horas; los de Live hasta 1 hora. El objetivo es respetar el plan gratis de API-FOOTBALL, por lo que **NO es un feed en tiempo real apto para aceptar apuestas**. Las cuotas pueden faltar y las selecciones de ese modo están deshabilitadas. El proveedor puede limitar o vaciar respuestas, y su consumo puede variar; revisa el saldo de solicitudes en su dashboard.
+
+### Cobros y ordenes
+- **`createTopupRequest`** requiere sesión y guarda solicitudes en `topup_requests`, en estado `PENDIENTE`. Es idempotente mediante `clientRequestId`. No altera `users.balance`, `ledger` ni accede a Mercado Pago.
+- El cierre de un pago real requeriría **aprobación de la actividad por Mercado Pago**, autorización y homologación MINCETUR, dominio compatible, identificación del jugador, un backend transaccional, webhook autenticado, confirmación del pago consultando la API de Mercado Pago, prevención de créditos duplicados y procedimiento de reembolso/contracargo.
+- La Ley peruana 31806 enumera `.bet.pe`, `.bet`, `.com`, `.pe` y `.com.pe` para plataformas autorizadas. **`premiumgol.website` no está en esa enumeración para explotación de apuestas reales**. Es válido seguir desarrollando aquí el prototipo.
+- Las cuotas de proveedores de datos no constituyen automáticamente autorización para ofrecer apuestas ni sustituyen una plataforma operadora y sus controles de riesgo.
+
+---
+
+## Documentación histórica de la versión 5
+
 
 ## Cambios de la versión 5
 
