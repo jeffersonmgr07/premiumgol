@@ -23,6 +23,7 @@ function rpc(requestJson){
       case 'me':return pgMe_(x);
       case 'updateProfile':return pgUpdateProfile_(x);
       case 'savePremiumGol':return pgSavePremiumGol_(x);
+      case 'createTopupRequest':return pgCreateTopupRequest_(x);
       case 'claimCoupon':return pgClaimCoupon_(x);
       case 'saveBet':return pgSaveBet_(x);
       case 'signout':return pgSignout_(x);
@@ -45,6 +46,7 @@ function rpc(requestJson){
       'El número de documento no es válido.','El número de WhatsApp no es válido.',
       'El tipo de documento no es válido.','La jugada ya fue registrada.','Esta jugada ya fue registrada en la jornada.',
       'Selecciona una jugada entre A y D.','Saldo virtual insuficiente.',
+      'Ingresa un monto válido entre S/ 30 y S/ 10,000.',
       'Este cupón no está disponible en este momento.','Este cupón ya fue activado en tu cuenta.'
     ];
     const message=err&&publicMessages.includes(err.message)?err.message:'No se pudo completar la solicitud. Intenta nuevamente.';
