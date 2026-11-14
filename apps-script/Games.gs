@@ -12,9 +12,27 @@ const PG_LIVE=[
   ['l2','Academia Azul','Valle Verde','Copa Estelar',31,0,0,2.42,2.98,3.11],
   ['l3','Cóndor Club','Marineros','Liga Continental',82,1,2,7.40,4.80,1.31]
 ];
-const PG_RETO_IDs=Array.from({length:12},(_,i)=>'gol'+(i+1));
+/** Cartilla seleccionada a partir de los 14 partidos proporcionados por el propietario.
+ * Los nombres no implican que los partidos estén próximos: fecha y disponibilidad requieren verificación externa.
+ */
+const PG_GOL_FIXTURES=[
+  ['España','Inglaterra','Selecciones'],
+  ['Bélgica','Italia','Selecciones'],
+  ['Letonia','Armenia','Selecciones'],
+  ['Panamá','Curazao','Selecciones'],
+  ['Alianza Atlético','Sporting Cristal','Fútbol peruano'],
+  ['Comerciantes Unidos','Sport Boys','Fútbol peruano'],
+  ['Juan Pablo II','Deportivo Garcilaso','Fútbol peruano'],
+  ['Eldense','Sabadell','Fútbol español'],
+  ['Amarante','Felgueiras','Fútbol portugués'],
+  ['Maastricht','Vitesse','Fútbol neerlandés'],
+  ['New Mexico United','Sacramento Republic','Fútbol estadounidense'],
+  ['Escocia Sub-21','Estados Unidos Sub-21','Selecciones Sub-21']
+].map((r,i)=>({id:'gol'+(i+1),home:r[0],away:r[1],league:r[2]}));
+const PG_RETO_IDs=PG_GOL_FIXTURES.map(g=>g.id);
 function pgDemoCatalog_(){
   return {ok:true,mode:'DEMO',games:{
+    gol:PG_GOL_FIXTURES,
     match:PG_MATCHES.map(r=>({id:r[0],home:r[1],away:r[2],league:r[3],day:r[4],time:r[5],odds:r.slice(6),colors:['#c6a450','#417aa7']})),
     live:PG_LIVE.map(r=>({id:r[0],home:r[1],away:r[2],league:r[3],minute:r[4],score:[r[5],r[6]],odds:r.slice(7),colors:['#c6a450','#417aa7']}))
   }};
