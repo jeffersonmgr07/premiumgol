@@ -11,12 +11,13 @@ const PG = Object.freeze({
     users:['uid','email','firstName','lastName','countryCode','phone','docType','docNumber','provider','balance','createdAt','updatedAt'],
     sessions:['tokenHash','uid','createdAt','expiresAt','revokedAt'],
     plays:['playId','uid','type','roundId','picksJson','stake','combinedOdds','potentialReturn','createdAt','note'],
-    ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt']
+    ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt'],
+    topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt']
   },
   INITIAL_CREDITS:1000,
   MAX_STAKE:1000,
   SESSION_DAYS:7,
-  ROUND_ID:'premiumgol12-demo-01',
+  ROUND_ID:'premiumgol12-cartilla-20261114-01',
   GOL_STAKE:3,
   COUPON_AMOUNT:50,
   COUPON_DURATION_MINUTES:5,
