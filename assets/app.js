@@ -5,7 +5,7 @@
 (() => {
   'use strict';
   const CONFIG = window.PREMIUMGOL_CONFIG || {};
-  const DRAFT_KEY = 'premiumgol_draft_v5';
+  const DRAFT_KEY = 'premiumgol_draft_v8';
   const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
   const SESSION_KEY = 'premiumgol_session_v2';
   const $ = sel => document.querySelector(sel);
@@ -17,7 +17,7 @@
   const randomId = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const fixtureDays = n => {const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace('.','');};
   let draft = {golPicks:{},slips:[]};
-  try {draft={...draft,...JSON.parse(localStorage.getItem(DRAFT_KEY)||localStorage.getItem(LEGACY_DRAFT_KEY)||'{}')};}catch{}
+  try {draft={...draft,...JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}')};}catch{}
   const SLOTS=['A','B','C','D'];
   draft.golCards=draft.golCards && typeof draft.golCards==='object'?draft.golCards:{A:draft.golPicks||{},B:{},C:{},D:{}};
   for(const slot of SLOTS){if(!draft.golCards[slot]||typeof draft.golCards[slot]!=='object')draft.golCards[slot]={};}
@@ -33,6 +33,7 @@
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login';
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
+  let topupSelection='30',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
   function couponTime(){
     const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
@@ -60,13 +61,21 @@
   function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),4200);}
   const outcomes=['1','X','2'];
   const outcomeName=['Local','Empate','Visita'];
-  const golGames = [
-    ['Astros FC','Metro United','Liga Continental'],['Atlético Sur','Leones del Norte','Liga Continental'],
-    ['Real Aurora','Costa Azul','Copa Estelar'],['Deportivo Capital','Fénix Club','Liga Continental'],
-    ['Montaña FC','Náuticos','Copa Estelar'],['Estrella Roja','Olimpo FC','Liga Continental'],
-    ['Unión Pacífico','Pumas Dorados','Liga Continental'],['Racing Andino','Imperial FC','Copa Estelar'],
-    ['Toros del Este','Titanes FC','Liga Continental'],['Valle Verde','Marineros','Copa Estelar'],
-    ['Cóndor Club','Atlético Central','Liga Continental'],['Royal Sporting','Deportivo Sol','Liga Continental']
+  const golLabel=['L','E','V'];
+  // Programación tomada de la cartilla compartida por el usuario; fechas pendientes de verificación.
+  let golGames = [
+    ['España','Inglaterra','Selecciones'],
+    ['Bélgica','Italia','Selecciones'],
+    ['Letonia','Armenia','Selecciones'],
+    ['Panamá','Curazao','Selecciones'],
+    ['Alianza Atlético','Sporting Cristal','Fútbol peruano'],
+    ['Comerciantes Unidos','Sport Boys','Fútbol peruano'],
+    ['Juan Pablo II','Deportivo Garcilaso','Fútbol peruano'],
+    ['Eldense','Sabadell','Fútbol español'],
+    ['Amarante','Felgueiras','Fútbol portugués'],
+    ['Maastricht','Vitesse','Fútbol neerlandés'],
+    ['New Mexico United','Sacramento Republic','Fútbol estadounidense'],
+    ['Escocia Sub-21','Estados Unidos Sub-21','Selecciones Sub-21']
   ].map(([home,away,league],i)=>({id:`gol${i+1}`,home,away,league}));
   let matches = [
     {id:'m1',home:'Astros FC',away:'Metro United',league:'Liga Continental',day:0,time:'20:00',odds:[1.85,3.40,4.20],colors:['#c9a244','#4b95c8']},
@@ -104,7 +113,7 @@
   function completedPicks(slot=activeCard){return golGames.filter(g=>outcomes.includes(draft.golCards[slot]?.[g.id])).length;}
   function renderGol(){
     const selections=currentPicks(),locked=Boolean(golLocked[activeCard]);
-    $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}"><span class="fixture-number">${String(i+1).padStart(2,'0')}</span><div class="fixture-main"><small>${esc(g.league)}</small><strong>${esc(g.home)} <span>vs.</span> ${esc(g.away)}</strong></div><div class="result-choices" role="group" aria-label="Partido ${i+1}: ${esc(g.home)} contra ${esc(g.away)}">${outcomes.map((o,k)=>`<button type="button" class="result-option ${selections[g.id]===o?'selected':''}" data-gol-id="${g.id}" data-gol-outcome="${o}" aria-pressed="${selections[g.id]===o}" title="${outcomeName[k]}" ${locked?'disabled':''}><b>${o}</b><small>${outcomeName[k]}</small></button>`).join('')}</div></article>`).join('');
+    $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}"><span class="fixture-number">${String(i+1).padStart(2,'0')}</span><div class="fixture-main"><small>${esc(g.league)}</small><strong>${esc(g.home)} <span>vs.</span> ${esc(g.away)}</strong></div><div class="result-choices" role="group" aria-label="Partido ${i+1}: ${esc(g.home)} contra ${esc(g.away)}">${outcomes.map((o,k)=>`<button type="button" class="result-option ${selections[g.id]===o?'selected':''}" data-gol-id="${g.id}" data-gol-outcome="${o}" aria-pressed="${selections[g.id]===o}" title="${outcomeName[k]}" ${locked?'disabled':''}><b>${golLabel[k]}</b><small>${outcomeName[k]}</small></button>`).join('')}</div></article>`).join('');
     $('#golCount').textContent=String(completedPicks());
     $('#golCountSide').textContent=`${completedPicks()} de 12`;
     $('#golProgress').style.width=`${completedPicks()/12*100}%`;
@@ -114,7 +123,7 @@
     $('#golSlotHint').textContent=locked?`Jugada ${activeCard} registrada. Elige otra letra para participar de nuevo.`:`Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
     $('#golTabs').innerHTML=SLOTS.map(slot=>`<button type="button" data-gol-slot="${slot}" class="${activeCard===slot?'active':''} ${golLocked[slot]?'recorded':''}" aria-pressed="${activeCard===slot}" title="Jugada ${slot}${golLocked[slot]?' registrada':''}">${slot}</button>`).join('');
     const list=golGames.map((g,i)=>({g,i,pick:selections[g.id]})).filter(x=>outcomes.includes(x.pick));
-    $('#golSummary').innerHTML=list.length?list.map(({g,i,pick})=>`<div class="gol-summary-row"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="game" title="${esc(g.home)} – ${esc(g.away)}">${esc(g.home)} · ${esc(g.away)}</span><b class="result">${esc(pick)} · ${esc(outcomeName[outcomes.indexOf(pick)])}</b></div>`).join(''):'<div class="gol-summary-empty">Aquí aparecerán tus pronósticos a medida que selecciones los partidos.</div>';
+    $('#golSummary').innerHTML=list.length?list.map(({g,i,pick})=>`<div class="gol-summary-row"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="game" title="${esc(g.home)} – ${esc(g.away)}">${esc(g.home)} · ${esc(g.away)}</span><b class="result">${esc(golLabel[outcomes.indexOf(pick)])} · ${esc(outcomeName[outcomes.indexOf(pick)])}</b></div>`).join(''):'<div class="gol-summary-empty">Aquí aparecerán tus pronósticos a medida que selecciones los partidos.</div>';
   }
   let sendingPlay=false;
   async function saveGol(){
@@ -197,9 +206,40 @@
   }
   function renderHeader(){
     $('#walletTop').hidden=!hasUser();
-    $('#topBalance').textContent=fmt(accountBalance);
+    $('#topBalance').textContent=fmt2(accountBalance);
     $('#loginTopLabel').textContent=hasUser()?'Mi cuenta':'Ingresar';
     $('#registerTop').hidden=hasUser();
+  }
+  function chosenTopup(){
+    const n=topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
+    return Number.isFinite(n)&&n>=30&&n<=10000&&Math.round(n*100)===n*100?n:null;
+  }
+  function renderTopup(){
+    $('[data-topup-amount]').forEach(el=>{
+      const active=el.dataset.topupAmount===topupSelection;
+      el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
+    });
+    $('#rechargeOtherWrap').hidden=topupSelection!=='custom';
+    if(document.activeElement!==$('#rechargeOther'))$('#rechargeOther').value=topupCustom;
+    const amount=chosenTopup();
+    $('#rechargeSelected').textContent=amount===null?'Importe no válido':'S/ '+fmt2(amount);
+    $('#rechargeGenerate').disabled=amount===null||topupBusy;
+  }
+  async function createTopupRequest(){
+    if(!hasUser()){openAuth('login');return;}
+    const amount=chosenTopup();
+    if(amount===null){toast('El importe debe ser entre S/ 30 y S/ 10,000.');return;}
+    if(topupBusy)return;
+    topupBusy=true;renderTopup();
+    topupRequestId=topupRequestId||randomId();
+    try{
+      const res=await remote('createTopupRequest',{sessionToken,amount,clientRequestId:topupRequestId});
+      const box=$('#rechargeOrder');box.hidden=false;
+      box.innerHTML=`<strong>Solicitud de recarga registrada</strong><div>Referencia: ${esc(res.orderId)}</div><div>Importe: S/ ${fmt2(res.amount)}</div><div>Estado: pendiente de habilitar el pago en línea.</div>`;
+      toast('Solicitud generada. El pago en línea todavía no está habilitado.');
+      topupRequestId=null;
+    }catch(e){toast(e.message||'No se pudo crear la solicitud de recarga.');}
+    finally{topupBusy=false;renderTopup();}
   }
   function renderAccount(){
     const name=[account?.firstName,account?.lastName].filter(Boolean).join(' ')||'Usuario';
@@ -207,7 +247,7 @@
     $('#avatarInitial').textContent=name.slice(0,1).toUpperCase();
     $('#profileSubtitle').textContent=account?.email||'Mi cuenta';
     $('#welcomeName').textContent=account?`¡Hola, ${account.firstName||'jugador'}!`:'¡El partido te espera!';
-    $('#accountBalance').textContent=fmt(accountBalance);
+    $('#accountBalance').textContent=fmt2(accountBalance);
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
     const one=h=>`<div class="history-row"><span class="history-icon">${icon(h.type==='gol'?'trophy':'ticket')}</span><div class="history-row-main"><b>${esc(h.title)}</b><span>${new Date(h.at).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'})} · ${esc(h.note||'Registrada')}</span></div><span class="history-row-status">REGISTRADA</span></div>`;
@@ -221,7 +261,8 @@
     $('#profilePhone').value=account?.phone||'';
     $('#profileDocType').value=account?.docType||'';
     $('#profileDocNumber').value=account?.docNumber||'';
-    $$('[data-account-tab]').forEach(el=>el.classList.toggle('active',el.dataset.accountTab===accountTab));
+    renderTopup();
+    $('[data-account-tab]').forEach(el=>el.classList.toggle('active',el.dataset.accountTab===accountTab));
     $$('.account-content').forEach(el=>el.classList.remove('is-active'));
     $(`#account${accountTab.charAt(0).toUpperCase()+accountTab.slice(1)}`)?.classList.add('is-active');
   }
@@ -326,6 +367,7 @@
     if(!CONFIG.appsScriptUrl)return;
     try{
       const data=await remote('catalog',{});
+      if(data.games?.gol&&Array.isArray(data.games.gol)&&data.games.gol.length===12)golGames=data.games.gol;
       if(data.games?.match&&Array.isArray(data.games.match))matches=data.games.match;
       if(data.games?.live&&Array.isArray(data.games.live))liveGames=data.games.live;
       // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
@@ -376,6 +418,8 @@
   $('#couponDialog').addEventListener('click',e=>{if(e.target===$('#couponDialog'))$('#couponDialog').close();});
   $('#claimCoupon').addEventListener('click',claimCoupon);
   $('#accountSignout').addEventListener('click',signout);
+  $('#rechargeOther').addEventListener('input',e=>{topupCustom=e.target.value;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();});
+  $('#rechargeGenerate').addEventListener('click',createTopupRequest);
   $('#profileForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!hasUser())return;
     const btn=$('#profileSave');btn.disabled=true;
@@ -398,6 +442,7 @@
     const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
     const nav=e.target.closest('[data-nav]');if(nav){e.preventDefault();showView(nav.dataset.nav);return;}
     const tab=e.target.closest('[data-account-tab]');if(tab){accountTab=tab.dataset.accountTab;renderAccount();return;}
+    const amountButton=e.target.closest('[data-topup-amount]');if(amountButton){topupSelection=amountButton.dataset.topupAmount;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();if(topupSelection==='custom')$('#rechargeOther').focus();return;}
     const pick=e.target.closest('[data-pick]');if(pick){changeSelection(pick.dataset.pick,pick.dataset.outcome);return;}
     const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>s.id!==rem.dataset.remove);delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
