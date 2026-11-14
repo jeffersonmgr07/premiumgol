@@ -1,0 +1,21 @@
+<!doctype html><html><head><base target="_top"><meta charset="utf-8"><title>Premium Gol · Conexión</title></head><body>
+<script>
+// Bridge de dominio restringido; nunca renderiza datos privados en la página.
+(function(){
+  'use strict';
+  var allowedOrigin=<?!= JSON.stringify(allowedOrigin) ?>;
+  var nonce=<?!= JSON.stringify(nonce) ?>;
+  if(!nonce||nonce.length>90)return;
+  function send(message){window.top.postMessage(Object.assign({scope:'premiumgol-bridge'},message),allowedOrigin);}
+  window.addEventListener('message',function(event){
+    if(event.origin!==allowedOrigin||event.source!==window.top)return;
+    var msg=event.data;
+    if(!msg||msg.scope!=='premiumgol'||msg.type!=='request'||typeof msg.id!=='string'||msg.id.length>120)return;
+    var id=msg.id;
+    google.script.run.withSuccessHandler(function(result){send({type:'reply',id:id,result:result});})
+      .withFailureHandler(function(){send({type:'reply',id:id,result:{ok:false,message:'No se pudo comunicar con el servidor.'}});})
+      .rpc(JSON.stringify({action:msg.action,data:msg.data||{}}));
+  });
+  send({type:'ready',nonce:nonce});
+})();
+</script></body></html>

@@ -1,0 +1,10 @@
+CONFIGURACIÓN DEL PROYECTO > PROPIEDADES DEL SCRIPT
+
+FRONTEND_ORIGIN = https://TU_DOMINIO_O_USUARIO.github.io
+GOOGLE_CLIENT_ID = TU_CLIENT_ID.apps.googleusercontent.com
+API_SPORTS_KEY = (opcional; nunca guardar en el repositorio)
+SPREADSHEET_ID = (automático después de ejecutar setupPremiumGol)
+
+En el frontend (assets/config.js):
+appsScriptUrl: https://script.google.com/macros/s/TU_IMPLEMENTACION/exec
+googleClientId: el MISMO GOOGLE_CLIENT_ID
