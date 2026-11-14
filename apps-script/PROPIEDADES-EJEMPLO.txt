@@ -8,3 +8,10 @@ SPREADSHEET_ID = (automático después de ejecutar setupPremiumGol)
 En el frontend (assets/config.js):
 appsScriptUrl: https://script.google.com/macros/s/TU_IMPLEMENTACION/exec
 googleClientId: el MISMO GOOGLE_CLIENT_ID
+
+SOLO PARA RECARGAS VIRTUALES AUTORIZADAS DESDE EL EDITOR (SIN PAGOS):
+ADMIN_EMAIL = correo del propietario que ejecuta el script
+RECHARGE_EMAIL = correo del usuario registrado al que se acredita saldo ficticio
+RECHARGE_REFERENCE = ID único por autorización, por ejemplo RECARGA-00001
+Ejecutar: adminRecharge50FromEditor
+IMPORTANTE: no publica pasarela ni confirma pagos; acredita créditos virtuales solamente.

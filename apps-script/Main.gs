@@ -22,7 +22,8 @@ function rpc(requestJson){
       case 'googleLogin':return pgGoogleLogin_(x);
       case 'me':return pgMe_(x);
       case 'updateProfile':return pgUpdateProfile_(x);
-      case 'saveReto14':return pgSaveReto14_(x);
+      case 'savePremiumGol':return pgSavePremiumGol_(x);
+      case 'claimCoupon':return pgClaimCoupon_(x);
       case 'saveBet':return pgSaveBet_(x);
       case 'signout':return pgSignout_(x);
       default:pgErr_('Operación no disponible.');
@@ -37,12 +38,14 @@ function rpc(requestJson){
       'No se pudo enviar el código. Intenta más tarde.','Correo electrónico no válido.',
       'Regístrate primero para crear tu cuenta.','El correo ya tiene una cuenta. Utiliza Ingresar.',
       'Completa nombres y apellidos.','Sesión vencida. Vuelve a ingresar.',
-      'No se pudo validar el acceso con Google.','Elige las 14 opciones antes de continuar.',
+      'No se pudo validar el acceso con Google.','Elige las 12 opciones antes de continuar.',
       'La cartilla contiene selecciones no válidas.','No hay partidos seleccionados.',
       'Se debe elegir una opción por partido.','Solo puedes usar de 1 a 1,000 créditos.',
       'Créditos insuficientes.','La selección de un partido ya no está disponible.',
       'El número de documento no es válido.','El número de WhatsApp no es válido.',
-      'El tipo de documento no es válido.','La jugada ya fue registrada.'
+      'El tipo de documento no es válido.','La jugada ya fue registrada.','Esta jugada ya fue registrada en la jornada.',
+      'Selecciona una jugada entre A y D.','Saldo virtual insuficiente.',
+      'Este cupón no está disponible en este momento.','Este cupón ya fue activado en tu cuenta.'
     ];
     const message=err&&publicMessages.includes(err.message)?err.message:'No se pudo completar la solicitud. Intenta nuevamente.';
     return {ok:false,message};

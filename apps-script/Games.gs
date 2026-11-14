@@ -12,7 +12,7 @@ const PG_LIVE=[
   ['l2','Academia Azul','Valle Verde','Copa Estelar',31,0,0,2.42,2.98,3.11],
   ['l3','Cóndor Club','Marineros','Liga Continental',82,1,2,7.40,4.80,1.31]
 ];
-const PG_RETO_IDs=Array.from({length:14},(_,i)=>'gol'+(i+1));
+const PG_RETO_IDs=Array.from({length:12},(_,i)=>'gol'+(i+1));
 function pgDemoCatalog_(){
   return {ok:true,mode:'DEMO',games:{
     match:PG_MATCHES.map(r=>({id:r[0],home:r[1],away:r[2],league:r[3],day:r[4],time:r[5],odds:r.slice(6),colors:['#c6a450','#417aa7']})),
@@ -31,17 +31,64 @@ function pgIdempotent_(uid,playId){
   if(String(row.values[1])!==String(uid))pgErr_('Solicitud inválida.');
   return true; // el mismo usuario puede reintentar la operación sin repetirla
 }
-function pgSaveReto14_(x){
+function pgSavePremiumGol_(x){
   return pgLock_(()=>{
-    const user=pgRequireSession_(x.sessionToken),u=pgObject_('users',user.values);
-    if(!Array.isArray(x.picks)||x.picks.length!==14)pgErr_('Elige las 14 opciones antes de continuar.');
+    const player=pgRequireSession_(x.sessionToken),u=pgObject_('users',player.values);
+    const slot=pgClean_(x.slot,1).toUpperCase();
+    if(!['A','B','C','D'].includes(slot))pgErr_('Selecciona una jugada entre A y D.');
+    if(!Array.isArray(x.picks)||x.picks.length!==12)pgErr_('Elige las 12 opciones antes de continuar.');
     const picks=x.picks.map(p=>({id:String(p.id),outcome:String(p.outcome)}));
     if(picks.some((p,i)=>p.id!==PG_RETO_IDs[i]||!['1','X','2'].includes(p.outcome)))pgErr_('La cartilla contiene selecciones no válidas.');
     const requestId=pgClean_(x.clientRequestId,90);
     if(!/^[A-Z0-9-]{10,90}$/i.test(requestId))pgErr_('Solicitud inválida.');
-    if(pgIdempotent_(u.uid,requestId))return pgSnapshot_(user);
-    pgWrite_('plays',{playId:requestId,uid:u.uid,type:'gol',roundId:PG.ROUND_ID,picksJson:JSON.stringify(picks),stake:0,combinedOdds:0,potentialReturn:0,createdAt:pgNow_(),note:'14 elecciones registradas · créditos virtuales'});
+    if(pgIdempotent_(u.uid,requestId))return pgSnapshot_(player);
+    const alreadySaved=pgRows_('plays').rows.some(row=>{
+      if(String(row[1])!==String(u.uid)||String(row[2])!=='gol'||String(row[3])!==PG.ROUND_ID)return false;
+      try{return JSON.parse(row[4]).slot===slot;}catch(e){return false;}
+    });
+    if(alreadySaved)pgErr_('Esta jugada ya fue registrada en la jornada.');
+    if(Number(u.balance)<PG.GOL_STAKE)pgErr_('Saldo virtual insuficiente.');
+    const balanceAfter=Number(u.balance)-PG.GOL_STAKE,when=pgNow_();
+    pgWrite_('plays',{playId:requestId,uid:u.uid,type:'gol',roundId:PG.ROUND_ID,picksJson:JSON.stringify({slot,picks}),stake:PG.GOL_STAKE,combinedOdds:0,potentialReturn:0,createdAt:when,note:'Jugada '+slot+' · 12 pronósticos · '+PG.GOL_STAKE+' créditos virtuales'});
+    pgUpdate_('users',player.index,{balance:balanceAfter,updatedAt:when});
+    pgWrite_('ledger',{txId:pgUuid_(),uid:u.uid,playId:requestId,action:'PREMIUMGOL_VIRTUAL',delta:-PG.GOL_STAKE,balanceAfter,createdAt:when});
     return pgSnapshot_(pgFind_('users','uid',u.uid));
+  });
+}
+/** Cuenta por persona, una única vez. El horario lo valida el servidor, no el navegador. */
+function pgCouponActive_(at){
+  const time=Utilities.formatDate(at||new Date(),'America/Lima','HH:mm').split(':').map(Number);
+  const hour=time[0],minute=time[1];
+  return minute>=hour&&minute<hour+PG.COUPON_DURATION_MINUTES;
+}
+function pgClaimCoupon_(x){
+  return pgLock_(()=>{
+    const player=pgRequireSession_(x.sessionToken),u=pgObject_('users',player.values);
+    if(!pgCouponActive_())pgErr_('Este cupón no está disponible en este momento.');
+    const redeemed=pgRows_('ledger').rows.some(row=>String(row[1])===String(u.uid)&&String(row[3])==='BONO_PREMIUM_50');
+    if(redeemed)pgErr_('Este cupón ya fue activado en tu cuenta.');
+    const balanceAfter=Number(u.balance)+PG.COUPON_AMOUNT,when=pgNow_();
+    pgWrite_('ledger',{txId:pgUuid_(),uid:u.uid,playId:'PREMIUM50',action:'BONO_PREMIUM_50',delta:PG.COUPON_AMOUNT,balanceAfter,createdAt:when});
+    pgUpdate_('users',player.index,{balance:balanceAfter,updatedAt:when});
+    return pgSnapshot_(pgFind_('users','uid',u.uid));
+  });
+}
+/** Recargas únicamente autorizadas, de créditos ficticios. Invocar desde el editor por el propietario. NO exponer vía rpc. */
+function adminApproveVirtualRecharge(email,amount,reference){
+  const operator=Session.getActiveUser().getEmail().toLowerCase();
+  const admin=pgProp_('ADMIN_EMAIL').toLowerCase();
+  if(!admin||operator!==admin)pgErr_('No autorizado.');
+  amount=Number(amount);reference=pgClean_(reference,90);
+  if(!Number.isInteger(amount)||amount<1||amount>5000||!/^[a-z0-9_-]{8,90}$/i.test(reference))pgErr_('Solicitud inválida.');
+  return pgLock_(()=>{
+    const target=pgFind_('users','email',pgClean_(email,254).toLowerCase());
+    if(!target)pgErr_('Cuenta no encontrada.');
+    const u=pgObject_('users',target.values);
+    if(pgRows_('ledger').rows.some(row=>String(row[2])===reference))pgErr_('Esta recarga ya fue registrada.');
+    const balanceAfter=Number(u.balance)+amount,when=pgNow_();
+    pgWrite_('ledger',{txId:pgUuid_(),uid:u.uid,playId:reference,action:'RECARGA_AUTORIZADA_VIRTUAL',delta:amount,balanceAfter,createdAt:when});
+    pgUpdate_('users',target.index,{balance:balanceAfter,updatedAt:when});
+    return {ok:true,uid:u.uid,balance:balanceAfter};
   });
 }
 function pgSaveBet_(x){

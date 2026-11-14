@@ -16,7 +16,10 @@ const PG = Object.freeze({
   INITIAL_CREDITS:1000,
   MAX_STAKE:1000,
   SESSION_DAYS:7,
-  ROUND_ID:'reto14-demo-01',
+  ROUND_ID:'premiumgol12-demo-01',
+  GOL_STAKE:3,
+  COUPON_AMOUNT:50,
+  COUPON_DURATION_MINUTES:5,
   CODE_TTL_SECONDS:600
 });
 function pgProp_(name){return String(PropertiesService.getScriptProperties().getProperty(name)||'').trim();}
@@ -62,9 +65,18 @@ function pgUpdate_(name,rowIndex,obj){const sh=pgSheet_(name);const cols=PG.SHEE
 function pgPublicUser_(u){return {id:String(u.uid),email:String(u.email),firstName:String(u.firstName),lastName:String(u.lastName),countryCode:String(u.countryCode||'+51'),phone:String(u.phone||''),docType:String(u.docType||''),docNumber:String(u.docNumber||'')};}
 function pgSnapshot_(row){
   const user=pgObject_('users',row.values);
-  const history=pgRows_('plays').rows.filter(r=>String(r[1])===String(user.uid)).slice(-200).reverse().map(r=>{
-    const p=pgObject_('plays',r);
-    return {id:String(p.playId),type:p.type==='gol'?'gol':'match',title:p.type==='gol'?'PremiumGol · 14 pronósticos':'Cupón de partidos',at:String(p.createdAt),note:String(p.note)};
+  const recent=pgRows_('plays').rows.filter(r=>String(r[1])===String(user.uid));
+  const history=recent.slice(-200).reverse().map(r=>{
+    const p=pgObject_('plays',r);let slot='';
+    try{const data=JSON.parse(p.picksJson);if(!Array.isArray(data))slot=String(data.slot||'');}catch(e){}
+    return {id:String(p.playId),type:p.type==='gol'?'gol':'match',title:p.type==='gol'?('PremiumGol · Jugada '+(slot||'registrada')):'Cupón de partidos',at:String(p.createdAt),note:String(p.note)};
   });
-  return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,history};
+  const golSlots={};
+  recent.forEach(r=>{
+    const p=pgObject_('plays',r);
+    if(p.type!=='gol'||p.roundId!==PG.ROUND_ID)return;
+    try{const data=JSON.parse(p.picksJson);if(['A','B','C','D'].includes(data.slot)&&Array.isArray(data.picks))golSlots[data.slot]={picks:data.picks,id:p.playId};}catch(e){}
+  });
+  const couponClaimed=pgRows_('ledger').rows.some(r=>String(r[1])===String(user.uid)&&String(r[3])==='BONO_PREMIUM_50');
+  return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,history,golSlots,couponClaimed};
 }

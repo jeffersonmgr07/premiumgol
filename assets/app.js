@@ -5,7 +5,8 @@
 (() => {
   'use strict';
   const CONFIG = window.PREMIUMGOL_CONFIG || {};
-  const DRAFT_KEY = 'premiumgol_draft_v2';
+  const DRAFT_KEY = 'premiumgol_draft_v5';
+  const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
   const SESSION_KEY = 'premiumgol_session_v2';
   const $ = sel => document.querySelector(sel);
   const $$ = sel => [...document.querySelectorAll(sel)];
@@ -16,8 +17,14 @@
   const randomId = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const fixtureDays = n => {const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace('.','');};
   let draft = {golPicks:{},slips:[]};
-  try {draft={...draft,...JSON.parse(localStorage.getItem(DRAFT_KEY)||'{}')};}catch{}
-  draft.golPicks = draft.golPicks && typeof draft.golPicks==='object' ? draft.golPicks : {};
+  try {draft={...draft,...JSON.parse(localStorage.getItem(DRAFT_KEY)||localStorage.getItem(LEGACY_DRAFT_KEY)||'{}')};}catch{}
+  const SLOTS=['A','B','C','D'];
+  draft.golCards=draft.golCards && typeof draft.golCards==='object'?draft.golCards:{A:draft.golPicks||{},B:{},C:{},D:{}};
+  for(const slot of SLOTS){if(!draft.golCards[slot]||typeof draft.golCards[slot]!=='object')draft.golCards[slot]={};}
+  draft.golRequestIds=draft.golRequestIds||{};
+  let activeCard=SLOTS.includes(draft.activeCard)?draft.activeCard:'A';
+  let golLocked={};let couponClaimed=false;
+  const currentPicks=()=>draft.golCards[activeCard];
   draft.slips = Array.isArray(draft.slips) ? draft.slips : [];
   const saveDraft = () => {try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));}catch{}};
   let sessionToken = sessionStorage.getItem(SESSION_KEY) || '';
@@ -27,6 +34,29 @@
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login';
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
   let toastTimer;
+  function couponTime(){
+    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
+    const hh=Number(parts.find(p=>p.type==='hour')?.value), mm=Number(parts.find(p=>p.type==='minute')?.value);
+    return Number.isInteger(hh)&&Number.isInteger(mm)&&mm>=hh&&mm<hh+5;
+  }
+  function refreshCoupon(){
+    const visible=couponTime();const coupon=$('#premiumCoupon');coupon.hidden=!visible;
+    if($('#couponDialog')?.open&&!visible)$('#couponDialog').close();
+  }
+  function claimCouponPrompt(){
+    if(!couponTime()){toast('El cupón no está disponible en este momento.');refreshCoupon();return;}
+    if(couponClaimed){toast('Este cupón ya fue activado en tu cuenta.');return;}
+    if(!hasUser()){pendingAfterAuth='coupon';openAuth('login');toast('Ingresa o regístrate para activar tu bono.');return;}
+    const dialog=$('#couponDialog');if(!dialog.open)dialog.showModal();
+  }
+  async function claimCoupon(){
+    if(!couponTime()){refreshCoupon();toast('El cupón ya no está disponible.');return;}
+    if(!hasUser()){pendingAfterAuth='coupon';openAuth('login');return;}
+    const btn=$('#claimCoupon');btn.disabled=true;
+    try{const result=await remote('claimCoupon',{sessionToken});updateAccount(result);$('#couponDialog').close();toast('¡50 créditos de bono añadidos a tu saldo virtual!');}
+    catch(e){toast(e.message||'No se pudo activar el cupón.');}
+    finally{btn.disabled=false;}
+  }
   function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),4200);}
   const outcomes=['1','X','2'];
   const outcomeName=['Local','Empate','Visita'];
@@ -36,8 +66,7 @@
     ['Montaña FC','Náuticos','Copa Estelar'],['Estrella Roja','Olimpo FC','Liga Continental'],
     ['Unión Pacífico','Pumas Dorados','Liga Continental'],['Racing Andino','Imperial FC','Copa Estelar'],
     ['Toros del Este','Titanes FC','Liga Continental'],['Valle Verde','Marineros','Copa Estelar'],
-    ['Cóndor Club','Atlético Central','Liga Continental'],['Royal Sporting','Deportivo Sol','Liga Continental'],
-    ['Trueno FC','Academia Azul','Copa Estelar'],['Guerreros FC','Norte Unido','Liga Continental']
+    ['Cóndor Club','Atlético Central','Liga Continental'],['Royal Sporting','Deportivo Sol','Liga Continental']
   ].map(([home,away,league],i)=>({id:`gol${i+1}`,home,away,league}));
   let matches = [
     {id:'m1',home:'Astros FC',away:'Metro United',league:'Liga Continental',day:0,time:'20:00',odds:[1.85,3.40,4.20],colors:['#c9a244','#4b95c8']},
@@ -72,25 +101,37 @@
   function renderHome(){
     $('#homeFixtures').innerHTML=matches.slice(0,3).map(g=>`<article class="preview-card"><div class="preview-card-head"><span>${icon('ball')} ${esc(g.league)}</span><span class="game-date">${esc(visibleDate(g))}</span></div><div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div><div class="preview-bottom"><span>Mercado 1 · X · 2</span><button data-nav="match">Ver cuotas →</button></div></article>`).join('');
   }
-  function completedPicks(){return golGames.filter(g=>outcomes.includes(draft.golPicks[g.id])).length;}
+  function completedPicks(slot=activeCard){return golGames.filter(g=>outcomes.includes(draft.golCards[slot]?.[g.id])).length;}
   function renderGol(){
-    $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(draft.golPicks[g.id])?'filled':''}"><span class="fixture-number">${String(i+1).padStart(2,'0')}</span><div class="fixture-main"><small>${esc(g.league)}</small><strong>${esc(g.home)} <span>vs.</span> ${esc(g.away)}</strong></div><div class="result-choices" role="group" aria-label="Partido ${i+1}: ${esc(g.home)} contra ${esc(g.away)}">${outcomes.map((o,k)=>`<button type="button" class="result-option ${draft.golPicks[g.id]===o?'selected':''}" data-gol-id="${g.id}" data-gol-outcome="${o}" aria-pressed="${draft.golPicks[g.id]===o}" title="${outcomeName[k]}"><b>${o}</b><small>${outcomeName[k]}</small></button>`).join('')}</div></article>`).join('');
+    const selections=currentPicks(),locked=Boolean(golLocked[activeCard]);
+    $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}"><span class="fixture-number">${String(i+1).padStart(2,'0')}</span><div class="fixture-main"><small>${esc(g.league)}</small><strong>${esc(g.home)} <span>vs.</span> ${esc(g.away)}</strong></div><div class="result-choices" role="group" aria-label="Partido ${i+1}: ${esc(g.home)} contra ${esc(g.away)}">${outcomes.map((o,k)=>`<button type="button" class="result-option ${selections[g.id]===o?'selected':''}" data-gol-id="${g.id}" data-gol-outcome="${o}" aria-pressed="${selections[g.id]===o}" title="${outcomeName[k]}" ${locked?'disabled':''}><b>${o}</b><small>${outcomeName[k]}</small></button>`).join('')}</div></article>`).join('');
     $('#golCount').textContent=String(completedPicks());
-    $('#golCountSide').textContent=`${completedPicks()} de 14`;
-    $('#golProgress').style.width=`${completedPicks()/14*100}%`;
-    $('#submitGol').disabled=completedPicks()!==14;
+    $('#golCountSide').textContent=`${completedPicks()} de 12`;
+    $('#golProgress').style.width=`${completedPicks()/12*100}%`;
+    $('#submitGol').disabled=locked||completedPicks()!==12;
+    $('#submitGol').innerHTML=locked?'Jugada registrada ✓':`Colocar jugada ${icon('arrow')}`;
+    $('#resetGol').hidden=locked;
+    $('#golSlotHint').textContent=locked?`Jugada ${activeCard} registrada. Elige otra letra para participar de nuevo.`:`Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
+    $('#golTabs').innerHTML=SLOTS.map(slot=>`<button type="button" data-gol-slot="${slot}" class="${activeCard===slot?'active':''} ${golLocked[slot]?'recorded':''}" aria-pressed="${activeCard===slot}" title="Jugada ${slot}${golLocked[slot]?' registrada':''}">${slot}</button>`).join('');
+    const list=golGames.map((g,i)=>({g,i,pick:selections[g.id]})).filter(x=>outcomes.includes(x.pick));
+    $('#golSummary').innerHTML=list.length?list.map(({g,i,pick})=>`<div class="gol-summary-row"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="game" title="${esc(g.home)} – ${esc(g.away)}">${esc(g.home)} · ${esc(g.away)}</span><b class="result">${esc(pick)} · ${esc(outcomeName[outcomes.indexOf(pick)])}</b></div>`).join(''):'<div class="gol-summary-empty">Aquí aparecerán tus pronósticos a medida que selecciones los partidos.</div>';
   }
   let sendingPlay=false;
   async function saveGol(){
-    if(completedPicks()!==14){toast(`Completa los 14 partidos. Llevas ${completedPicks()} de 14.`);return;}
+    if(golLocked[activeCard]){toast('Esta jugada ya fue registrada. Elige otra letra.');return;}
+    if(completedPicks()!==12){toast(`Completa los 12 partidos. Llevas ${completedPicks()} de 12.`);return;}
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
+    if(accountBalance<3){toast('Saldo insuficiente. Cada jugada requiere 3 créditos virtuales.');return;}
     if(sendingPlay)return;
     sendingPlay=true;$('#submitGol').disabled=true;
+    const slot=activeCard;
     try{
-      const picks=golGames.map(g=>({id:g.id,outcome:draft.golPicks[g.id]}));
-      draft.golRequestId=draft.golRequestId||randomId();saveDraft();
-      const res=await remote('saveReto14',{sessionToken,picks,clientRequestId:draft.golRequestId});
-      updateAccount(res);draft.golPicks={};delete draft.golRequestId;saveDraft();renderAll();toast('¡Jugada PremiumGol registrada en tu cuenta!');
+      const picks=golGames.map(g=>({id:g.id,outcome:draft.golCards[slot][g.id]}));
+      draft.golRequestIds[slot]=draft.golRequestIds[slot]||randomId();saveDraft();
+      const res=await remote('savePremiumGol',{sessionToken,slot,picks,clientRequestId:draft.golRequestIds[slot]});
+      updateAccount(res);delete draft.golRequestIds[slot];saveDraft();
+      const next=SLOTS.find(s=>!golLocked[s]);if(next){activeCard=next;draft.activeCard=next;saveDraft();}
+      renderGol();toast(`¡Jugada ${slot} registrada! Se descontaron 3 créditos virtuales.`);
     }catch(e){toast(e.message||'No se pudo guardar la jugada.');}
     finally{sendingPlay=false;renderGol();}
   }
@@ -150,6 +191,8 @@
     if(result.user)account=result.user;
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Array.isArray(result.history))playHistory=result.history;
+    if(result.golSlots&&typeof result.golSlots==='object'){golLocked=result.golSlots;for(const slot of SLOTS){if(golLocked[slot]?.picks){draft.golCards[slot]=Object.fromEntries(golLocked[slot].picks.map(p=>[p.id,p.outcome]));}}saveDraft();}
+    if(typeof result.couponClaimed==='boolean')couponClaimed=result.couponClaimed;
     renderAll();
   }
   function renderHeader(){
@@ -190,7 +233,8 @@
     $('#tabLogin').setAttribute('aria-selected',String(authMode==='login'));
     $('#tabRegister').setAttribute('aria-selected',String(authMode==='register'));
     $('#authTitle').textContent=authMode==='register'?'Crear cuenta':'Ingresar';
-    $('#authDescription').textContent=authMode==='register'?'Regístrate y comienza a disfrutar PremiumGol.':'Accede a tus jugadas y pronósticos.';
+    $('#authTitle').classList.toggle('visually-hidden',authMode!=='register');
+    $('#authDescription').textContent=authMode==='register'?'Tus jugadas y pronósticos.':'Tus jugadas y pronósticos.';
     $('#signupFields').hidden=authMode!=='register';
     $('#authFirst').required=authMode==='register';
     $('#authLast').required=authMode==='register';
@@ -210,10 +254,10 @@
     updateAccount(result);
     closeAuth();toast('¡Bienvenido a PremiumGol!');
     const next=pendingAfterAuth;pendingAfterAuth=null;
-    if(next==='gol')saveGol();else if(next==='bet')placeBet();else showView('account');
+    if(next==='gol')saveGol();else if(next==='bet')placeBet();else if(next==='coupon')claimCouponPrompt();else showView('account');
   }
   async function signout(){
-    const old=sessionToken;sessionToken='';account=null;accountBalance=0;playHistory=[];
+    const old=sessionToken;sessionToken='';account=null;accountBalance=0;playHistory=[];golLocked={};couponClaimed=false;
     sessionStorage.removeItem(SESSION_KEY);
     renderAll();showView('home');toast('Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
@@ -267,7 +311,7 @@
         try{acceptSession(await remote('googleLogin',{idToken:credential}));}
         catch(e){toast(e.message||'No se pudo ingresar con Google.');}
       }});
-      $('#googleButtonMount').style.display='flex';$('#googleLogin').style.display='none';
+      $('#googleButtonMount').style.display='flex';$('#googleUnavailable').hidden=true;
       window.google.accounts.id.renderButton($('#googleButtonMount'),{theme:'outline',size:'large',text:'continue_with',shape:'rectangular',width:300,locale:'es'});
     };
     script.onerror=()=>{googleStarted=false;toast('No se pudo cargar el acceso Google.');};
@@ -298,7 +342,7 @@
   $('#tabRegister').addEventListener('click',()=>setAuthMode('register'));
   $('#closeAuth').addEventListener('click',closeAuth);
   $('#authDialog').addEventListener('click',e=>{if(e.target===$('#authDialog'))closeAuth();});
-  $('#googleLogin').addEventListener('click',()=>CONFIG.googleClientId?setupGoogle():toast('El acceso con Google se habilitará al conectar la configuración.'));
+  $('#googleUnavailable').hidden=Boolean(CONFIG.googleClientId);
   $('#emailForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const email=$('#authEmail').value.trim().toLowerCase();
@@ -326,7 +370,11 @@
   });
   $('#backToEmail').addEventListener('click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
   $('#submitGol').addEventListener('click',saveGol);
-  $('#resetGol').addEventListener('click',()=>{draft.golPicks={};delete draft.golRequestId;saveDraft();renderGol();toast('Se borró tu selección actual.');});
+  $('#resetGol').addEventListener('click',()=>{if(golLocked[activeCard])return;draft.golCards[activeCard]={};delete draft.golRequestIds[activeCard];saveDraft();renderGol();toast('Se borró la selección de la jugada '+activeCard+'.');});
+  $('#premiumCoupon').addEventListener('click',claimCouponPrompt);
+  $('#closeCoupon').addEventListener('click',()=>$('#couponDialog').close());
+  $('#couponDialog').addEventListener('click',e=>{if(e.target===$('#couponDialog'))$('#couponDialog').close();});
+  $('#claimCoupon').addEventListener('click',claimCoupon);
   $('#accountSignout').addEventListener('click',signout);
   $('#profileForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!hasUser())return;
@@ -346,7 +394,8 @@
     }
   });
   document.addEventListener('click',e=>{
-    const gol=e.target.closest('[data-gol-id]');if(gol){delete draft.golRequestId;draft.golPicks[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
+    const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
+    const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
     const nav=e.target.closest('[data-nav]');if(nav){e.preventDefault();showView(nav.dataset.nav);return;}
     const tab=e.target.closest('[data-account-tab]');if(tab){accountTab=tab.dataset.accountTab;renderAccount();return;}
     const pick=e.target.closest('[data-pick]');if(pick){changeSelection(pick.dataset.pick,pick.dataset.outcome);return;}
@@ -356,6 +405,7 @@
   });
   $('#footerYear').textContent=new Date().getFullYear();
   renderAll();
+  refreshCoupon();setInterval(refreshCoupon,15000);
   initBridge();
   if(sessionToken)refreshAccount();
   loadCatalog();

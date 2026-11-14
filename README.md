@@ -1,8 +1,30 @@
-# PremiumGol — versión 4 (web + Google Apps Script)
+# PremiumGol — versión 5 (web + Google Apps Script)
+
+## Cambios de la versión 5
+
+- Banner superior: texto animado de derecha a izquierda y firma «Una experiencia de PremiumLott» alineada al contenedor de la cabecera.
+- **Cupón Premium 50 BW:** aparece exclusivamente cuando la hora de Perú coincide con el minuto (00:00, 01:01, 02:02... 23:23), durante los **primeros cinco minutos** de ese intervalo. Ejemplos: 18:18–18:22. Clic abre una ventana y, al iniciar sesión, activa **50 créditos de bono virtual**, **máximo una vez por cuenta**. El backend verifica horario y unicidad; no se puede canjear por dinero.
+- **PremiumGol:** 12 partidos (1/X/2), selecciones independientes A, B, C y D. Cada una se guarda una sola vez por jornada; el servidor descuenta **3 créditos virtuales** (equivalentes a S/ 3 simulados en la pantalla) y conserva historial, resumen y saldo. No hay apuestas con soles reales.
+- Eliminadas las franjas introductorias grandes de PremiumGol, Apuestas deportivas y Premium Live; quedan sus títulos de sección y textos solicitados.
+- Modales: logotipo oficial completo en lugar del círculo anterior. Se dejó `assets/premiumgol-modal-logo.png` como archivo independiente para sustituirlo sin cambiar HTML cuando esté disponible la nueva imagen de modal; la versión actual usa **una copia intacta del logo oficial anterior**.
+- Botón **Continuar con Google**: se renderiza únicamente con Google Identity Services al configurar `GOOGLE_CLIENT_ID`; no hay botón imitado que simule Google sin conexión.
+- Cuenta: mensaje de billetera virtual y recargas próximas. No se implementa cobro con Mercado Pago ni PayPal.
+
+### Recarga virtual manual autorizada
+
+Esta etapa mantiene créditos **ficticios**. Si deseas asignar 50 créditos virtuales desde Apps Script a un usuario registrado:
+
+1. En **Propiedades del script** configura `ADMIN_EMAIL` con tu correo administrador, `RECHARGE_EMAIL` con el correo del usuario y `RECHARGE_REFERENCE` con un identificador único (por ejemplo `AUTORIZADA-000001`).
+2. Ejecuta **`adminRecharge50FromEditor`** en el editor autenticado con la cuenta administradora. La función verifica el correo ejecutor, bloquea referencias repetidas, acredita **50 créditos ficticios** y registra la operación en `ledger`.
+3. Nunca agregues `adminApproveVirtualRecharge` ni `adminRecharge50FromEditor` como acciones públicas en `Main.gs`. No uses esta herramienta para acreditar fondos reales. Google Sheets no ofrece transacciones financieras atómicas; cuando se habiliten pagos reales, hará falta una base de datos transaccional, conciliación y controles regulatorios.
+
+**La cartilla de 12 partidos y sus partidas son ficticias hasta configurar una jornada oficial.** Cambiar la jornada requiere ajustar `PG.ROUND_ID` en `Config.gs`, el catálogo de partidos y volver a publicar la implementación.
+
+
 
 PremiumGol es la marca deportiva de PremiumLott. Esta entrega conserva la portada de estadio nocturno y el diseño azul oscuro/dorado del prototipo anterior, con las siguientes secciones:
 
-- **PremiumGol:** cartilla de 14 partidos, un pronóstico por encuentro: **1 = local, X = empate, 2 = visita**. Se habilita **Colocar jugada** después de completar los 14.
+- **PremiumGol:** cartilla de 12 partidos, con cuatro jugadas independientes A, B, C y D (3 créditos virtuales cada una), un pronóstico por encuentro: **1 = local, X = empate, 2 = visita**. Se habilita **Colocar jugada** después de completar los 12.
 - **Apuestas deportivas:** próximos encuentros, mercado 1/X/2, filtros por equipo, liga y fecha, orden por liga/fecha/equipo y cupón con cuotas.
 - **Premium Live:** partidos en vivo y su cupón de créditos virtuales.
 - **Mi cuenta:** saldos, historial, datos de perfil y documentos opcionales para completar después.
@@ -18,19 +40,21 @@ assets/
   app.js             # UI, cartilla 1/X/2, perfil y puente a Apps Script
   styles.css         # estética responsive
   premiumgol-logo-oficial.png  # Logo oficial proporcionado, sin alteraciones
+  premiumgol-modal-logo.png   # Logo provisional del modal, sustituible por el nuevo adjunto
   stadium.svg        # estadio propio sin marcas de terceros
 apps-script/
   Config.gs          # hoja base, utilidades y configuración
   Main.gs            # entrada Web App y API interna
   Auth.gs            # Google + OTP por correo, sesiones y perfiles
-  Games.gs           # PremiumGol, cupones, saldo y registro en Sheets
+  Games.gs           # PremiumGol 12 partidos, bono horario, saldos y registro en Sheets
   ApiSports.gs       # prueba de conexión al proveedor; no activado
+  Admin.gs           # recargas virtuales autorizadas desde el editor
   Bridge.html        # puente iframe + google.script.run
 ```
 
 ## Configuración desde cero (necesaria para que el login y la persistencia funcionen)
 
-1. Crea un proyecto en <https://script.google.com> desde tu cuenta propietaria. Añade los **cinco archivos `.gs`** de `apps-script/`, cada uno como *Script*, y `Bridge.html` como archivo *HTML*. Los nombres deben coincidir. No uses dos archivos distintos denominados `Code.gs` con lógica superpuesta.
+1. Crea un proyecto en <https://script.google.com> desde tu cuenta propietaria. Añade los **seis archivos `.gs`** de `apps-script/`, cada uno como *Script*, y `Bridge.html` como archivo *HTML*. Los nombres deben coincidir. No uses dos archivos distintos denominados `Code.gs` con lógica superpuesta.
 2. En **Configuración del proyecto → Propiedades del script**, añade:
 
    | Propiedad | Valor |
@@ -53,7 +77,7 @@ apps-script/
    ```
 
 7. Publica la carpeta web completa (sin `apps-script/` si prefieres mantenerlo fuera del repositorio) en GitHub Pages o tu hosting HTTPS. El iframe de Apps Script requiere el origen exacto indicado en `FRONTEND_ORIGIN`. La web es una aplicación de una sola página; no necesitas instalar dependencias.
-8. Prueba: **Registrarse → nombres, apellidos, correo → recibir código → verificar**, entrar a **Mi perfil**, completar WhatsApp y documento, rellenar **14 opciones 1/X/2**, pulsar **Colocar jugada** y comprobar `plays` y `users` en la hoja. Cierra sesión e ingresa con el mismo correo. Prueba también **Continuar con Google** desde el dominio autorizado.
+8. Prueba: **Registrarse → nombres, apellidos, correo → recibir código → verificar**, entrar a **Mi perfil**, completar WhatsApp y documento, rellenar **12 opciones 1/X/2**, pulsar **Colocar jugada** y comprobar `plays` y `users` en la hoja. Cierra sesión e ingresa con el mismo correo. Prueba también **Continuar con Google** desde el dominio autorizado.
 
 Cada cambio en los archivos `.gs` exige **actualizar la implementación** del Web App para que la URL pública utilice la versión nueva. El backend devuelve mensajes de error controlados; si no llega el OTP revisa autorización de MailApp, cuotas de correo, correo no deseado y registros de ejecución.
 
@@ -83,7 +107,7 @@ Cuando facilites la rama de GitHub, se aplicará la nueva versión sobre la estr
 
 - Cabecera y pie: `assets/premiumgol-logo-oficial.png`, el PNG transparente original suministrado por el propietario; no se redibujó.
 - Menú escritorio: **Inicio · PremiumGol · Apuestas deportivas · Premium Live**. Menú móvil: Inicio · PremiumGol · Apuestas · Live · Cuenta.
-- El juego PremiumGol usa exactamente 14 pronósticos **1 / X / 2**. No se solicitan marcadores numéricos.
+- El juego PremiumGol usa exactamente 12 pronósticos **1 / X / 2**. No se solicitan marcadores numéricos.
 - El backend conserva por compatibilidad el identificador interno de acción `saveReto14` (no se muestra al jugador). No cambiarlo sin ajustar frontend y `Main.gs` conjuntamente.
 - Sin URLs reales ni credenciales proporcionadas, el acceso externo y la API deportiva siguen pendientes de configurar y verificar tras desplegar.
 
