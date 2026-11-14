@@ -63,14 +63,8 @@
 @media(max-width:720px){.top-line{height:31px}.top-line-inner{gap:7px}.promo-ticker-track{font-size:8px;letter-spacing:.3px;animation-duration:21s}.premium-coupon{font-size:9px;padding:5px 6px}.gol-side .premium-panel{padding:19px}.gol-summary{max-height:230px}.auth-brand-logo{max-height:70px}}
 @media(prefers-reduced-motion:reduce){.promo-ticker-track{animation:none}.premium-coupon{animation:none}}
 
-
-/* PremiumGol | Contraste visual V6: solo color, sin cambiar espesores ni geometría. */
-:root {
-  --gold: #ffe000;
-  --gold2: #ffd000;
-  --text: #ffffff;
-}
-/* Tipografía principal realmente blanca; textos secundarios continúan diferenciados. */
+/* PremiumGol | Contraste blanco V7: dorado original conservado. */
+:root { --text: #ffffff; }
 .nav-link,
 .btn-outline,
 .hero-copy > p,
@@ -82,23 +76,3 @@
 .mode-card h3,
 .premium-panel h3,
 .coupon-box h2 { color: #ffffff; }
-/* Dorado luminoso. Se conserva el ancho original de todos los bordes. */
-.btn-gold {
-  background: linear-gradient(130deg,#fff17a 0%,#ffe000 48%,#ffca00 100%);
-  border-color: #ffe600;
-}
-.mode-card:hover,
-.gol-fixture.filled,
-.choice.selected,
-.result-option.selected,
-.filter-pill:hover,
-.filter-pill.active,
-.gol-card-tabs button.active { border-color: #ffe000; }
-.premium-coupon {
-  border-color: #ffe600;
-  color: #ffe600;
-  box-shadow: 0 0 17px #ffdb0066,inset 0 0 8px #ffdb0033;
-}
-.coupon-dialog { border-color: #ffe000; color: #ffffff; }
-.coupon-seal { border-color: #ffe000; color: #ffe600; }
-.gol-side-icon { border-color: #ffe00099; }
