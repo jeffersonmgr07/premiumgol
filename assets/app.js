@@ -239,7 +239,7 @@
     try{
       const res=await remote('createTopupRequest',{sessionToken,amount,clientRequestId:topupRequestId});
       const box=$('#rechargeOrder');box.hidden=false;
-      box.innerHTML=`<strong>Solicitud de recarga registrada</strong><div>Referencia: ${esc(res.orderId)}</div><div>Importe: S/ ${fmt2(res.amount)}</div><div>Estado: pendiente de habilitar el pago en línea.</div>`;
+      box.innerHTML=`<strong>Solicitud de recarga registrada</strong><div>Referencia: ${esc(res.orderId)}</div><div>Importe: S/ ${fmt2(res.amount)}</div><div>Estado: pendiente de habilitar el pago en línea.</div><button type="button" class="btn btn-outline btn-full" disabled aria-disabled="true">Pagar con Mercado Pago · Próximamente</button>`;
       toast('Solicitud generada. El pago en línea todavía no está habilitado.');
       topupRequestId=null;
     }catch(e){toast(e.message||'No se pudo crear la solicitud de recarga.');}
