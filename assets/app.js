@@ -31,7 +31,7 @@
   let account = null;
   let accountBalance = 0;
   let playHistory = [];
-  let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login';
+  let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='DEMO';
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
   let topupSelection='30',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
@@ -155,19 +155,22 @@
     if(sortFilter==='league')games.sort((a,b)=>a.league.localeCompare(b.league,'es'));
     else if(sortFilter==='team')games.sort((a,b)=>a.home.localeCompare(b.home,'es'));
     else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
+    $('#matchSourceLabel').textContent=catalogMode==='API_PREVIEW'?'API-FOOTBALL · Vista informativa (sin apuestas)':'Cuotas de demostración';
     $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
     $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):'<div class="empty-state">No se encontraron partidos con esos filtros.</div>';
     renderSlips();
   }
   function renderLive(){
+    $('#liveSourceLabel').textContent=catalogMode==='API_PREVIEW'?'API-FOOTBALL · Datos con retraso (sin apuestas)':'Resultados y cuotas simulados';
     $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):'<div class="empty-state">No hay encuentros en vivo en este momento.</div>';
     renderSlips();
   }
   function marketCard(g,live){
     const selected=draft.slips.find(s=>s.id===g.id)?.outcome;
-    return `<article class="market-card ${live?'live-card':''}"><div class="market-top"><span class="market-league"><span class="league-icon">✦</span>${esc(g.league)}</span><span class="market-schedule">${live?`<span class="tiny-live"></span> ${Number(g.minute)||0}' EN VIVO`:esc(visibleDate(g))}</span></div><div class="market-body"><div class="teams-block"><span class="market-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="market-middle">${live?'':'VS'}</span><span class="market-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>${live?`<span class="market-score">${Number(g.score?.[0])||0} <small>:</small> ${Number(g.score?.[1])||0}</span>`:''}</div><div class="market-choices">${outcomes.map((o,i)=>`<button type="button" class="choice ${selected===o?'selected':''}" data-pick="${esc(g.id)}" data-outcome="${o}" ${!Number.isFinite(Number(g.odds?.[i]))?'disabled':''} aria-label="${outcomeName[i]} para ${esc(g.home)} contra ${esc(g.away)}"><small>${o}</small><b>${g.odds?.[i]?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div></article>`;
+    return `<article class="market-card ${live?'live-card':''}"><div class="market-top"><span class="market-league"><span class="league-icon">✦</span>${esc(g.league)}</span><span class="market-schedule">${live?`<span class="tiny-live"></span> ${Number(g.minute)||0}' EN VIVO`:esc(visibleDate(g))}</span></div><div class="market-body"><div class="teams-block"><span class="market-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="market-middle">${live?'':'VS'}</span><span class="market-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>${live?`<span class="market-score">${Number(g.score?.[0])||0} <small>:</small> ${Number(g.score?.[1])||0}</span>`:''}</div><div class="market-choices">${outcomes.map((o,i)=>`<button type="button" class="choice ${selected===o?'selected':''}" data-pick="${esc(g.id)}" data-outcome="${o}" ${catalogMode==='API_PREVIEW'||!Number.isFinite(Number(g.odds?.[i]))?'disabled':''} aria-label="${outcomeName[i]} para ${esc(g.home)} contra ${esc(g.away)}"><small>${o}</small><b>${g.odds?.[i]?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div></article>`;
   }
   function changeSelection(id,outcome){
+    if(catalogMode==='API_PREVIEW'){toast('Las cuotas consultadas no están disponibles para jugar.');return;}
     const game=allGames().find(g=>g.id===id);if(!game||!outcomes.includes(outcome))return;
     const selected=draft.slips.find(s=>s.id===id)?.outcome===outcome;
     delete draft.betRequestId;
@@ -183,6 +186,7 @@
     $('#liveBetslip').innerHTML=content.replaceAll('id="betStake"','id="betStakeLive"').replaceAll('for="betStake"','for="betStakeLive"').replaceAll('id="slipReturn"','id="slipReturnLive"').replaceAll('id="placeBet"','id="placeBetLive"').replaceAll('id="clearBetslip"','id="clearBetslipLive"');
   }
   async function placeBet(){
+    if(catalogMode==='API_PREVIEW'){toast('Las cuotas consultadas no están disponibles para jugar.');return;}
     if(!draft.slips.length){toast('Selecciona al menos un resultado.');return;}
     if(!hasUser()){pendingAfterAuth='bet';openAuth('login');toast('Ingresa o regístrate para guardar tu cupón.');return;}
     if(!Number.isInteger(stake)||stake<1||stake>1000){toast('Ingresa entre 1 y 1,000 créditos.');return;}
@@ -367,9 +371,11 @@
     if(!CONFIG.appsScriptUrl)return;
     try{
       const data=await remote('catalog',{});
+      catalogMode=data.mode||'DEMO';
       if(data.games?.gol&&Array.isArray(data.games.gol)&&data.games.gol.length===12)golGames=data.games.gol;
       if(data.games?.match&&Array.isArray(data.games.match))matches=data.games.match;
       if(data.games?.live&&Array.isArray(data.games.live))liveGames=data.games.live;
+      if(catalogMode==='API_PREVIEW')draft.slips=[];
       // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
       const ids=new Set(allGames().map(g=>g.id));
       draft.slips=draft.slips.filter(s=>ids.has(s.id));saveDraft();
