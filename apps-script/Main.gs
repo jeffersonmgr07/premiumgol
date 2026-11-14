@@ -16,7 +16,7 @@ function rpc(requestJson){
     const req=JSON.parse(requestJson),x=req.data||{};
     if(!req||typeof req.action!=='string'||typeof x!=='object')pgErr_('Solicitud inválida.');
     switch(req.action){
-      case 'catalog':return pgDemoCatalog_();
+      case 'catalog':return pgPublicSportsCatalog_();
       case 'sendCode':return pgSendCode_(x);
       case 'verifyCode':return pgVerifyCode_(x);
       case 'googleLogin':return pgGoogleLogin_(x);
