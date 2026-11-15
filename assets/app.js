@@ -123,6 +123,7 @@
     if(!match)return;
     leagueFilter='all';dateFilter='all';searchFilter=match.home;sortFilter='date';
     $('#matchSearch').value=match.home;
+    $('#matchLeague').value='all';
     $('#matchDate').value='all';
     showView('match');
   }
@@ -334,7 +335,8 @@
     if(!CONFIG.appsScriptUrl) return Promise.reject(new Error('El inicio de sesión estará disponible al conectar el servidor de PremiumGol.'));
     return new Promise((resolve,reject)=>{
       const id=randomId();
-      const timer=setTimeout(()=>{bridge.pending.delete(id);bridge.queue=bridge.queue.filter(p=>p.id!==id);reject(new Error('La conexión tardó demasiado. Vuelve a intentarlo.'));},15000);
+      const timeout=action==='catalog'?45000:20000;
+      const timer=setTimeout(()=>{bridge.pending.delete(id);bridge.queue=bridge.queue.filter(p=>p.id!==id);reject(new Error('La conexión tardó demasiado. Vuelve a intentarlo.'));},timeout);
       bridge.pending.set(id,{resolve,reject,timer});sendBridgeRequest({id,action,data});
     });
   }
