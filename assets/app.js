@@ -200,13 +200,13 @@
     else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
     $('#matchSourceLabel').textContent='API-FOOTBALL · Cuotas informativas (no aptas para apostar)';
     $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
-    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):`<div class="empty-state">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay partidos disponibles con esos filtros.')}</div>`;
+    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):`<div class="empty-state">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay partidos disponibles con esos filtros.')}${catalogLoading?'':'<button class="btn btn-outline btn-mini catalog-retry" data-retry-sports="1" type="button">Reintentar</button>'}</div>`;
     renderSlips();
   }
   function renderLive(){
     const ts=liveGames[0]?.fetchedAt?new Date(liveGames[0].fetchedAt).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
     $('#liveSourceLabel').textContent='API-FOOTBALL · Live informativo'+(ts?' · Consultado '+ts:'');
-    $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):`<div class="empty-state">${catalogLoading?'Consultando partidos en curso…':(catalogWarning||'No hay encuentros en vivo disponibles en este momento.')}</div>`;
+    $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):`<div class="empty-state">${catalogLoading?'Consultando partidos en curso…':(catalogWarning||'No hay encuentros en vivo disponibles en este momento.')}${catalogLoading?'':'<button class="btn btn-outline btn-mini catalog-retry" data-retry-sports="1" type="button">Reintentar</button>'}</div>`;
     renderSlips();
   }
   function marketCard(g,live){
@@ -370,7 +370,7 @@
     if(!CONFIG.appsScriptUrl) return Promise.reject(new Error('El inicio de sesión estará disponible al conectar el servidor de PremiumGol.'));
     return new Promise((resolve,reject)=>{
       const id=randomId();
-      const timeout=action==='catalog'?45000:20000;
+      const timeout=(action==='catalog'||action==='golProgram')?30000:20000;
       const timer=setTimeout(()=>{bridge.pending.delete(id);bridge.queue=bridge.queue.filter(p=>p.id!==id);reject(new Error('La conexión tardó demasiado. Vuelve a intentarlo.'));},timeout);
       bridge.pending.set(id,{resolve,reject,timer});sendBridgeRequest({id,action,data});
     });
@@ -426,6 +426,20 @@
     try{updateAccount(await remote('me',{sessionToken}));}
     catch{sessionToken='';account=null;sessionStorage.removeItem(SESSION_KEY);renderAll();}
   }
+  async function loadGolProgram(){
+    if(!CONFIG.appsScriptUrl)return;
+    try{
+      const data=await remote('golProgram',{});
+      if(data?.roundId!=='premiumgol12-jornada-20261118'||!Array.isArray(data.games)||data.games.length!==12)return;
+      if(!data.games.every((g,i)=>String(g.id)===`gol${i+1}`))return;
+      golGames=data.games;
+      if(/^2026-11-18T18:30:00-05:00$/.test(String(data.cutoff||'')))golCutoff=data.cutoff;
+      renderGol();
+    }catch(e){
+      // La cartilla con jornadas, ligas y horarios funciona aunque la API aún no entregue escudos.
+      console.warn('El proveedor no entregó todas las insignias de la cartilla.');
+    }
+  }
   async function loadCatalog(){
     if(!CONFIG.appsScriptUrl){catalogLoading=false;catalogWarning='Encuentros temporalmente no disponibles.';renderAll();return;}
     try{
@@ -441,7 +455,14 @@
       const ids=new Set(allGames().map(g=>g.id));
       draft.slips=draft.slips.filter(s=>ids.has(s.id));saveDraft();
       renderAll();
-    }catch(e){catalogLoading=false;catalogWarning='No se pudieron actualizar los partidos. Vuelve a intentarlo más tarde.';matches=[];liveGames=[];renderAll();console.warn('No se pudo cargar el catálogo deportivo.');}
+    }catch(e){
+      catalogLoading=false;
+      catalogWarning=!bridge.ready?
+        'No se pudo conectar con Apps Script. Revisa el despliegue y FRONTEND_ORIGIN.':
+        'No fue posible obtener los partidos. Revisa las ejecuciones de Apps Script y vuelve a intentarlo.';
+      matches=[];liveGames=[];renderAll();
+      console.warn('Catálogo deportivo sin respuesta:',e.message);
+    }
   }
   $('#loginTop').addEventListener('click',()=>hasUser()?showView('account'):openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
@@ -511,6 +532,10 @@
     const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
     const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
     const highlighted=e.target.closest('[data-featured-match]');if(highlighted){e.preventDefault();openFeaturedGame(highlighted.dataset.featuredMatch);return;}
+    if(e.target.closest('[data-retry-sports]')){
+      if(!catalogLoading){catalogLoading=true;catalogWarning='';renderAll();loadCatalog();}
+      return;
+    }
     const nav=e.target.closest('[data-nav]');if(nav){e.preventDefault();showView(nav.dataset.nav);return;}
     const tab=e.target.closest('[data-account-tab]');if(tab){accountTab=tab.dataset.accountTab;renderAccount();return;}
     const amountButton=e.target.closest('[data-topup-amount]');if(amountButton){topupSelection=amountButton.dataset.topupAmount;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();if(topupSelection==='custom')$('#rechargeOther').focus();return;}
@@ -526,6 +551,9 @@
   initBridge();
   if(sessionToken)refreshAccount();
   loadCatalog();
+  loadGolProgram();
+  document.addEventListener('error',e=>{if(e.target?.matches?.('img.gol-crest-img'))e.target.remove();},true);
+  setInterval(()=>{if(activeView==='gol')renderGol();},60000);
   // El navegador consulta el caché del servidor; no realiza solicitudes a API-FOOTBALL.
   setInterval(()=>{if(document.visibilityState==='visible'&&['home','match','live'].includes(activeView))loadCatalog();},300000);
   const hash=location.hash.slice(1);
