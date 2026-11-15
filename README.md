@@ -1,3 +1,20 @@
+## Seguridad OAuth y pruebas del plan Free (15/11/2026)
+El botón Google daba `401 invalid_client` porque el valor de `googleClientId` publicado comenzaba por `GOCSPX-`, prefijo de secreto OAuth, no de ID de cliente web. Se retiró inmediatamente del archivo público `assets/config.js`. Como también existió en un commit previo, **revocar/rotar esa credencial en Google Cloud es obligatorio**: borrarla del último commit NO elimina copias ni el historial. No registrar aquí el nuevo secreto.
+
+**Restauración del login Google:**
+1. En Google Cloud (cuenta propietaria del proyecto), seleccionar el proyecto PremiumGol → Google Auth Platform → Clients → cliente tipo `Web application`.
+2. En JavaScript origins, permitir `https://premiumgol.website` (sin slash). El Client ID correcto habitualmente comienza por números y termina en `.apps.googleusercontent.com`; NO comienza por `GOCSPX-`.
+3. Copiar **solo el Client ID público** a `assets/config.js` → `googleClientId` y a las Propiedades privadas del Apps Script → `GOOGLE_CLIENT_ID`. Ambos valores deben ser idénticos.
+4. Apps Script: mantener `FRONTEND_ORIGIN=https://premiumgol.website`; copiar la versión actualizada de `Auth.gs`, ejecutar `testPremiumGolGoogleConfiguration` y publicar una nueva versión del despliegue.
+5. No configurar un Client Secret en JavaScript ni enviar ese secreto al chat. GIS usa un ID Token verificado por Apps Script.
+6. Mientras falta el ID real, el botón de Google aparece desactivado con mensaje explicativo; el formulario de correo permanece disponible.
+
+**Plan Free de API-FOOTBALL:** el proveedor devuelve `Free plans do not have access to the Next parameter` para `fixtures?next=5`. `ApiSports.gs` ahora elige `fixtures?live=all` en la prueba con plan gratuito y usa el parámetro `next` únicamente en planes que lo admitan. En los últimos registros: `live: 11` y `liveWithOdds: 8`; cuota disponible para 8 encuentros no significa apuestas transaccionales habilitadas. Actualizar la versión de `ApiSports.gs` en el editor de Apps Script y volver a ejecutar `testApiSportsFixtures`.
+
+**Atención:** en las capturas el archivo local `Código.gs` parecía contener funciones repetidas de `ApiSports.gs`. Todos los `.gs` comparten ámbito global: si hay duplicados de `pgSportsRequest_` o `testApiSportsConnection`, conservar solo una definición vigente. No borrar otras funciones propias del proyecto sin revisión.
+
+---
+
 ## Diagnóstico de los registros de API-FOOTBALL (15 de noviembre de 2026)
 
 Las pruebas del propietario mostraron `/status HTTP 200`, cuenta `Free` activa (100 solicitudes/día), `testApiSportsFixtures` con error genérico, `testPremiumGolSportsCatalog` con `upcoming:0,live:11` y `testPremiumGolProgram` con **0 escudos**.
