@@ -963,7 +963,12 @@ body.auth-request-busy{overflow:hidden}
 #walletTop[aria-expanded="true"]{border-color:#F7C85D}
 .referral-panel+.account-panel{margin-top:24px}
 .referral-wallet-summary{grid-template-columns:minmax(0,1fr)}
-.auth-busy-google{display:block;width:76px;height:76px;object-fit:contain;background:none;color:inherit}
+.auth-busy-icon{display:none;width:76px;height:76px;object-fit:contain;animation:pgGooglePulse 1.25s ease-in-out infinite}
+@media(max-width:900px){
+  .auth-busy-overlay[data-kind="google"] .auth-busy-google{display:none}
+  .auth-busy-overlay[data-kind="google"] .auth-busy-icon{display:block}
+}
+@media(prefers-reduced-motion:reduce){.auth-busy-icon{animation:none}}
 .google-account-hint{text-align:center;color:#dce8f2;font-size:11px;line-height:1.5;margin:5px auto 12px}
 .email-access-toggle{display:block;margin:15px auto 9px;cursor:pointer;border:0;background:transparent;color:#F7C85D;font-weight:800;font-size:13px;text-decoration:underline;text-underline-offset:4px}
 .email-access-toggle:focus-visible{outline:2px solid #F7C85D;border-radius:4px}
