@@ -161,7 +161,17 @@ function pgPublicSportsCatalog_(){
 }
 function testPremiumGolSportsCatalog(){
   const data=pgPublicSportsCatalog_();
-  console.log(JSON.stringify({mode:data.mode,upcoming:data.games.match.length,live:data.games.live.length,
-    preview:data.games.match.slice(0,2),warning:data.warning||''}).slice(0,4500));
-  return {mode:data.mode,upcoming:data.games.match.slice(0,3),live:data.games.live.slice(0,3),warning:data.warning||''};
+  const available=rows=>rows.filter(g=>Array.isArray(g.odds)&&g.odds.length===3&&
+    g.odds.every(n=>Number(n)>1)).length;
+  const stats={mode:data.mode,
+    upcoming:data.games.match.length,
+    upcomingWithOdds:available(data.games.match),
+    live:data.games.live.length,
+    liveWithOdds:available(data.games.live),
+    livePreview:data.games.live.slice(0,2).map(g=>({
+      league:g.league,fixture:g.home+' vs '+g.away,odds:g.odds
+    })),
+    warning:data.warning||''};
+  console.log('Catálogo deportivo: '+JSON.stringify(stats).slice(0,4500));
+  return stats;
 }
