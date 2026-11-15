@@ -31,7 +31,8 @@
   let account = null;
   let accountBalance = 0;
   let playHistory = [];
-  let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='DEMO';
+  let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
+  let catalogWarning='',catalogLoading=true;
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
   let topupSelection='30',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
@@ -77,19 +78,10 @@
     ['New Mexico United','Sacramento Republic','Fútbol estadounidense'],
     ['Escocia Sub-21','Estados Unidos Sub-21','Selecciones Sub-21']
   ].map(([home,away,league],i)=>({id:`gol${i+1}`,home,away,league}));
-  let matches = [
-    {id:'m1',home:'Astros FC',away:'Metro United',league:'Liga Continental',day:0,time:'20:00',odds:[1.85,3.40,4.20],colors:['#c9a244','#4b95c8']},
-    {id:'m2',home:'Atlético Sur',away:'Leones del Norte',league:'Liga Continental',day:0,time:'21:30',odds:[2.12,3.15,3.05],colors:['#bf524d','#ddbd55']},
-    {id:'m3',home:'Real Aurora',away:'Costa Azul',league:'Copa Estelar',day:1,time:'18:00',odds:[1.62,3.75,5.10],colors:['#a7b8ce','#2586b6']},
-    {id:'m4',home:'Montaña FC',away:'Náuticos',league:'Copa Estelar',day:1,time:'19:45',odds:[2.90,3.20,2.30],colors:['#438367','#377ab0']},
-    {id:'m5',home:'Estrella Roja',away:'Olimpo FC',league:'Liga Continental',day:2,time:'17:30',odds:[2.05,3.25,3.70],colors:['#a9394b','#a7a4bd']},
-    {id:'m6',home:'Racing Andino',away:'Imperial FC',league:'Copa Estelar',day:2,time:'21:00',odds:[1.95,3.50,3.85],colors:['#56aeb5','#9d69ac']}
-  ];
-  let liveGames = [
-    {id:'l1',home:'Fénix Club',away:'Trueno FC',league:'Liga Continental',minute:67,score:[2,1],odds:[1.38,4.55,8.20],colors:['#da6652','#5975b5']},
-    {id:'l2',home:'Academia Azul',away:'Valle Verde',league:'Copa Estelar',minute:31,score:[0,0],odds:[2.42,2.98,3.11],colors:['#376fb2','#4c9669']},
-    {id:'l3',home:'Cóndor Club',away:'Marineros',league:'Liga Continental',minute:82,score:[1,2],odds:[7.40,4.80,1.31],colors:['#aa935e','#538bc0']}
-  ];
+  // Partidos y cuotas llegan únicamente desde API-FOOTBALL a través de Apps Script.
+  // Nunca pintar datos ficticios como cuotas disponibles.
+  let matches=[];
+  let liveGames=[];
   const hasUser = () => Boolean(account && sessionToken);
   const allGames = () => [...matches,...liveGames];
   const visibleDate = g => g.dateLabel || `${fixtureDays(g.day||0)} · ${g.time||''}`;
@@ -110,13 +102,13 @@
   function renderHome(){
     const withOdds=matches.filter(g=>g.odds?.some(v=>Number(v)>1));
     const featured=[...withOdds,...matches.filter(g=>!withOdds.some(x=>x.id===g.id))].slice(0,3);
-    const source=catalogMode==='API_PREVIEW'?'Cuotas consultadas · solo información':'Cuotas ilustrativas · demostración';
+    const source='Cuotas informativas · no disponibles para apostar';
     $('#homeFixtures').innerHTML=featured.length?featured.map(g=>`<article class="preview-card featured-clickable" data-featured-match="${esc(g.id)}" role="button" tabindex="0" aria-label="Ver cuotas de ${esc(g.home)} contra ${esc(g.away)}">
       <div class="preview-card-head"><span>${icon('ball')} ${esc(g.league)}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
       <div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>
       <div class="featured-odds" aria-label="Cuotas local empate visita">${['1','X','2'].map((name,n)=>`<span><small>${name}</small><b>${Number(g.odds?.[n])>1?fmt2(g.odds[n]):'—'}</b></span>`).join('')}</div>
       <div class="preview-bottom"><small>${source}</small><button type="button" class="text-link" data-featured-button="${esc(g.id)}">Ver cuotas →</button></div>
-    </article>`).join(''):`<div class="empty-state featured-empty">${catalogMode==='API_PREVIEW'?'Estamos actualizando los próximos encuentros disponibles.':'Los encuentros y cuotas se mostrarán al conectar el servicio deportivo.'}</div>`;
+    </article>`).join(''):`<div class="empty-state featured-empty">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay cuotas disponibles para los próximos encuentros.')}</div>`;
   }
   function openFeaturedGame(id){
     const match=matches.find(g=>String(g.id)===String(id));
@@ -172,14 +164,15 @@
     if(sortFilter==='league')games.sort((a,b)=>a.league.localeCompare(b.league,'es'));
     else if(sortFilter==='team')games.sort((a,b)=>a.home.localeCompare(b.home,'es'));
     else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
-    $('#matchSourceLabel').textContent=catalogMode==='API_PREVIEW'?'API-FOOTBALL · Vista informativa (sin apuestas)':'Cuotas de demostración';
+    $('#matchSourceLabel').textContent='API-FOOTBALL · Cuotas informativas (no aptas para apostar)';
     $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
-    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):'<div class="empty-state">No se encontraron partidos con esos filtros.</div>';
+    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):`<div class="empty-state">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay partidos disponibles con esos filtros.')}</div>`;
     renderSlips();
   }
   function renderLive(){
-    $('#liveSourceLabel').textContent=catalogMode==='API_PREVIEW'?'API-FOOTBALL · Datos con retraso (sin apuestas)':'Resultados y cuotas simulados';
-    $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):'<div class="empty-state">No hay encuentros en vivo en este momento.</div>';
+    const ts=liveGames[0]?.fetchedAt?new Date(liveGames[0].fetchedAt).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
+    $('#liveSourceLabel').textContent='API-FOOTBALL · Live informativo'+(ts?' · Consultado '+ts:'');
+    $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):`<div class="empty-state">${catalogLoading?'Consultando partidos en curso…':(catalogWarning||'No hay encuentros en vivo disponibles en este momento.')}</div>`;
     renderSlips();
   }
   function marketCard(g,live){
@@ -400,9 +393,10 @@
     catch{sessionToken='';account=null;sessionStorage.removeItem(SESSION_KEY);renderAll();}
   }
   async function loadCatalog(){
-    if(!CONFIG.appsScriptUrl)return;
+    if(!CONFIG.appsScriptUrl){catalogLoading=false;catalogWarning='Encuentros temporalmente no disponibles.';renderAll();return;}
     try{
       const data=await remote('catalog',{});
+      catalogLoading=false;catalogWarning=data.warning||'';
       catalogMode=data.mode||'DEMO';
       if(data.games?.gol&&Array.isArray(data.games.gol)&&data.games.gol.length===12)golGames=data.games.gol;
       if(data.games?.match&&Array.isArray(data.games.match))matches=data.games.match;
@@ -412,7 +406,7 @@
       const ids=new Set(allGames().map(g=>g.id));
       draft.slips=draft.slips.filter(s=>ids.has(s.id));saveDraft();
       renderAll();
-    }catch(e){console.warn('Catálogo provisional activo:',e.message);}
+    }catch(e){catalogLoading=false;catalogWarning='No se pudieron actualizar los partidos. Vuelve a intentarlo más tarde.';matches=[];liveGames=[];renderAll();console.warn('No se pudo cargar el catálogo deportivo.');}
   }
   $('#loginTop').addEventListener('click',()=>hasUser()?showView('account'):openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
@@ -497,6 +491,8 @@
   initBridge();
   if(sessionToken)refreshAccount();
   loadCatalog();
+  // El navegador consulta el caché del servidor; no realiza solicitudes a API-FOOTBALL.
+  setInterval(()=>{if(document.visibilityState==='visible'&&['home','match','live'].includes(activeView))loadCatalog();},300000);
   const hash=location.hash.slice(1);
   const view=hash==='inicio'?'home':hash;
   if(['home','gol','match','live'].includes(view))showView(view,true);
