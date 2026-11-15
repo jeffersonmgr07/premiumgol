@@ -125,9 +125,12 @@ function pgReferralSummary_(user){
   const invited=pgRows_('users').rows.map(r=>pgObject_('users',r))
     .filter(p=>String(p.invitedBy||'')===String(user.uid));
   const credits=pgRows_('payments_ledger').rows;
+  const refunds=new Set(credits.filter(v=>
+    ['REFUNDED','CHARGED_BACK'].includes(String(v[5]))&&Number(v[4])<0
+  ).map(v=>String(v[2])));
   const referrals=invited.map(p=>{
     const verified=credits.some(v=>String(v[1])===String(p.uid)&&
-      String(v[5])==='TOPUP_APPROVED'&&Number(v[4])>0);
+      String(v[5])==='TOPUP_APPROVED'&&Number(v[4])>0&&!refunds.has(String(v[2])));
     const first=pgClean_(p.firstName,70);
     const initial=pgClean_(p.lastName,70).charAt(0);
     return {label:first+(initial?' '+initial+'.':''),
