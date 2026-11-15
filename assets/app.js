@@ -396,11 +396,13 @@
     if(!CONFIG.appsScriptUrl){catalogLoading=false;catalogWarning='Encuentros temporalmente no disponibles.';renderAll();return;}
     try{
       const data=await remote('catalog',{});
-      catalogLoading=false;catalogWarning=data.warning||'';
-      catalogMode=data.mode||'DEMO';
-      if(data.games?.gol&&Array.isArray(data.games.gol)&&data.games.gol.length===12)golGames=data.games.gol;
-      if(data.games?.match&&Array.isArray(data.games.match))matches=data.games.match;
-      if(data.games?.live&&Array.isArray(data.games.live))liveGames=data.games.live;
+      catalogLoading=false;
+      catalogMode='API_PREVIEW';
+      const verified=data.mode==='API_PREVIEW';
+      catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
+      if(verified&&data.games?.gol&&Array.isArray(data.games.gol)&&data.games.gol.length===12)golGames=data.games.gol;
+      matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
+      liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
       if(catalogMode==='API_PREVIEW')draft.slips=[];
       // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
       const ids=new Set(allGames().map(g=>g.id));
