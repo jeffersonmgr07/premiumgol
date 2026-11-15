@@ -142,8 +142,19 @@ function pgPublicSportsCatalog_(){
   if(!enabled)return {ok:true,mode:'API_PREVIEW',warning:'No hay encuentros disponibles por ahora.',
     games:{gol:PG_GOL_FIXTURES,match:[],live:[]}};
   let match=[],live=[],warnings=[];
-  try{match=pgSportsUpcoming_();}catch(e){console.warn('Catálogo próximo: '+e.message);warnings.push('No se pudieron actualizar los próximos partidos.');}
-  try{live=pgSportsLive_();}catch(e){console.warn('Catálogo Live: '+e.message);warnings.push('No se pudieron actualizar los encuentros en vivo.');}
+  const access=pgSportsPlanInfo_();
+  // El plan Free en 2026 incluye temporadas antiguas, no calendario pre-match actual.
+  // Evitar gastar solicitudes en endpoints/temporadas bloqueadas por el proveedor.
+  if(String(access.plan).toLowerCase()==='free'){
+    console.warn('API-FOOTBALL Free: no incluye temporadas actuales para consulta prematch.');
+    warnings.push('Los próximos encuentros aún no están disponibles.');
+  }else{
+    try{match=pgSportsUpcoming_();}
+    catch(e){console.warn('Catálogo próximo: '+e.message);warnings.push('No se pudieron actualizar los próximos partidos.');}
+  }
+  // LIVE se consulta por separado: en las pruebas del usuario sí devolvió encuentros.
+  try{live=pgSportsLive_();}
+  catch(e){console.warn('Catálogo Live: '+e.message);warnings.push('No se pudieron actualizar los encuentros en vivo.');}
   return {ok:true,mode:'API_PREVIEW',warning:warnings.join(' '),
     liveRefreshSeconds:pgSportsLiveCacheSeconds_(),
     games:{gol:PG_GOL_FIXTURES,match,live}};
