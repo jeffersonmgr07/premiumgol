@@ -5,7 +5,7 @@
 (() => {
   'use strict';
   const CONFIG = window.PREMIUMGOL_CONFIG || {};
-  const DRAFT_KEY = 'premiumgol_draft_v8';
+  const DRAFT_KEY = 'premiumgol_draft_20261118';
   const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
   const SESSION_KEY = 'premiumgol_session_v2';
   const $ = sel => document.querySelector(sel);
@@ -63,21 +63,23 @@
   const outcomes=['1','X','2'];
   const outcomeName=['Local','Empate','Visita'];
   const golLabel=['L','E','V'];
-  // Programación tomada de la cartilla compartida por el usuario; fechas pendientes de verificación.
-  let golGames = [
-    ['España','Inglaterra','Selecciones'],
-    ['Bélgica','Italia','Selecciones'],
-    ['Letonia','Armenia','Selecciones'],
-    ['Panamá','Curazao','Selecciones'],
-    ['Alianza Atlético','Sporting Cristal','Fútbol peruano'],
-    ['Comerciantes Unidos','Sport Boys','Fútbol peruano'],
-    ['Juan Pablo II','Deportivo Garcilaso','Fútbol peruano'],
-    ['Eldense','Sabadell','Fútbol español'],
-    ['Amarante','Felgueiras','Fútbol portugués'],
-    ['Maastricht','Vitesse','Fútbol neerlandés'],
-    ['New Mexico United','Sacramento Republic','Fútbol estadounidense'],
-    ['Escocia Sub-21','Estados Unidos Sub-21','Selecciones Sub-21']
-  ].map(([home,away,league],i)=>({id:`gol${i+1}`,home,away,league}));
+  // Jornada 18–20 nov 2026. Todas las horas son de Perú (UTC−05:00).
+  // Se excluyen Cruzeiro–Palmeiras (inicia al cierre) y el amistoso Norrköping–KuPS.
+  let golCutoff='2026-11-18T18:30:00-05:00';
+  let golGames=[
+    ['Grêmio','Bahia','Brasileirão · Serie A','2026-11-18T19:30:00-05:00'],
+    ['Vitória','RB Bragantino','Brasileirão · Serie A','2026-11-19T17:30:00-05:00'],
+    ['São Paulo','Fluminense','Brasileirão · Serie A','2026-11-19T19:30:00-05:00'],
+    ['Orlando City','FC Cincinnati','MLS Cup Playoffs','2026-11-19T19:30:00-05:00'],
+    ['Seattle Sounders','Real Salt Lake','MLS Cup Playoffs','2026-11-19T22:00:00-05:00'],
+    ['Septemvri Sofia','Lokomotiv Plovdiv','Primera Liga · Bulgaria','2026-11-20T11:00:00-05:00'],
+    ['Piast Gliwice','Korona Kielce','Ekstraklasa · Polonia','2026-11-20T12:00:00-05:00'],
+    ['Farul Constanța','Universitatea Cluj','SuperLiga · Rumanía','2026-11-20T13:30:00-05:00'],
+    ['FC Andorra','CD Leganés','LaLiga Hypermotion · España','2026-11-20T13:30:00-05:00'],
+    ['Almere City','NAC Breda','Eerste Divisie · Países Bajos','2026-11-20T14:00:00-05:00'],
+    ['Helmond Sport','FC Dordrecht','Eerste Divisie · Países Bajos','2026-11-20T14:00:00-05:00'],
+    ['Cercle Brugge','KVC Westerlo','Jupiler Pro League · Bélgica','2026-11-20T14:45:00-05:00']
+  ].map(([home,away,league,kickoff],i)=>({id:'gol'+(i+1),home,away,league,kickoff,homeLogo:'',awayLogo:''}));
   // Partidos y cuotas llegan únicamente desde API-FOOTBALL a través de Apps Script.
   // Nunca pintar datos ficticios como cuotas disponibles.
   let matches=[];
@@ -120,22 +122,54 @@
     showView('match');
   }
   function completedPicks(slot=activeCard){return golGames.filter(g=>outcomes.includes(draft.golCards[slot]?.[g.id])).length;}
+  const golClosed=()=>Date.now()>=new Date(golCutoff).getTime();
+  function golDateLabel(iso){
+    const parsed=new Date(iso);
+    return Number.isFinite(parsed.getTime())?
+      new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',weekday:'short',day:'2-digit',month:'short',
+        hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(parsed).replace(/\./g,'')+' (Perú)':
+      'Horario por confirmar';
+  }
+  function golCrest(team,url){
+    const safe=String(url||'');
+    const valid=/^https:\/\/media\.api-sports\.io\/football\/teams\/[1-9]\d*\.png$/.test(safe);
+    return `<span class="gol-team-crest" aria-hidden="true"><span class="gol-crest-initial">${esc(initials(team))}</span>${valid?`<img class="gol-crest-img" src="${esc(safe)}" alt="" loading="lazy" decoding="async">`:''}</span>`;
+  }
   function renderGol(){
-    const selections=currentPicks(),locked=Boolean(golLocked[activeCard]);
-    $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}"><span class="fixture-number">${String(i+1).padStart(2,'0')}</span><div class="fixture-main"><small>${esc(g.league)}</small><strong>${esc(g.home)} <span>vs.</span> ${esc(g.away)}</strong></div><div class="result-choices" role="group" aria-label="Partido ${i+1}: ${esc(g.home)} contra ${esc(g.away)}">${outcomes.map((o,k)=>`<button type="button" class="result-option ${selections[g.id]===o?'selected':''}" data-gol-id="${g.id}" data-gol-outcome="${o}" aria-pressed="${selections[g.id]===o}" title="${outcomeName[k]}" ${locked?'disabled':''}><b>${golLabel[k]}</b><small>${outcomeName[k]}</small></button>`).join('')}</div></article>`).join('');
+    const selections=currentPicks(),locked=Boolean(golLocked[activeCard]),closed=golClosed();
+    const deadline=$('#golDeadline');
+    deadline.textContent=closed?'Jornada cerrada · Finalizó el miércoles 18 de noviembre de 2026, 6:30 p. m. (Perú)':
+      'Juega hasta el miércoles 18 de noviembre de 2026, 6:30 p. m. (hora de Perú)';
+    deadline.classList.toggle('expired',closed);
+    $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}">
+      <span class="fixture-number">${String(i+1).padStart(2,'0')}</span>
+      <div class="fixture-main">
+        <div class="gol-fixture-meta"><small>${esc(g.league)}</small><span>${esc(golDateLabel(g.kickoff))}</span></div>
+        <div class="gol-teams-row">
+          <span class="gol-team gol-team-home">${golCrest(g.home,g.homeLogo)}<strong>${esc(g.home)}</strong></span>
+          <span class="gol-versus">VS</span>
+          <span class="gol-team gol-team-away">${golCrest(g.away,g.awayLogo)}<strong>${esc(g.away)}</strong></span>
+        </div>
+      </div>
+      <div class="result-choices" role="group" aria-label="Partido ${i+1}: ${esc(g.home)} contra ${esc(g.away)}">
+        ${outcomes.map((o,k)=>`<button type="button" class="result-option ${selections[g.id]===o?'selected':''}" data-gol-id="${esc(g.id)}" data-gol-outcome="${o}" aria-pressed="${selections[g.id]===o}" title="${outcomeName[k]}" ${locked||closed?'disabled':''}><b>${golLabel[k]}</b><small>${outcomeName[k]}</small></button>`).join('')}
+      </div>
+    </article>`).join('');
     $('#golCount').textContent=String(completedPicks());
     $('#golCountSide').textContent=`${completedPicks()} de 12`;
     $('#golProgress').style.width=`${completedPicks()/12*100}%`;
-    $('#submitGol').disabled=locked||completedPicks()!==12;
-    $('#submitGol').innerHTML=locked?'Jugada registrada ✓':`Colocar jugada ${icon('arrow')}`;
-    $('#resetGol').hidden=locked;
-    $('#golSlotHint').textContent=locked?`Jugada ${activeCard} registrada. Elige otra letra para participar de nuevo.`:`Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
+    $('#submitGol').disabled=closed||locked||completedPicks()!==12;
+    $('#submitGol').innerHTML=closed?'Jornada cerrada':locked?'Jugada registrada ✓':`Colocar jugada ${icon('arrow')}`;
+    $('#resetGol').hidden=locked||closed;
+    $('#golSlotHint').textContent=closed?'La jornada ha finalizado.':locked?`Jugada ${activeCard} registrada. Elige otra letra para participar de nuevo.`:`Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
     $('#golTabs').innerHTML=SLOTS.map(slot=>`<button type="button" data-gol-slot="${slot}" class="${activeCard===slot?'active':''} ${golLocked[slot]?'recorded':''}" aria-pressed="${activeCard===slot}" title="Jugada ${slot}${golLocked[slot]?' registrada':''}">${slot}</button>`).join('');
     const list=golGames.map((g,i)=>({g,i,pick:selections[g.id]})).filter(x=>outcomes.includes(x.pick));
     $('#golSummary').innerHTML=list.length?list.map(({g,i,pick})=>`<div class="gol-summary-row"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="game" title="${esc(g.home)} – ${esc(g.away)}">${esc(g.home)} · ${esc(g.away)}</span><b class="result">${esc(golLabel[outcomes.indexOf(pick)])} · ${esc(outcomeName[outcomes.indexOf(pick)])}</b></div>`).join(''):'<div class="gol-summary-empty">Aquí aparecerán tus pronósticos a medida que selecciones los partidos.</div>';
   }
+
   let sendingPlay=false;
   async function saveGol(){
+    if(golClosed()){toast('La cartilla está cerrada para nuevas jugadas.');renderGol();return;}
     if(golLocked[activeCard]){toast('Esta jugada ya fue registrada. Elige otra letra.');return;}
     if(completedPicks()!==12){toast(`Completa los 12 partidos. Llevas ${completedPicks()} de 12.`);return;}
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
@@ -400,7 +434,6 @@
       catalogMode='API_PREVIEW';
       const verified=data.mode==='API_PREVIEW';
       catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
-      if(verified&&data.games?.gol&&Array.isArray(data.games.gol)&&data.games.gol.length===12)golGames=data.games.gol;
       matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
       liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
       if(catalogMode==='API_PREVIEW')draft.slips=[];
