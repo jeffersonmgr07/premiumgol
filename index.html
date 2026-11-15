@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=26">
+  <link rel="stylesheet" href="assets/styles.css?v=28">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=27"></script>
+  <script defer src="assets/app.js?v=28"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -149,7 +149,8 @@
   <p class="referral-detail" id="referralCount">Invitaciones pendientes de activación</p>
 </div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
   <div class="panel-head"><h2>Recargar saldo</h2></div>
-  <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 30. Al habilitarse el pago en línea podrás elegir un medio de pago disponible, incluido Yape, si la pasarela lo ofrece.</p>
+  <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 30. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.</p>
+  <div class="paid-wallet-balance" role="status"><span>Saldo recargado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Movimientos verificados de Mercado Pago</small></div>
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
       <button type="button" data-topup-amount="30" class="recharge-amount active" aria-pressed="true">S/ 30</button>
@@ -164,6 +165,7 @@
     <div class="recharge-total"><span>Importe solicitado</span><b id="rechargeSelected">S/ 30.00</b></div>
     <button type="button" class="btn btn-gold btn-full" id="rechargeGenerate">Generar orden de recarga <svg><use href="#i-arrow"></use></svg></button>
     <div class="recharge-order" id="rechargeOrder" role="status" aria-live="polite" hidden></div>
+    <div class="topup-history"><h3>Últimas recargas</h3><div id="topupHistory" class="topup-history-list"><p>Aún no has registrado recargas.</p></div></div>
 
   </div>
 </div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div><div id="fullHistory"></div></div><div id="accountProfile" class="account-content"><h2>Mi perfil</h2><p class="profile-info">Completa tus datos personales y mantén tu cuenta actualizada.</p><form id="profileForm" class="profile-form">
