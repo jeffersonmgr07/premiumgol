@@ -1,3 +1,22 @@
+## Diagnóstico de los registros de API-FOOTBALL (15 de noviembre de 2026)
+
+Las pruebas del propietario mostraron `/status HTTP 200`, cuenta `Free` activa (100 solicitudes/día), `testApiSportsFixtures` con error genérico, `testPremiumGolSportsCatalog` con `upcoming:0,live:11` y `testPremiumGolProgram` con **0 escudos**.
+
+**Causa probable:** en 2026, el plan Free restringe las temporadas a 2022–2024; por tanto, las solicitudes a fixtures/odds del calendario 2026 pueden devolver errores aunque la API Key sea válida. Fuente oficial: https://www.api-football.com/news/post/how-to-get-all-data-from-a-league-with-api-football.
+
+**Cambios en el repositorio:**
+- `ApiSports.gs` informa errores HTTP y detalles seguros de respuesta de API-FOOTBALL en el registro; nunca imprime la API Key. `testApiSportsFixtures` devuelve información diagnóstica, no un error genérico.
+- `SportsCatalog.gs` evita consultas pre-match no permitidas con plan Free, conserva la consulta Live y ahora diferencia `live` de `liveWithOdds`.
+- `GolProgram.gs` evita consultar fixtures fechados en 2026 con plan Free; seguirá mostrando iniciales de los clubes hasta obtener las insignias por otra vía o mediante un plan compatible.
+
+**Acción obligatoria en el proyecto real de Apps Script:** actualizar **`ApiSports.gs`**, **`SportsCatalog.gs`** y **`GolProgram.gs`** desde GitHub. Confirmar que solo exista una definición de `pgSportsRequest_` y `testApiSportsConnection`: en las capturas se veía un `Código.gs` además de `ApiSports.gs`, aparentemente con el mismo contenido. Apps Script comparte espacio global entre archivos, así que el duplicado puede impedir que se use el código actualizado. Si `Código.gs` solo repite funciones, eliminar únicamente esas definiciones duplicadas y conservar el resto del código necesario.
+
+**Pruebas después de guardar:** ejecutar `testApiSportsConnection`, `testApiSportsFixtures` y `testPremiumGolSportsCatalog`. El último registro indicará `upcomingWithOdds` y `liveWithOdds`, no solo el número de partidos. Publicar una nueva versión mediante **Implementar → Administrar implementaciones** para actualizar el `/exec` existente.
+
+Los errores de `adminRecharge50FromEditor` (faltan `RECHARGE_EMAIL` y `RECHARGE_REFERENCE`) y `adminApproveVirtualRecharge` (`No autorizado`) son independientes del proveedor deportivo. No prueban pagos reales ni se deben eludir controles de administrador.
+
+---
+
 ## Jornada PremiumGol 18–20 noviembre 2026 y conexión del catálogo
 
 La cartilla pública ahora contiene 12 encuentros competitivos de la lista suministrada. Se retiraron Cruzeiro–Palmeiras (empieza exactamente a la hora límite) e IFK Norrköping–KuPS (amistoso). Esto **no** implica que esos dos fuesen los pronósticos más fáciles; se eligieron con criterios verificables de calendario y formato competitivo.
