@@ -107,7 +107,7 @@
   let recentTopupOrders = [];
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
-  let accountMenuOpen=false,authBusy=false,referralsJoined=0;
+  let accountMenuOpen=false,walletBreakdownOpen=false,authBusy=false,referralsJoined=0;
   const referralFromUrl=(()=>{
     try{
       const code=new URLSearchParams(location.search).get('ref')||'';
@@ -132,8 +132,21 @@
     $('#loginTop').setAttribute('aria-expanded','false');
     $('[data-nav="account"]')?.setAttribute('aria-expanded','false');
   }
+  function closeWalletBreakdown(){
+    walletBreakdownOpen=false;
+    $('#walletBreakdown').hidden=true;
+    $('#walletTop').setAttribute('aria-expanded','false');
+  }
+  function toggleWalletBreakdown(){
+    if(!hasUser())return;
+    closeAccountMenu();
+    walletBreakdownOpen=!walletBreakdownOpen;
+    $('#walletBreakdown').hidden=!walletBreakdownOpen;
+    $('#walletTop').setAttribute('aria-expanded',String(walletBreakdownOpen));
+  }
   function toggleAccountMenu(source){
     if(!hasUser()){openAuth('login');return;}
+    closeWalletBreakdown();
     accountMenuOpen=!accountMenuOpen;
     const menu=$('#accountMenu');
     menu.hidden=!accountMenuOpen;
@@ -154,7 +167,7 @@
   }
   function openAccountTab(tab){
     if(!['overview','history','wallet','profile'].includes(tab))return;
-    accountTab=tab;closeAccountMenu();showView('account');
+    accountTab=tab;closeAccountMenu();closeWalletBreakdown();showView('account');
     renderAccount();if(tab==='wallet')loadTopupOrders();
   }
   let catalogWarning='',catalogLoading=false,catalogRequested=false,golProgramRequested=false;
@@ -185,6 +198,10 @@
     finally{btn.disabled=false;}
   }
   function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),4200);}
+  function showInsufficientFunds(){
+    const dialog=$('#insufficientFundsDialog');
+    if(!dialog.open)dialog.showModal();
+  }
   const outcomes=['1','X','2'];
   const outcomeName=['Local','Empate','Visita'];
   const golLabel=['L','E','V'];
@@ -345,7 +362,7 @@
       try{await refreshAccount();}finally{setAuthBusy(false);}
     }
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
-    if(accountBalance<5){toast('Saldo insuficiente. Cada jugada requiere 5 créditos virtuales.');return;}
+    if(accountBalance<5){showInsufficientFunds();return;}
     if(sendingPlay)return;
     sendingPlay=true;$('#submitGol').disabled=true;
     setAuthBusy(true,'Guardando tu jugada…','general');
@@ -361,8 +378,8 @@
       delete draft.golRequestIds[slot];
       activeCard=slot;draft.activeCard=slot;
       saveDraft();
-      renderGol();toast('¡Ticket PremiumGol registrado! Se descontaron 5 créditos virtuales.');
-    }catch(e){toast(e.message||'No se pudo guardar la jugada.');}
+      renderGol();toast('¡Ticket PremiumGol registrado! Costo: S/ 5.00.');
+    }catch(e){if(/saldo virtual insuficiente|créditos insuficientes/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo guardar la jugada.');}
     finally{sendingPlay=false;setAuthBusy(false);renderGol();}
   }
   function filterOptions(){
@@ -417,6 +434,7 @@
     if(!draft.slips.length){toast('Selecciona al menos un resultado.');return;}
     if(!hasUser()){pendingAfterAuth='bet';openAuth('login');toast('Ingresa o regístrate para guardar tu cupón.');return;}
     if(!Number.isInteger(stake)||stake<1||stake>1000){toast('Ingresa entre 1 y 1,000 créditos.');return;}
+    if(accountBalance<stake){showInsufficientFunds();return;}
     if(sendingPlay)return;
     sendingPlay=true;
     try{
@@ -424,7 +442,7 @@
       draft.betRequestId=draft.betRequestId||randomId();saveDraft();
       const res=await remote('saveBet',{sessionToken,stake,selections:draft.slips.map(s=>({id:s.id,outcome:s.outcome})),clientRequestId:draft.betRequestId});
       updateAccount(res);draft.slips=[];delete draft.betRequestId;saveDraft();renderAll();toast(`¡Jugada registrada! ${fmt(stake)} créditos utilizados.`);
-    }catch(e){toast(e.message||'No se pudo registrar el cupón.');}
+    }catch(e){if(/saldo virtual insuficiente|créditos insuficientes/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo registrar el cupón.');}
     finally{sendingPlay=false;}
   }
   function updateAccount(result){
@@ -442,7 +460,10 @@
   }
   function renderHeader(){
     $('#walletTop').hidden=!hasUser();
-    $('#topBalance').textContent=fmt2(accountBalance);
+    $('#topBalance').textContent='S/ '+fmt2(accountBalance);
+    $('#walletMainBalance').textContent='S/ '+fmt2(accountBalance);
+    $('#walletBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
+    $('#walletTotalBalance').textContent='S/ '+fmt2(accountBalance+bonusBalancePEN);
     $('#loginTopLabel').textContent=hasUser()?'Mi cuenta':'Ingresar';
     $('#loginTop').setAttribute('aria-label',hasUser()?'Abrir menú de Mi cuenta':'Ingresar o registrarse');
     $('#loginTop').setAttribute('aria-haspopup',hasUser()?'menu':'false');
@@ -603,6 +624,9 @@
     }
     finally{topupBusy=false;setAuthBusy(false);renderTopup();}
   }
+  function playResultLabel(status){
+    return status==='GANADOR'?'Ganador':status==='SIN_PREMIO'?'Sin premio':'Pendiente';
+  }
   function showPlayDetails(id){
     const ticket=playHistory.find(h=>String(h.id)===String(id)&&h.type==='gol');
     if(!ticket)return;
@@ -625,9 +649,9 @@
     $('#playDetailsTitle').textContent='Ticket '+code;
     $('#playDetailsBody').innerHTML='<div class="play-ticket-meta">'+
       '<div><span>Código</span><b>'+esc(code)+'</b></div>'+
-      '<div><span>Costo</span><b>S/ '+fmt2(ticket.stake)+' · '+fmt2(ticket.stake)+
-      ' créditos virtuales</b></div>'+
-      '<div><span>Fecha y hora</span><b>'+esc(when)+'</b></div></div>'+
+      '<div><span>Costo</span><b>S/ '+fmt2(ticket.stake)+'</b></div>'+
+      '<div><span>Fecha y hora</span><b>'+esc(when)+'</b></div>'+ 
+      '<div><span>Resultado</span><b>'+esc(playResultLabel(ticket.resultStatus))+'</b></div></div>'+
       '<h3 class="play-ticket-subtitle">Pronósticos seleccionados</h3>'+
       (rows||'<p class="profile-info">Pronósticos no disponibles.</p>');
     if(!dlg.open)dlg.showModal();
@@ -644,11 +668,9 @@
     if(!photoValid)img.removeAttribute('src');
     $('#profileSubtitle').textContent=account?.email||'Mi cuenta';
     $('#welcomeName').textContent=account?`¡Hola, ${account.firstName||'jugador'}!`:'¡El partido te espera!';
-    $('#accountBalance').textContent=fmt2(accountBalance);
+    $('#accountBalance').textContent='S/ '+fmt2(accountBalance);
     $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
-    $('#bonusBalancePEN').textContent='S/ '+fmt2(bonusBalancePEN);
     $('#referralBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
-    $('#referralPendingPEN').textContent='S/ '+fmt2(referralPendingPEN);
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
     const when=value=>{
@@ -661,12 +683,12 @@
     const one=h=>{
       const isGol=h.type==='gol';
       const code=isGol?String(h.code||('PG-'+String(h.id||'').slice(-10).toUpperCase())):'';
-      const cost='S/ '+fmt2(h.stake)+' · '+fmt2(h.stake)+' créditos virtuales';
+      const cost='S/ '+fmt2(h.stake);
       return '<article class="history-row"><span class="history-icon">'+icon(isGol?'trophy':'ticket')+
         '</span><div class="history-row-main"><b>'+
         esc(isGol?'PremiumGol · '+code:h.title)+'</b><span>'+esc(cost)+
         '</span><time>'+esc(when(h.at))+'</time></div>'+
-        (isGol?'<button type="button" class="btn btn-outline btn-mini" data-play-details="'+
+        (isGol?'<span class="history-row-status">'+esc(playResultLabel(h.resultStatus))+'</span><button type="button" class="btn btn-outline btn-mini" data-play-details="'+
         esc(h.id)+'">Ver detalles</button>':'<span class="history-row-status">REGISTRADA</span>')+
         '</article>';
     };
@@ -695,12 +717,13 @@
         timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric'
       }).format(d):'';
       const verified=Boolean(r.firstTopupVerified);
+      const awarded=Boolean(r.bonusAwarded);
       return '<div class="referral-activity-item"><div><strong>'+esc(r.label||'Invitado')+
-        '</strong><span>'+esc(verified?'Primera recarga confirmada · Bono por recomendar pendiente':
+        '</strong><span>'+esc(awarded?'Bono acreditado':verified?'Primera recarga confirmada · bono en verificación':
         'Cuenta registrada · Primera recarga pendiente')+
         '</span><small>'+esc(date)+'</small></div><b>'+
-        (verified?'+ S/ 5.00 · Por activar':'Pendiente')+'</b></div>';
-    }).join(''):'<p class="referral-detail">Comparte tu enlace para invitar amigos.</p>';
+        (awarded?'+ S/ 5.00':verified?'En verificación':'Registrado')+'</b></div>';
+    }).join(''):'<p class="referral-detail">Aún no tienes amigos registrados con tu enlace.</p>';
     document.querySelectorAll('[data-account-tab]').forEach(el=>{
       const active=el.dataset.accountTab===accountTab;
       el.classList.toggle('active',active);
@@ -728,6 +751,10 @@
     $('#googleSigninShell').hidden=!canUseGoogle;
     $('#googleUnavailable').hidden=canUseGoogle;
     $('#emailForm').hidden=false;$('#verifyForm').hidden=true;
+    $('#emailAccessPanel').hidden=canUseGoogle;
+    $('#emailAccessToggle').hidden=!canUseGoogle;
+    $('#emailAccessToggle').setAttribute('aria-expanded',String(!canUseGoogle));
+    $('#googleAccountHint').hidden=!canUseGoogle;
   }
   function openAuth(mode='login'){
     if(hasUser()){showView('account');return;}
@@ -766,7 +793,7 @@
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
     const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;referralPendingPEN=0;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
-    closeAccountMenu();referralsJoined=0;
+    closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     renderAll();showView('home');
     toast(reason==='idle'?'Tu sesión terminó tras una hora de inactividad.':'Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
@@ -824,7 +851,7 @@
     if(googleStarted||!validGoogleClientId||!CONFIG.appsScriptUrl)return;googleStarted=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onload=()=>{
-      if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;return;}
+      if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;$('#emailAccessPanel').hidden=false;$('#emailAccessToggle').hidden=true;$('#googleAccountHint').hidden=true;return;}
       window.google.accounts.id.initialize({
         client_id:CONFIG.googleClientId,
         ux_mode:'popup',auto_select:false,
@@ -856,7 +883,7 @@
         shape:'pill',width:buttonWidth,locale:'es',logo_alignment:'left'
       });
     };
-    script.onerror=()=>{googleStarted=false;$('#googleUnavailable').hidden=false;toast('No se pudo cargar el acceso Google.');};
+    script.onerror=()=>{googleStarted=false;$('#googleUnavailable').hidden=false;$('#emailAccessPanel').hidden=false;$('#emailAccessToggle').hidden=true;$('#googleAccountHint').hidden=true;toast('No se pudo cargar el acceso Google.');};
     document.head.appendChild(script);
   }
   async function refreshAccount(){
@@ -924,7 +951,7 @@
   }
   $('#loginTop').addEventListener('click',e=>hasUser()?toggleAccountMenu(e.currentTarget):openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
-  $('#walletTop').addEventListener('click',()=>openAccountTab('wallet'));
+  $('#walletTop').addEventListener('click',toggleWalletBreakdown);
   $('#copyReferral').addEventListener('click',async()=>{
     const value=$('#referralLink').value;
     if(!/^https:\/\/premiumgol\.website\/\?ref=[A-Z0-9]{10,16}$/.test(value))return;
@@ -935,6 +962,11 @@
     }
   });
   // El registro se abre desde la pestaña «Registrarse» del modal de acceso.
+  $('#emailAccessToggle').addEventListener('click',()=>{
+    const panel=$('#emailAccessPanel');panel.hidden=!panel.hidden;
+    $('#emailAccessToggle').setAttribute('aria-expanded',String(!panel.hidden));
+    if(!panel.hidden)$('#authEmail').focus();
+  });
   $('#tabLogin').addEventListener('click',()=>setAuthMode('login'));
   $('#tabRegister').addEventListener('click',()=>setAuthMode('register'));
   $('#closeAuth').addEventListener('click',closeAuth);
@@ -974,6 +1006,9 @@
   });
   $('#backToEmail').addEventListener('click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
   $('#submitGol').addEventListener('click',saveGol);
+  $('#closeInsufficientFunds').addEventListener('click',()=>$('#insufficientFundsDialog').close());
+  $('#insufficientFundsRecharge').addEventListener('click',()=>{$('#insufficientFundsDialog').close();openAccountTab('wallet');});
+  $('#insufficientFundsDialog').addEventListener('click',e=>{if(e.target===$('#insufficientFundsDialog'))e.target.close();});
   $('#closePlayDetails').addEventListener('click',()=>$('#playDetailsDialog').close());
   $('#donePlayDetails').addEventListener('click',()=>$('#playDetailsDialog').close());
   $('#playDetailsDialog').addEventListener('click',e=>{
@@ -984,7 +1019,7 @@
   $('#acceptGolRules').addEventListener('click',()=>$('#golRulesDialog').close());
   $('#golRulesDialog').addEventListener('click',e=>{if(e.target===$('#golRulesDialog'))$('#golRulesDialog').close();});
   $('#authBusyOverlay').addEventListener('cancel',e=>e.preventDefault());
-  window.addEventListener('resize',()=>{if(accountMenuOpen)closeAccountMenu();});
+  window.addEventListener('resize',()=>{if(accountMenuOpen)closeAccountMenu();if(walletBreakdownOpen)closeWalletBreakdown();});
   $('#resetGol').addEventListener('click',()=>{if(golLocked[activeCard])return;draft.golCards[activeCard]={};delete draft.golRequestIds[activeCard];saveDraft();renderGol();toast('Se borró la selección de la jugada '+activeCard+'.');});
   $('#premiumCoupon').addEventListener('click',claimCouponPrompt);
   $('#closeCoupon').addEventListener('click',()=>$('#couponDialog').close());
@@ -993,6 +1028,7 @@
   $('#accountSignout').addEventListener('click',signout);
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&accountMenuOpen){closeAccountMenu();e.preventDefault();}
+    if(e.key==='Escape'&&walletBreakdownOpen){closeWalletBreakdown();e.preventDefault();}
     if(e.key==='Escape'&&authBusy)e.preventDefault();
   });
   $('#rechargeOther').addEventListener('input',e=>{topupCustom=e.target.value;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();});
@@ -1028,6 +1064,7 @@
   });
   document.addEventListener('click',e=>{
     if(accountMenuOpen&&!e.target.closest('#accountMenu,#loginTop,[data-nav="account"]'))closeAccountMenu();
+    if(walletBreakdownOpen&&!e.target.closest('#walletTop,#walletBreakdown'))closeWalletBreakdown();
     const logout=e.target.closest('[data-account-signout]');
     if(logout){e.preventDefault();closeAccountMenu();signout();return;}
     const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
