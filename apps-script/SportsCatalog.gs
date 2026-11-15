@@ -42,23 +42,36 @@ function pgSportsGetOdds_(data){
     const id=String(row.fixture?.id||row.fixture_id||'');
     if(!/^\d+$/.test(id))continue;
     const sets=[];
+    if(row.status?.blocked||row.status?.stopped||row.status?.finished)continue;
+    if(Array.isArray(row.bets))sets.push(...row.bets); // odds/live
     if(Array.isArray(row.odds))sets.push(...row.odds);
     for(const bookmaker of row.bookmakers||[]){
       if(Array.isArray(bookmaker.bets))sets.push(...bookmaker.bets);
     }
-    byId[id]=pgSportsValueOdds_(sets);
+    const values=pgSportsValueOdds_(sets);
+    if(!byId[id]||(!byId[id].some(v=>v!==null)&&values.some(v=>v!==null)))byId[id]=values;
   }
   return byId;
 }
 function pgSportsUpcoming_(){
   return pgSportsCached_('premiumgol:api-upcoming-v1',10800,()=>{
-    const list=pgSportsRequest_('fixtures',{next:50});
-    const oddsToday=pgSportsRequest_('odds',{date:pgSportsDate_(0),bet:1,page:1});
-    const oddsTomorrow=pgSportsRequest_('odds',{date:pgSportsDate_(1),bet:1,page:1});
-    const odds=pgSportsGetOdds_([...(oddsToday||[]),...(oddsTomorrow||[])]);
+    const list=pgSportsRequest_('fixtures',{next:30,timezone:'America/Lima'});
+    // API-FOOTBALL devuelve hasta diez eventos por página; las cuotas no siempre están disponibles.
+    const oddsRows=[];
+    for(const offset of [0,1]){
+      for(const page of [1,2]){
+        try{
+          const pageRows=pgSportsRequest_('odds',{date:pgSportsDate_(offset),bet:1,page,timezone:'America/Lima'});
+          oddsRows.push(...pageRows);
+          if(pageRows.length<10)break;
+        }catch(err){console.warn('No se pudo consultar una página de cuotas.');break;}
+      }
+    }
+    const odds=pgSportsGetOdds_(oddsRows);
     const now=new Date();
     const localToday=pgSportsDate_(0),localTomorrow=pgSportsDate_(1);
-    return (list||[]).filter(f=>f.fixture?.id && new Date(f.fixture.date)>now).slice(0,50).map(f=>{
+    return (list||[]).filter(f=>f.fixture?.id && f.fixture?.date && new Date(f.fixture.date)>now &&
+      ['NS','TBD'].includes(String(f.fixture.status?.short||'NS'))).slice(0,30).map(f=>{
       const id=String(f.fixture.id),date=new Date(f.fixture.date);
       const localDate=Utilities.formatDate(date,'America/Lima','yyyy-MM-dd');
       const day=localDate===localToday?0:localDate===localTomorrow?1:2;
@@ -74,7 +87,7 @@ function pgSportsLive_(){
   return pgSportsCached_('premiumgol:api-live-v1',3600,()=>{
     const list=pgSportsRequest_('fixtures',{live:'all'});
     const odds=pgSportsGetOdds_(pgSportsRequest_('odds/live',{}));
-    return (list||[]).filter(f=>f.fixture?.id).slice(0,40).map(f=>{
+    return (list||[]).filter(f=>f.fixture?.id && !['FT','AET','PEN','CANC','PST'].includes(String(f.fixture.status?.short||''))).slice(0,40).map(f=>{
       const id=String(f.fixture.id);
       return {id:'api-live-'+id,home:String(f.teams?.home?.name||''),away:String(f.teams?.away?.name||''),
         league:String(f.league?.name||'Fútbol'),minute:Number(f.fixture.status?.elapsed)||0,
