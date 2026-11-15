@@ -318,6 +318,12 @@
     updateAccount(result);
     closeAuth();toast('¡Bienvenido a PremiumGol!');
     const next=pendingAfterAuth;pendingAfterAuth=null;
+    if(!String(result.user.phone||'').trim()){
+      // Google no entrega el teléfono: pedirlo en el perfil al entrar por primera vez.
+      accountTab='profile';showView('account');
+      toast('Completa tu número de WhatsApp para terminar tu registro.');
+      return;
+    }
     if(next==='gol')saveGol();else if(next==='bet')placeBet();else if(next==='coupon')claimCouponPrompt();else showView('account');
   }
   async function signout(){
