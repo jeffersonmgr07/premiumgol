@@ -73,18 +73,28 @@ function pgSportsRequest_(endpoint,query){
   }
   return Array.isArray(data.response)?data.response:[];
 }
-/** Una sola consulta deportiva para diagnosticar acceso a fixtures actuales. */
+/** Diagnóstico seguro: plan Free NO admite /fixtures?next.
+ * Prueba LIVE en Free (sin adelantar que pueda acceder a próximos partidos).
+ * Consume como máximo una solicitud deportiva al ejecutar manualmente.
+ */
 function testApiSportsFixtures(){
   const info=pgSportsPlanInfo_();
-  console.log('Plan disponible: '+info.plan);
+  const free=String(info.plan).toLowerCase()==='free';
+  const query=free?{live:'all'}:{next:5};
+  console.log('Plan disponible: '+info.plan+'; filtro: '+(free?'live=all':'next=5'));
   try{
-    const result=pgSportsRequest_('fixtures',{next:5});
-    console.log('Fixtures retornados: '+result.length);
-    return result.slice(0,5).map(f=>({id:f.fixture?.id,
-      league:f.league?.name,home:f.teams?.home?.name,
-      away:f.teams?.away?.name,date:f.fixture?.date}));
+    const fixtures=pgSportsRequest_('fixtures',query);
+    const sample=fixtures.slice(0,5).map(f=>({
+      id:f.fixture?.id,league:f.league?.name,
+      home:f.teams?.home?.name,away:f.teams?.away?.name,date:f.fixture?.date
+    }));
+    const summary={ok:true,plan:info.plan,filter:free?'live=all':'next=5',
+      total:fixtures.length,sample};
+    console.log('Resultado de fixtures: '+JSON.stringify(summary).slice(0,2400));
+    return summary;
   }catch(e){
     console.warn('Diagnóstico fixtures: '+e.message);
-    return {ok:false,plan:info.plan,error:String(e.message).slice(0,450)};
+    return {ok:false,plan:info.plan,filter:free?'live=all':'next=5',
+      error:String(e.message).slice(0,450)};
   }
 }
