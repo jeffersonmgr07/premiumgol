@@ -434,7 +434,11 @@
     showGoogleLoginStatus('',false);
     if(validGoogleClientId && CONFIG.appsScriptUrl)setupGoogle();
   }
-  function closeAuth(){if($('#authDialog').open)$('#authDialog').close();showGoogleLoginStatus('',false);}
+  function closeAuth(){
+    if(authBusy)return;
+    if($('#authDialog').open)$('#authDialog').close();
+    showGoogleLoginStatus('',false);
+  }
   function acceptSession(result){
     if(!result.sessionToken||!result.user)throw new Error('El servidor no devolvió una sesión válida.');
     sessionToken=result.sessionToken;
@@ -521,14 +525,15 @@
           }
           googleLoggingIn=true;
           showGoogleLoginStatus('Verificando tu cuenta de Google…',false);
+          setAuthBusy(true,'Verificando tu cuenta de Google…');
           try{
-            const result=await remote('googleLogin',{idToken:response.credential});
+            const result=await remote('googleLogin',{idToken:response.credential,referralCode:referralFromUrl});
             acceptSession(result);
             showGoogleLoginStatus('',false);
           }catch(err){
             showGoogleLoginStatus(err?.message||'No se pudo iniciar sesión con Google.',true);
-            console.warn('PremiumGol OAuth: la sesión no se completó; revisa el despliegue de Apps Script.');
-          }finally{googleLoggingIn=false;}
+            console.warn('PremiumGol OAuth: no hubo sesión; comprueba la implementación de Apps Script y los registros rpc.');
+          }finally{googleLoggingIn=false;setAuthBusy(false);}
         }
       });
       $('#googleButtonMount').style.display='flex';$('#googleUnavailable').hidden=true;
@@ -586,14 +591,24 @@
       console.warn('Catálogo deportivo sin respuesta:',e.message);
     }
   }
-  $('#loginTop').addEventListener('click',()=>hasUser()?showView('account'):openAuth('login'));
+  $('#loginTop').addEventListener('click',()=>hasUser()?toggleAccountMenu():openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
-  $('#walletTop').addEventListener('click',()=>showView('account'));
+  $('#walletTop').addEventListener('click',()=>openAccountTab('wallet'));
+  $('#copyReferral').addEventListener('click',async()=>{
+    const value=$('#referralLink').value;
+    if(!/^https:\/\/premiumgol\.website\/\?ref=[A-Z0-9]{10,16}$/.test(value))return;
+    try{await navigator.clipboard.writeText(value);toast('Enlace copiado. Compártelo con tus amigos.');}
+    catch(e){
+      $('#referralLink').select();
+      toast('Selecciona el enlace para copiarlo y compartirlo.');
+    }
+  });
   // El registro se abre desde la pestaña «Registrarse» del modal de acceso.
   $('#tabLogin').addEventListener('click',()=>setAuthMode('login'));
   $('#tabRegister').addEventListener('click',()=>setAuthMode('register'));
   $('#closeAuth').addEventListener('click',closeAuth);
-  $('#authDialog').addEventListener('click',e=>{if(e.target===$('#authDialog'))closeAuth();});
+  $('#authDialog').addEventListener('click',e=>{if(e.target===$('#authDialog')&&!authBusy)closeAuth();});
+  $('#authDialog').addEventListener('cancel',e=>{if(authBusy)e.preventDefault();});
   $('#googleUnavailable').hidden=validGoogleClientId && Boolean(CONFIG.appsScriptUrl);
   $('#emailForm').addEventListener('submit',async e=>{
     e.preventDefault();
@@ -614,14 +629,16 @@
     const code=$('#authCode').value.trim();
     if(!/^\d{6}$/.test(code)){toast('Escribe los 6 dígitos del código.');return;}
     const btn=$('#verifyCodeBtn');btn.disabled=true;
+    setAuthBusy(true,'Verificando tu código de acceso…');
     try{
       const result=await remote('verifyCode',{
         email:$('#authEmail').value.trim().toLowerCase(),code,mode:authMode,
         firstName:$('#authFirst').value.trim(),lastName:$('#authLast').value.trim(),
-        countryCode:$('#authCountry').value,phone:$('#authPhone').value.trim()
+        countryCode:$('#authCountry').value,phone:$('#authPhone').value.trim(),
+        referralCode:referralFromUrl
       });acceptSession(result);
     }catch(err){toast(err.message||'El código es incorrecto o ha vencido.');}
-    finally{btn.disabled=false;}
+    finally{btn.disabled=false;setAuthBusy(false);}
   });
   $('#backToEmail').addEventListener('click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
   $('#submitGol').addEventListener('click',saveGol);
@@ -631,6 +648,10 @@
   $('#couponDialog').addEventListener('click',e=>{if(e.target===$('#couponDialog'))$('#couponDialog').close();});
   $('#claimCoupon').addEventListener('click',claimCoupon);
   $('#accountSignout').addEventListener('click',signout);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&accountMenuOpen){closeAccountMenu();e.preventDefault();}
+    if(e.key==='Escape'&&authBusy)e.preventDefault();
+  });
   $('#rechargeOther').addEventListener('input',e=>{topupCustom=e.target.value;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();});
   $('#rechargeGenerate').addEventListener('click',createTopupRequest);
   $('#profileForm').addEventListener('submit',async e=>{
@@ -651,6 +672,9 @@
     }
   });
   document.addEventListener('click',e=>{
+    if(accountMenuOpen&&!e.target.closest('#accountMenu,#loginTop,[data-nav="account"]'))closeAccountMenu();
+    const logout=e.target.closest('[data-account-signout]');
+    if(logout){e.preventDefault();closeAccountMenu();signout();return;}
     const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
     const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
     const highlighted=e.target.closest('[data-featured-match]');if(highlighted){e.preventDefault();openFeaturedGame(highlighted.dataset.featuredMatch);return;}
@@ -658,8 +682,16 @@
       if(!catalogLoading){catalogLoading=true;catalogWarning='';renderAll();loadCatalog();}
       return;
     }
-    const nav=e.target.closest('[data-nav]');if(nav){e.preventDefault();showView(nav.dataset.nav);return;}
-    const tab=e.target.closest('[data-account-tab]');if(tab){accountTab=tab.dataset.accountTab;renderAccount();return;}
+    const nav=e.target.closest('[data-nav]');
+    if(nav){
+      e.preventDefault();
+      if(nav.dataset.nav==='account'){
+        if(hasUser())toggleAccountMenu();else openAuth('login');
+      }else showView(nav.dataset.nav);
+      return;
+    }
+    const tab=e.target.closest('[data-account-tab]');
+    if(tab){e.preventDefault();openAccountTab(tab.dataset.accountTab);return;}
     const amountButton=e.target.closest('[data-topup-amount]');if(amountButton){topupSelection=amountButton.dataset.topupAmount;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();if(topupSelection==='custom')$('#rechargeOther').focus();return;}
     const pick=e.target.closest('[data-pick]');if(pick){changeSelection(pick.dataset.pick,pick.dataset.outcome);return;}
     const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>s.id!==rem.dataset.remove);delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
@@ -672,9 +704,8 @@
   refreshCoupon();setInterval(refreshCoupon,15000);
   initBridge();
   if(sessionToken)refreshAccount();
-  // Primero el catálogo deportivo, después los escudos, para no competir
-  // por el bloqueo de consulta compartido de Google Apps Script.
-  loadCatalog().finally(()=>loadGolProgram());
+  // Consultas deportivas bajo demanda, no al iniciar sesión.
+  // Esto evita bloquear el login mientras se consulta la API en el plan Free.
   document.addEventListener('error',e=>{
     const img=e.target;
     if(!img?.matches?.('img.gol-crest-img'))return;
@@ -687,7 +718,9 @@
   },true);
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
   // El navegador consulta el caché del servidor; no realiza solicitudes a API-FOOTBALL.
-  setInterval(()=>{if(document.visibilityState==='visible'&&['home','match','live'].includes(activeView))loadCatalog();},300000);
+  setInterval(()=>{
+    if(document.visibilityState==='visible'&&['match','live'].includes(activeView)&&!authBusy)loadCatalog();
+  },300000);
   const hash=location.hash.slice(1);
   const view=hash==='inicio'?'home':hash;
   if(['home','gol','match','live'].includes(view))showView(view,true);
