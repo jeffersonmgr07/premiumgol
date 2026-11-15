@@ -4,5 +4,5 @@
  */
 window.PREMIUMGOL_CONFIG = {
   appsScriptUrl: 'https://script.google.com/macros/s/AKfycbxuDiU0FDI1Sv6x6U5RpW6K5Hd52dYMi6LyJPpNqcwmas92JGYGTdfmb6wHUUJeiEcXYQ/exec', // https://script.google.com/macros/s/XXXXX/exec
-  googleClientId: '' // XXXXX.apps.googleusercontent.com
+  googleClientId: '404739639638-emoo8p06drt7h8rghmv1rfh8bts3gc5j.apps.googleusercontent.com' // XXXXX.apps.googleusercontent.com
 };
