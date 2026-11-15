@@ -1,96 +1,83 @@
-# Mercado Pago en PremiumGol — Checkout Pro integrado en Mi cuenta
-> **Documento principal actualizado:** [payments/README.md](../payments/README.md). La versión actual no utiliza una página de QA independiente; el botón de recarga pertenece a `premiumgol.website` y consulta un backend protegido dentro del mismo repositorio.
+# Mercado Pago en PremiumGol · Apps Script como único backend de pagos
 
+**Actualización: 15 de noviembre de 2026.** La web pública sigue en **https://premiumgol.website/** (GitHub Pages), con Google Login y correo OTP. El checkout se genera y verifica exclusivamente desde el **mismo Apps Script que ya administra los usuarios**. No requiere Cloud Run, Firestore, Secret Manager, un servidor aparte ni otra página de checkout. La interfaz dirige al comprador a Checkout Pro de Mercado Pago.
 
-**Estado (15/11/2026): código integrado en Mi cuenta, pendiente de despliegue y habilitación comercial/legal. NO COBRAR APUESTAS EN PRODUCCIÓN.** El sitio está en GitHub Pages y el backend actual utiliza Apps Script con créditos de demostración. La vista de recargas ya permite elegir S/30, 50, 100, 200, 500, 1,000 y otro monto (mínimo S/30), y crea solicitudes `PENDIENTE` en `Topups.gs`. El botón de Mercado Pago todavía está deshabilitado deliberadamente. `savePremiumGol` descuenta 5 créditos virtuales por jugada.
+> Código implementado y guardado en GitHub. **No se ha desplegado en tu Apps Script ni efectuado un cobro real desde este chat.** Los pagos aparecen cuando publiques la nueva implementación y configures las propiedades que siguen.
 
-## 0. Requisitos antes de habilitar dinero real
+## 1. Archivos a actualizar — en este orden
 
-- **Licencia y homologación:** para operar apuestas deportivas a distancia en Perú, confirmar autorización MINCETUR, homologación de la plataforma/componentes y requisitos de verificación y juego responsable. Fuentes: https://apuestasdeportivas.mincetur.gob.pe/ y https://www.gob.pe/94256-autorizacion-y-registro-homologacion-y-o-renovacion-y-o-modificacion-de-las-plataformas-tecnologicas-de-los-juegos-a-distancia-y-o-de-las-apuestas-deportivas-a-distancia
-- **Dominio:** la Ley 31806 enumera `.bet.pe`, `.bet`, `.com`, `.pe` y `.com.pe` como extensiones de dominio para esta actividad. `premiumgol.website` no figura en la lista para explotación real.
-- **Mercado Pago:** solicitar al área comercial/compliance la aceptación **expresa** de apuestas deportivas y recargas relacionadas y confirmar que la pasarela utilizada esté habilitada y registrada conforme a los requisitos de MINCETUR. Tener credenciales no implica autorización comercial para recibir apuestas.
-- Mientras no se hayan validado esas condiciones, **solo pruebas con saldos y pagos de entorno de prueba**. Nunca representar transacciones de prueba como dinero real.
+1. [apps-script/Config.gs](../apps-script/Config.gs) — añade cinco columnas a la hoja `topup_requests`, crea `payments_ledger` y expone el saldo monetario confirmado.
+2. [apps-script/Topups.gs](../apps-script/Topups.gs) — reemplaza **todo** el contenido anterior. Crea preferencias de Checkout Pro, consulta pagos, almacena estados, concilia y revierte devoluciones en el libro monetario.
+3. [apps-script/Main.gs](../apps-script/Main.gs) — nuevos RPC `createTopupRequest`, `getTopupStatus`, `listTopupOrders`. Mantiene un alias temporal para el antiguo `getTopupStatusTicket`.
+4. [assets/app.js](../assets/app.js), [index.html](../index.html) y [assets/styles.css](../assets/styles.css) — ya actualizados en GitHub. En tu hosting GitHub Pages se desplegarán desde `main`; no copies los JS a Apps Script.
+5. **No actualizar por este cambio:** `Auth.gs`, `Games.gs`, `Bridge.html` ni código de API-FOOTBALL, siempre que ya tengas las versiones de la etapa anterior.
 
-## 1. Credenciales: dónde guardarlas
+**Precaución:** mantén el `SPREADSHEET_ID` original. Antes de cambiar código, haz una copia de respaldo de la hoja Google Sheets; `setupPremiumGol` añade columnas y una hoja, **sin borrar filas antiguas ni cambiar saldos de demostración**.
 
-En el panel https://www.mercadopago.com.pe/developers/panel/app crea o utiliza tu integración de Checkout Pro. Obtén credenciales de **prueba**: `Access Token` y, si usas Brick, `Public Key`. Para Checkout Pro con redirección, la web no necesita el Access Token ni un SDK visible; el servidor genera una orden.
+## 2. Propiedades privadas del proyecto Apps Script
 
-**No pegues nunca** `Access Token`, secreto de Webhooks ni contraseñas en GitHub, `assets/config.js`, HTML, mensajes o frontend. En un servicio backend privado (p. ej., Google Cloud Run con Secret Manager) registra `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET`. No habilites las credenciales de producción hasta tener aprobación de actividad.
+En **Configuración del proyecto → Propiedades del script**, establece:
 
-## 2. Flujo correcto (dos tipos de orden)
+| Nombre | Valor y explicación |
+| --- | --- |
+| `SPREADSHEET_ID` | Conserva exactamente el actual |
+| `FRONTEND_ORIGIN` | `https://premiumgol.website` sin barra final |
+| `MP_ENV` | `test` para empezar; `production` únicamente para cobrar en modo real |
+| `MP_TEST_ACCESS_TOKEN` | Credencial privada del entorno de prueba; puedes reutilizar la que ya configuraste en `MercadoPagoTest.gs` |
+| `MP_ACCESS_TOKEN` | Credencial privada de producción; se utiliza **solo** si `MP_ENV=production` |
+| `MP_COLLECTOR_ID` | ID numérico de la cuenta cobradora asociada al Access Token del entorno seleccionado |
+| `MP_CHECKOUT_ENABLED` | `false` inicialmente. Al finalizar las pruebas del entorno correspondiente y confirmar su habilitación, cambiar a `true` |
 
-```
-Usuario autenticado en premiumgol.website
-  |-- Recargar billetera: S/ 30, 50, 100, 200, 500, 1000 u otro ≥ 30
-  |-- Comprar jugada PremiumGol: S/ 5 por jugada A, B, C o D
-         |
-         v
-Backend privado: autenticar sesión y verificar la cuenta
-         |
-         v
-Crear orden pendiente con orderId único, monto PEN validado en servidor,
-tipo = WALLET_TOPUP o GOL_ENTRY; no aceptar monto final enviado por la web
-         |
-         v
-Solicitar preferencia Checkout Pro a Mercado Pago:
-POST https://api.mercadopago.com/checkout/preferences
-Authorization: Bearer <MP_ACCESS_TOKEN>
-items: [{id, title, quantity: 1, currency_id: "PEN", unit_price: ...}]
-external_reference: orderId
-back_urls: URLs HTTPS de tu dominio
-notification_url: URL HTTPS de backend con capacidad de leer x-signature
-         |
-         v
-Backend devuelve init_point / init_point de esa orden
-Usuario redirigido al Checkout Pro
-         |
-         v
-Mercado Pago notifica webhook -> verificar x-signature y x-request-id
-         |
-         v
-Servidor consulta GET /v1/payments/{payment_id} con Access Token privado
-Validar: pago approved, monto, moneda PEN, cuenta receptor/collector,
-external_reference, orderId, entorno y que la orden siga pendiente
-         |
-         v
-Transacción atómica e idempotente (paymentId único):
-   - WALLET_TOPUP: crear ledger + acreditar billetera una sola vez
-   - GOL_ENTRY: registrar jugada para jornada abierta una sola vez
-         |
-         v
-Marcar orden PAGADA; mostrar saldo/jugada al actualizar "Mi cuenta".
-```
+**Ya no se utilizan:** `PAYMENTS_API_URL`, `PAYMENTS_ASSERTION_SECRET`, `PAYMENTS_CHECKOUT_READY`. Puedes dejar esas propiedades sin efecto o eliminarlas manualmente en el editor, si ya no las usa ninguna otra versión de la aplicación.
 
-**Nunca** acreditar saldo a partir de los parámetros `status=approved` de la URL de retorno: el retorno de navegador es información para el usuario, no prueba de pago. Exigir verificación del webhook y consulta privada del pago.
+Nunca guardes `MP_ACCESS_TOKEN`, `MP_TEST_ACCESS_TOKEN` ni secretos del proveedor en GitHub Pages, HTML, `assets/config.js`, `index.html` o chats.
 
-Mercado Pago documenta preferencia y redirección: https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/overview y https://www.mercadopago.com.pe/developers/es/reference/online-payments/checkout-pro-preferences/create-preference/post
+### Descubrir el ID del vendedor
 
-Webhooks firmados: https://www.mercadopago.com.pe/developers/es/docs/checkout-pro-preferences/payment-notifications
+1. Guarda `Topups.gs` y configura `MP_ENV` y el Access Token correcto.
+2. Ejecuta la función **`testPremiumGolMerchantId`** desde Apps Script. Devuelve `collectorId` y `collectorMatches`, sin imprimir el token.
+3. Copia el valor numérico `collectorId` a la propiedad `MP_COLLECTOR_ID`.
+4. Ejecuta **`testPremiumGolCheckoutConfiguration`**. Debe indicar `tokenConfigured:true`, `collectorConfigured:true`, `ordersSheet:true`, `moneyLedgerSheet:true` y, tras instalar los activadores, `automaticReconciliation:true` y `dailyAudit:true`.
 
-## 3. Modelo de datos mínimo
+## 3. Migración y activadores
 
-- `orders`: orderId, uid, tipo, reference, amountCents, currency (`PEN`), estado, createdAt, expiresAt.
-- `provider_payments`: paymentId **UNIQUE**, orderId, providerStatus, amountCents, notifiedAt, verifiedAt.
-- `wallet_ledger`: ledgerId, uid, orderId **UNIQUE**, paymentId **UNIQUE**, deltaCents, balanceAfterCents, createdAt.
-- `plays`: uid, roundId, slot (A/B/C/D), picks, paymentOrderId, state. Índice único `(uid, roundId, slot)` donde corresponda.
-- Usar transacciones de base de datos para impedir dos créditos por reenvío de webhook, pagos duplicados o doble clic.
-- Distinguir saldos de prueba de saldos reales. No mezclar contadores de créditos con PEN sin contabilidad explícita.
+1. Copia y guarda los tres archivos GS indicados.
+2. **Ejecuta `setupPremiumGol` una sola vez** desde Apps Script. Preserva las hojas existentes y añade, al final de `topup_requests`, `preferenceId`, `checkoutUrl`, `paymentId`, `paidAt`, `lastCheckAt`. Crea además la hoja `payments_ledger` vacía.
+3. Ejecuta `testPremiumGolMerchantId` para comprobar la cuenta cobradora y establece `MP_COLLECTOR_ID`.
+4. Ejecuta `testPremiumGolCheckoutConfiguration`.
+5. Ejecuta manualmente **`setupPremiumGolMercadoPagoTrigger`**. Crea, si aún no existen, los activadores `pgMpReconcilePendingOrders` cada cinco minutos y `pgMpAuditSettledOrders` diariamente. No elimina otros activadores.
+6. En **Implementar → Administrar implementaciones**, edita el despliegue actual, selecciona **Nueva versión** y conserva la misma URL `/exec` conectada a GitHub Pages.
+7. Verifica en modo `test` las órdenes, el retorno y la conciliación. Solo cambia a `production` después de tener autorización operativa y aprobación del medio de pago para el producto.
 
-## 4. Por qué hace falta backend adicional a Apps Script
+## 4. Qué verá el cliente
 
-Tu frontend es estático. El `Access Token` no debe exponerse. Además, la validación de Webhooks de Mercado Pago requiere leer encabezados `x-signature` y `x-request-id`, trabajar con claves privadas y usar transacciones atómicas. Para cobros reales no basta con el enlace `/exec` de Apps Script y Google Sheets.
+- **Mi cuenta → Recargar saldo** mantiene las opciones S/30, 50, 100, 200, 500, 1,000 y «Otro monto» (mínimo S/30, máximo S/10 000).
+- El usuario selecciona un importe y pulsa **Generar orden de recarga**. Apps Script valida su sesión y el importe **desde el servidor**, registra una orden y obtiene la URL `init_point` de Checkout Pro.
+- Aparece **Continuar con Mercado Pago**. El cliente elige los medios que estén disponibles para su cuenta y checkout (no prometemos Yape si el proveedor no lo habilita).
+- Cuando Mercado Pago redirige a `premiumgol.website/?mp_return=1&order=...#account`, el frontend consulta Apps Script; **nunca** confía en `status=approved` de la URL.
+- Si el cliente paga más tarde, Apps Script revisa automáticamente las órdenes pendientes cada cinco minutos. Los resultados aprobados se registran una sola vez. El historial permite «Verificar» y «Pagar» una solicitud pendiente.
+- La auditoría diaria revisa reembolsos/contracargos recientes y registra el ajuste monetario inverso.
 
-Una alternativa adecuada es **Google Cloud Run** con una base de datos transaccional (p. ej., Firestore / Postgres), HTTPS, Secret Manager y endpoint `/webhooks/mercadopago`. Apps Script puede seguir administrando el login de prueba, pero se debe definir un método de autenticación del usuario que el backend de pagos pueda validar de forma segura.
+## 5. Cómo se guardan los saldos y por qué están separados
 
-## 5. Pruebas de integración antes del lanzamiento
+`users.balance` y `ledger` siguen siendo créditos virtuales de demostración (incluido el bono inicial de 10). **No se convierten a soles**.
 
-1. Crear orden de pruebas y verificar que `external_reference` corresponde a su `orderId`.
-2. Abrir `init_point`; cancelar, rechazar, dejar pendiente y aprobar utilizando únicamente herramientas/cuentas de prueba permitidas por Mercado Pago.
-3. Comprobar que éxito/pendiente/fallo no acreditan sin webhook verificado.
-4. Simular dos notificaciones iguales, notificaciones fuera de orden y reintentos: solo un asiento.
-5. Probar recargas de S/30, S/50 y monto personalizado. Probar compra directa de S/5 si es un producto legalmente autorizado.
-6. Simular sesión inválida, usuario no titular, pago de importe erróneo y pagos expirados.
-7. Auditar saldos y conciliar sumatoria del ledger con pagos realmente aprobados.
-8. Tras licencias/aprobaciones, ejecutar pruebas de producción de monto mínimo supervisadas antes de habilitar públicamente.
+El saldo **recargado de dinero real** es `paidBalancePEN`, calculado desde `payments_ledger` y mostrado en Mi cuenta. En producción, un pago aprobado que coincide exactamente con `external_reference`, importe, moneda PEN, `collector_id` y `live_mode` genera un único movimiento `TOPUP_APPROVED`. Un pago refundado o sujeto a contracargo genera una reversión única.
 
-**Nota:** este documento define la arquitectura y no activa pagos ni apuestas con dinero real. No hay un Webhook de Mercado Pago, autorización de actividad ni proceso de liquidación implementado aún.
+Esto mantiene intactas las jugadas previas. **Aún no se descuentan jugadas del saldo monetario**, porque las funciones de juego actuales trabajan con créditos de prueba. Antes de pasar a apuestas por dinero real, debe completarse y probarse un libro transaccional para débitos y liquidaciones de premios, además de las condiciones operativas aplicables.
+
+## 6. Pruebas imprescindibles
+
+1. Credenciales **Test**, `MP_ENV=test`, cuenta de prueba del proveedor. Generar una preferencia y verificar que el botón abre el checkout.
+2. Aprobación test: aparece `APPROVED`, pero **no se contabiliza como dinero real** en `payments_ledger`.
+3. Pago pendiente, rechazado y cancelado: el historial muestra el estado correspondiente; no se acredita saldo.
+4. En una integración de producción autorizada, comprobar una recarga pequeña real, su retorno y el incremento único de `paidBalancePEN`.
+5. Repetir la misma consulta cinco veces: no debe crear cinco movimientos monetarios.
+6. Verificar importe incorrecto, identificador del vendedor equivocado, `live_mode` incorrecto y referencia ajena: **ninguno se acredita**.
+7. Simular un reembolso en los registros de prueba y verificar el movimiento inverso único. En producción seguir el procedimiento del proveedor.
+8. Desactivar temporalmente el checkout y verificar que las órdenes existentes continúan siendo conciliables con sus credenciales.
+9. Probar dos navegadores y varios usuarios para confirmar que nadie puede consultar una orden ajena.
+
+**Límites:** Apps Script usa bloqueos para concurrencia inicial y Google Sheets como almacenamiento. Para escalar a muchas compras simultáneas, depósitos grandes, pagos parciales, retiros o apuestas monetarias, migra a almacenamiento transaccional y validación de webhooks firmados. Las cabeceras de los webhooks no están disponibles genéricamente en `doPost` de Apps Script, razón por la que esta fase utiliza consultas directas a Mercado Pago.
+
+Referencias técnicas: [Preferencias Checkout Pro](https://www.mercadopago.com.pe/developers/es/reference/online-payments/checkout-pro-preferences/create-preference/post), [Buscar pagos](https://www.mercadopago.com.pe/developers/es/reference/online-payments/checkout-api-payments/search-payments/get), [Credenciales](https://www.mercadopago.com.pe/developers/es/docs/automatic-payments-orders/resources/credentials).
