@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=19">
+  <link rel="stylesheet" href="assets/styles.css?v=20">
   <script defer src="assets/config.js?v=12"></script>
-  <script defer src="assets/app.js?v=19"></script>
+  <script defer src="assets/app.js?v=20"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -86,7 +86,7 @@
 
     <section id="view-gol" class="view" aria-label="PremiumGol">
       
-      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p><p id="golDeadline" class="gol-deadline" role="status">Cierre de jugadas: miércoles 18 de noviembre, 6:30 p. m. (Perú)</p></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag"><svg><use href="#i-clock"></use></svg> Jornada 18–20 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
+      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p><div id="golDeadline" class="gol-info-badges" role="status" aria-label="Fecha límite y pozo acumulado"><span class="gol-info-badge gol-info-date"><svg aria-hidden="true"><use href="#i-calendar"></use></svg> Miércoles 18 de noviembre</span><span class="gol-info-badge gol-info-time"><svg aria-hidden="true"><use href="#i-clock"></use></svg> 6:30 p. m.</span><span class="gol-info-badge gol-info-pot"><svg aria-hidden="true"><use href="#i-trophy"></use></svg> Pozo acumulado <b>S/ 10,000</b></span></div></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag"><svg><use href="#i-clock"></use></svg> Jornada 18–20 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
   <span class="overline">TUS JUGADAS</span><h3>Resumen de tu jugada</h3>
   <div id="golTabs" class="gol-card-tabs" role="group" aria-label="Seleccionar jugada"><button type="button" data-gol-slot="A" class="active">A</button><button type="button" data-gol-slot="B">B</button><button type="button" data-gol-slot="C">C</button><button type="button" data-gol-slot="D">D</button></div>
   <p class="slot-help" id="golSlotHint">Jugada A · marca local, empate o visita.</p>
