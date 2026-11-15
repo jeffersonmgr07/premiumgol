@@ -947,3 +947,24 @@ body.auth-request-busy{overflow:hidden}
   .play-prediction-row{grid-template-columns:23px minmax(0,1fr) 95px}
   .history-row [data-play-details]{margin-left:0;width:100%}
 }
+
+/* Saldo principal y bonos, aviso de recarga y acceso alternativo */
+.wallet-breakdown[hidden],#emailAccessPanel[hidden],#emailAccessToggle[hidden],#googleAccountHint[hidden]{display:none!important}
+.wallet-breakdown{
+  position:absolute;right:0;top:calc(100% + 10px);z-index:125;
+  width:min(285px,calc(100vw - 24px));padding:13px 16px;
+  background:#101e30;border:1px solid #F7C85D88;border-radius:13px;
+  box-shadow:0 14px 45px #000b;color:#fff
+}
+.wallet-breakdown>div{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 1px;font-size:12px}
+.wallet-breakdown>div+div{border-top:1px solid #34465e}
+.wallet-breakdown strong{color:#fff;font-weight:850;white-space:nowrap}
+.wallet-breakdown .wallet-breakdown-total strong{color:#F7C85D;font-size:16px}
+#walletTop[aria-expanded="true"]{border-color:#F7C85D}
+.referral-panel+.account-panel{margin-top:24px}
+.referral-wallet-summary{grid-template-columns:minmax(0,1fr)}
+.auth-busy-google{display:block;width:76px;height:76px;object-fit:contain;background:none;color:inherit}
+.google-account-hint{text-align:center;color:#dce8f2;font-size:11px;line-height:1.5;margin:5px auto 12px}
+.email-access-toggle{display:block;margin:15px auto 9px;cursor:pointer;border:0;background:transparent;color:#F7C85D;font-weight:800;font-size:13px;text-decoration:underline;text-underline-offset:4px}
+.email-access-toggle:focus-visible{outline:2px solid #F7C85D;border-radius:4px}
+@media(max-width:900px){.wallet-breakdown{top:calc(100% + 7px);right:0}}
