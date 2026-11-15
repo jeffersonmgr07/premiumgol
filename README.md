@@ -1,3 +1,14 @@
+## Checkout Pro integrado a PremiumGol — 15/11/2026
+
+**El flujo de recargas pertenece ahora a `Mi cuenta`**, no a una página de QA independiente. La web de GitHub Pages crea la solicitud en Apps Script, recibe un token HMAC temporal, consulta el backend `payments/` en Cloud Run para crear la preferencia Checkout Pro y permite seguir la orden después de regresar de Mercado Pago.
+
+- **Repositorio:** `assets/app.js`, `apps-script/Topups.gs`, `apps-script/Main.gs` y `payments/`.
+- **Backend de producción preparado pero no activado:** `payments/server.js`. Necesita Cloud Run, Firestore, Secret Manager, Webhooks y configuración privada. La creación de nuevas preferencias permanece deshabilitada hasta la autorización comercial y sectorial necesaria.
+- **Cualquier usuario autenticado**, tanto Google como correo OTP, puede generar una solicitud de recarga; la validación de sesiones se hace en Apps Script. No hay una lista privada de correos ni segundo login para los pagos.
+- **No hay acreditación automática de dinero en la billetera de apuestas** ni compra de jugadas con dinero real. Los créditos actuales son virtuales; las notificaciones aprobadas se registran de forma independiente.
+- **Guía actual:** [payments/README.md](payments/README.md). El antiguo módulo `payments-qa/` y la página `qa-pagos.html` fueron retirados.
+
+---
 ## Actualización: Google, cartilla y recargas — 15/11/2026
 
 - La verificación de Google utiliza ahora un diálogo modal bloqueante con G pulsante, indicador de giro y mensajes de estado; se libera tras respuesta o error. Se evita abrir otro login durante la restauración de una sesión válida.
@@ -7,7 +18,7 @@
 - El enlace «Ver reglas y condiciones» muestra las reglas de pronóstico y clasificación. Los bonos de 11 y 10 aciertos siguen como propuestas, no premios garantizados.
 - Las solicitudes de recarga se muestran como órdenes pendientes en badges, sin exponer toda la referencia al jugador. No hay cobros ni abonos reales.
 - Nuevo archivo `apps-script/MercadoPagoTest.gs`: prueba **manual** de conectividad a Checkout Pro con credenciales del entorno Test; no se expone por RPC ni acredita saldo.
-- Instrucciones: [Mercado Pago (prueba técnica)](docs/mercadopago-pruebas-20261115.md) y [Arquitectura de pagos](docs/mercadopago-integracion.md).
+- Instrucciones: [Checkout Pro integrado](payments/README.md) y [Arquitectura de pagos](docs/mercadopago-integracion.md).
 
 ---
 ## Corrección del retorno Google y assets de marca · 15/11/2026
