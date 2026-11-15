@@ -587,6 +587,35 @@
     }
     finally{topupBusy=false;setAuthBusy(false);renderTopup();}
   }
+  function showPlayDetails(id){
+    const ticket=playHistory.find(h=>String(h.id)===String(id)&&h.type==='gol');
+    if(!ticket)return;
+    const dlg=$('#playDetailsDialog');
+    const created=new Date(ticket.at);
+    const when=Number.isFinite(created.getTime())?
+      new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',day:'2-digit',
+        month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})
+        .format(created):'Fecha no disponible';
+    const code=String(ticket.code||('PG-'+String(ticket.id).slice(-10).toUpperCase()));
+    const byId=new Map(golGames.map((g,i)=>[g.id,{...g,idx:i+1}]));
+    const rows=(Array.isArray(ticket.picks)?ticket.picks:[]).map(p=>{
+      const game=byId.get(p.id),resultIndex=outcomes.indexOf(p.outcome);
+      if(!game||resultIndex<0)return '';
+      return '<div class="play-prediction-row"><span class="play-prediction-number">'+
+        String(game.idx).padStart(2,'0')+'</span><span class="play-prediction-teams">'+
+        esc(game.home)+' · '+esc(game.away)+'</span><strong>'+
+        esc(golLabel[resultIndex])+' · '+esc(outcomeName[resultIndex])+'</strong></div>';
+    }).join('');
+    $('#playDetailsTitle').textContent='Ticket '+code;
+    $('#playDetailsBody').innerHTML='<div class="play-ticket-meta">'+
+      '<div><span>Código</span><b>'+esc(code)+'</b></div>'+
+      '<div><span>Costo</span><b>S/ '+fmt2(ticket.stake)+' · '+fmt2(ticket.stake)+
+      ' créditos virtuales</b></div>'+
+      '<div><span>Fecha y hora</span><b>'+esc(when)+'</b></div></div>'+
+      '<h3 class="play-ticket-subtitle">Pronósticos seleccionados</h3>'+
+      (rows||'<p class="profile-info">Pronósticos no disponibles.</p>');
+    if(!dlg.open)dlg.showModal();
+  }
   function renderAccount(){
     const name=[account?.firstName,account?.lastName].filter(Boolean).join(' ')||'Usuario';
     $('#profileName').textContent=name;
@@ -603,7 +632,25 @@
     $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
-    const one=h=>`<div class="history-row"><span class="history-icon">${icon(h.type==='gol'?'trophy':'ticket')}</span><div class="history-row-main"><b>${esc(h.title)}</b><span>${new Date(h.at).toLocaleDateString('es-PE',{day:'2-digit',month:'short',year:'numeric'})} · ${esc(h.note||'Registrada')}</span></div><span class="history-row-status">REGISTRADA</span></div>`;
+    const when=value=>{
+      const d=new Date(value);
+      return Number.isFinite(d.getTime())?new Intl.DateTimeFormat('es-PE',{
+        timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric',
+        hour:'numeric',minute:'2-digit',hour12:true
+      }).format(d):'Fecha no disponible';
+    };
+    const one=h=>{
+      const isGol=h.type==='gol';
+      const code=isGol?String(h.code||('PG-'+String(h.id||'').slice(-10).toUpperCase())):'';
+      const cost='S/ '+fmt2(h.stake)+' · '+fmt2(h.stake)+' créditos virtuales';
+      return '<article class="history-row"><span class="history-icon">'+icon(isGol?'trophy':'ticket')+
+        '</span><div class="history-row-main"><b>'+
+        esc(isGol?'PremiumGol · '+code:h.title)+'</b><span>'+esc(cost)+
+        '</span><time>'+esc(when(h.at))+'</time></div>'+
+        (isGol?'<button type="button" class="btn btn-outline btn-mini" data-play-details="'+
+        esc(h.id)+'">Ver detalles</button>':'<span class="history-row-status">REGISTRADA</span>')+
+        '</article>';
+    };
     const empty=`<div class="empty-state">${icon('ticket')}Aún no tienes jugadas registradas.</div>`;
     $('#recentHistory').innerHTML=playHistory.length?playHistory.slice(0,4).map(one).join(''):empty;
     $('#fullHistory').innerHTML=playHistory.length?playHistory.map(one).join(''):empty;
@@ -896,6 +943,11 @@
   });
   $('#backToEmail').addEventListener('click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
   $('#submitGol').addEventListener('click',saveGol);
+  $('#closePlayDetails').addEventListener('click',()=>$('#playDetailsDialog').close());
+  $('#donePlayDetails').addEventListener('click',()=>$('#playDetailsDialog').close());
+  $('#playDetailsDialog').addEventListener('click',e=>{
+    if(e.target===$('#playDetailsDialog'))$('#playDetailsDialog').close();
+  });
   $('#openGolRules').addEventListener('click',()=>$('#golRulesDialog').showModal());
   $('#closeGolRules').addEventListener('click',()=>$('#golRulesDialog').close());
   $('#acceptGolRules').addEventListener('click',()=>$('#golRulesDialog').close());
@@ -921,7 +973,9 @@
       if(url)window.location.assign(url);return;
     }
     const check=e.target.closest('[data-topup-check]');
-    if(check){checkTopupOrder(check.dataset.topupCheck);}
+    if(check){checkTopupOrder(check.dataset.topupCheck);return;}
+    const details=e.target.closest('[data-play-details]');
+    if(details){showPlayDetails(details.dataset.playDetails);return;}
   });
   $('#profileForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!hasUser())return;
