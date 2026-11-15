@@ -41,10 +41,15 @@
       return /^[A-Z0-9]{10,16}$/i.test(code)?code.toUpperCase():'';
     }catch{return '';}
   })();
-  function setAuthBusy(on,message='Verificando tu cuenta…'){
+  function setAuthBusy(on,message='Verificando tu cuenta…',kind='google'){
     authBusy=Boolean(on);
     const overlay=$('#authBusyOverlay');
-    if(overlay){overlay.hidden=!authBusy;$('#authBusyTitle').textContent=message;}
+    if(overlay){
+      $('#authBusyTitle').textContent=message;
+      overlay.dataset.kind=kind;
+      if(authBusy&&!overlay.open)overlay.showModal();
+      else if(!authBusy&&overlay.open)overlay.close();
+    }
     document.body.classList.toggle('auth-request-busy',authBusy);
     if($('#authDialog'))$('#authDialog').setAttribute('aria-busy',String(authBusy));
   }
@@ -54,12 +59,25 @@
     $('#loginTop').setAttribute('aria-expanded','false');
     $('[data-nav="account"]')?.setAttribute('aria-expanded','false');
   }
-  function toggleAccountMenu(){
+  function toggleAccountMenu(source){
     if(!hasUser()){openAuth('login');return;}
     accountMenuOpen=!accountMenuOpen;
-    $('#accountMenu').hidden=!accountMenuOpen;
+    const menu=$('#accountMenu');
+    menu.hidden=!accountMenuOpen;
+    if(accountMenuOpen&&window.matchMedia('(max-width:900px)').matches){
+      const anchor=source?.closest?.('button')||$('[data-nav="account"]');
+      const rect=anchor.getBoundingClientRect();
+      const width=Math.min(225,window.innerWidth-24);
+      const left=Math.max(12,Math.min(window.innerWidth-width-12,rect.right-width));
+      menu.style.left=left+'px';
+      menu.style.bottom=Math.max(10,window.innerHeight-rect.top+8)+'px';
+      menu.style.right='auto';menu.style.top='auto';
+    }else{
+      menu.style.left='';menu.style.bottom='';menu.style.right='';menu.style.top='';
+    }
     $('#loginTop').setAttribute('aria-expanded',String(accountMenuOpen));
     $('[data-nav="account"]')?.setAttribute('aria-expanded',String(accountMenuOpen));
+    if(accountMenuOpen)menu.querySelector('button')?.focus({preventScroll:true});
   }
   function openAccountTab(tab){
     if(!['overview','history','wallet','profile'].includes(tab))return;
@@ -240,9 +258,10 @@
     if(golLocked[activeCard]){toast('Esta jugada ya fue registrada. Elige otra letra.');return;}
     if(completedPicks()!==12){toast(`Completa los 12 partidos. Llevas ${completedPicks()} de 12.`);return;}
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
-    if(accountBalance<3){toast('Saldo insuficiente. Cada jugada requiere 3 créditos virtuales.');return;}
+    if(accountBalance<5){toast('Saldo insuficiente. Cada jugada requiere 5 créditos virtuales.');return;}
     if(sendingPlay)return;
     sendingPlay=true;$('#submitGol').disabled=true;
+    setAuthBusy(true,'Guardando tu jugada…','general');
     const slot=activeCard;
     try{
       const picks=golGames.map(g=>({id:g.id,outcome:draft.golCards[slot][g.id]}));
@@ -250,9 +269,9 @@
       const res=await remote('savePremiumGol',{sessionToken,slot,picks,clientRequestId:draft.golRequestIds[slot]});
       updateAccount(res);delete draft.golRequestIds[slot];saveDraft();
       const next=SLOTS.find(s=>!golLocked[s]);if(next){activeCard=next;draft.activeCard=next;saveDraft();}
-      renderGol();toast(`¡Jugada ${slot} registrada! Se descontaron 3 créditos virtuales.`);
+      renderGol();toast(`¡Jugada ${slot} registrada! Se descontaron 5 créditos virtuales.`);
     }catch(e){toast(e.message||'No se pudo guardar la jugada.');}
-    finally{sendingPlay=false;renderGol();}
+    finally{sendingPlay=false;setAuthBusy(false);renderGol();}
   }
   function filterOptions(){
     const leagueSel=$('#matchLeague'),current=leagueFilter;
@@ -356,15 +375,16 @@
     if(amount===null){toast('El importe debe ser entre S/ 30 y S/ 10,000.');return;}
     if(topupBusy)return;
     topupBusy=true;renderTopup();
+    setAuthBusy(true,'Preparando tu orden…','general');
     topupRequestId=topupRequestId||randomId();
     try{
       const res=await remote('createTopupRequest',{sessionToken,amount,clientRequestId:topupRequestId});
       const box=$('#rechargeOrder');box.hidden=false;
-      box.innerHTML=`<strong>Solicitud de recarga registrada</strong><div>Referencia: ${esc(res.orderId)}</div><div>Importe: S/ ${fmt2(res.amount)}</div><div>Estado: pendiente de habilitar el pago en línea.</div><button type="button" class="btn btn-outline btn-full" disabled aria-disabled="true">Pagar con Mercado Pago · Próximamente</button>`;
-      toast('Solicitud generada. El pago en línea todavía no está habilitado.');
+      box.innerHTML=`<div class="recharge-order-head"><span class="recharge-order-icon">${icon('wallet')}</span><div><strong>Orden de recarga generada</strong><span>Tu solicitud quedó registrada</span></div></div><div class="recharge-order-data"><span class="recharge-order-badge">S/ ${fmt2(res.amount)}</span><span class="recharge-order-badge is-pending">Pendiente</span></div><p class="recharge-order-small">La orden se conservará en tu cuenta. La opción de pago se mostrará cuando esté habilitada.</p>`;
+      toast('Orden de recarga registrada.');
       topupRequestId=null;
     }catch(e){toast(e.message||'No se pudo crear la solicitud de recarga.');}
-    finally{topupBusy=false;renderTopup();}
+    finally{topupBusy=false;setAuthBusy(false);renderTopup();}
   }
   function renderAccount(){
     const name=[account?.firstName,account?.lastName].filter(Boolean).join(' ')||'Usuario';
@@ -457,6 +477,9 @@
     if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
   }
   async function signout(){
+    // Google no debe reabrir automáticamente una sesión después de salir.
+    // La elección de cuenta/consentimiento sigue siendo controlada por Google.
+    try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
     const old=sessionToken;sessionToken='';account=null;accountBalance=0;playHistory=[];golLocked={};couponClaimed=false;
     sessionStorage.removeItem(SESSION_KEY);
     closeAccountMenu();referralsJoined=0;
@@ -594,7 +617,7 @@
       console.warn('Catálogo deportivo sin respuesta:',e.message);
     }
   }
-  $('#loginTop').addEventListener('click',()=>hasUser()?toggleAccountMenu():openAuth('login'));
+  $('#loginTop').addEventListener('click',e=>hasUser()?toggleAccountMenu(e.currentTarget):openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
   $('#walletTop').addEventListener('click',()=>openAccountTab('wallet'));
   $('#copyReferral').addEventListener('click',async()=>{
@@ -621,11 +644,12 @@
       if(authMode==='register' && !/^\d{6,15}$/.test($('#authPhone').value.trim())){
         throw new Error('Ingresa tu número de WhatsApp para registrarte.');
       }
+      setAuthBusy(true,'Enviando código de acceso…','general');
       await remote('sendCode',{email,mode:authMode});
       $('#emailForm').hidden=true;$('#verifyForm').hidden=false;$('#authCode').focus();
       toast('Revisa tu correo para encontrar el código de 6 dígitos.');
     }catch(e){toast(e.message||'No se pudo enviar el código.');}
-    finally{btn.disabled=false;}
+    finally{btn.disabled=false;setAuthBusy(false);}
   });
   $('#verifyForm').addEventListener('submit',async e=>{
     e.preventDefault();
@@ -645,6 +669,12 @@
   });
   $('#backToEmail').addEventListener('click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
   $('#submitGol').addEventListener('click',saveGol);
+  $('#openGolRules').addEventListener('click',()=>$('#golRulesDialog').showModal());
+  $('#closeGolRules').addEventListener('click',()=>$('#golRulesDialog').close());
+  $('#acceptGolRules').addEventListener('click',()=>$('#golRulesDialog').close());
+  $('#golRulesDialog').addEventListener('click',e=>{if(e.target===$('#golRulesDialog'))$('#golRulesDialog').close();});
+  $('#authBusyOverlay').addEventListener('cancel',e=>e.preventDefault());
+  window.addEventListener('resize',()=>{if(accountMenuOpen)closeAccountMenu();});
   $('#resetGol').addEventListener('click',()=>{if(golLocked[activeCard])return;draft.golCards[activeCard]={};delete draft.golRequestIds[activeCard];saveDraft();renderGol();toast('Se borró la selección de la jugada '+activeCard+'.');});
   $('#premiumCoupon').addEventListener('click',claimCouponPrompt);
   $('#closeCoupon').addEventListener('click',()=>$('#couponDialog').close());
@@ -660,8 +690,9 @@
   $('#profileForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!hasUser())return;
     const btn=$('#profileSave');btn.disabled=true;
+    setAuthBusy(true,'Guardando tu perfil…','general');
     try{const res=await remote('updateProfile',{sessionToken,firstName:$('#profileFirst').value.trim(),lastName:$('#profileLast').value.trim(),countryCode:$('#profileCountry').value,phone:$('#profilePhone').value.trim(),docType:$('#profileDocType').value,docNumber:$('#profileDocNumber').value.trim()});updateAccount(res);toast('Tus datos fueron actualizados.');}
-    catch(err){toast(err.message||'No se pudieron guardar tus datos.');}finally{btn.disabled=false;}
+    catch(err){toast(err.message||'No se pudieron guardar tus datos.');}finally{btn.disabled=false;setAuthBusy(false);}
   });
   $('#matchSearch').addEventListener('input',e=>{searchFilter=e.target.value.trim();renderMatch();});
   $('#matchLeague').addEventListener('change',e=>{leagueFilter=e.target.value;renderMatch();});
@@ -689,7 +720,7 @@
     if(nav){
       e.preventDefault();
       if(nav.dataset.nav==='account'){
-        if(hasUser())toggleAccountMenu();else openAuth('login');
+        if(hasUser())toggleAccountMenu(nav);else openAuth('login');
       }else showView(nav.dataset.nav);
       return;
     }
