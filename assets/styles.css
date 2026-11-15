@@ -267,3 +267,8 @@
  .hero .eyebrow{display:none}
  .hero .hero-copy h1{margin-top:0}
 }
+
+/* V11.2 · También la opción activa del menú móvil conserva delineado blanco. */
+@media(max-width:720px){
+  .mobile-nav button.active,.mobile-nav button.active svg{color:#ffffff;stroke:#ffffff}
+}
