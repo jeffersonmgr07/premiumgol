@@ -886,3 +886,64 @@ body.auth-request-busy{overflow:hidden}
 @media(max-width:480px){
   .topup-history-actions{align-self:stretch}
 }
+
+/* PremiumGol V31 · tickets, vigencia de recargas y estado de recomendaciones */
+.account-view-plays{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:9px;
+  border:1px solid #F7C85D9c;background:#F7C85D14;color:#F7C85D;
+  min-height:42px;border-radius:10px;font-size:13px;font-weight:800;
+  cursor:pointer;margin:12px 0 18px
+}
+.account-view-plays:hover,.account-view-plays:focus-visible{
+  border-color:#DBFF26;color:#DBFF26;outline:0
+}
+.account-view-plays svg{width:17px;height:17px}
+.history-row{gap:12px;flex-wrap:wrap;align-items:center}
+.history-row .history-row-main{flex:1;min-width:160px;display:flex;flex-direction:column;gap:5px}
+.history-row .history-row-main b{font-size:13px;overflow-wrap:anywhere}
+.history-row .history-row-main span,
+.history-row .history-row-main time{color:#fff;font-size:11px;line-height:1.5}
+.history-row [data-play-details]{flex-shrink:0;margin-left:auto;white-space:nowrap}
+.play-ticket-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:15px 0 17px}
+.play-ticket-meta>div{border:1px solid #4b5e74;border-radius:10px;padding:10px;min-width:0}
+.play-ticket-meta span{display:block;color:#aebacf;font-size:10px;margin-bottom:5px}
+.play-ticket-meta b{font-size:12px;overflow-wrap:anywhere}
+.play-ticket-subtitle{color:#F7C85D;font-size:14px;margin:18px 0 10px}
+.play-prediction-row{
+  display:grid;grid-template-columns:28px minmax(0,1fr) 110px;
+  gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #31435a;
+  font-size:11px
+}
+.play-prediction-row .play-prediction-number{color:#DBFF26;font-weight:900}
+.play-prediction-row .play-prediction-teams{color:#fff;line-height:1.4}
+.play-prediction-row strong{text-align:right;color:#F7C85D;font-size:11px}
+.referral-wallet-summary{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:16px 0
+}
+.referral-wallet-summary>div,.bonus-wallet-balance{
+  display:flex;flex-direction:column;gap:8px;padding:15px;
+  background:#101e30;border:1px solid #435671;border-radius:12px
+}
+.referral-wallet-summary span,.bonus-wallet-balance span{font-size:11px;color:#fff}
+.referral-wallet-summary strong,.bonus-wallet-balance strong{color:#DBFF26;font:850 19px var(--display)}
+.bonus-wallet-balance{max-width:700px;margin:0 0 18px}
+.bonus-wallet-balance small{font-size:11px;color:#d3dfec;line-height:1.5}
+.referral-activity-title{font-size:12px;color:#F7C85D;margin:16px 0 9px}
+.referral-activity-list{display:flex;flex-direction:column;gap:8px}
+.referral-activity-item{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ padding:10px 12px;border:1px solid #34465e;border-radius:9px
+}
+.referral-activity-item>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.referral-activity-item strong{font-size:12px;color:#fff}
+.referral-activity-item span,.referral-activity-item small{font-size:11px;color:#dce8f2;line-height:1.5}
+.referral-activity-item>b{font-size:11px;color:#DBFF26;white-space:nowrap}
+.referral-future-note{margin-top:12px;font-size:11px;color:#d3dfec;line-height:1.6}
+@media(max-width:540px){
+  .referral-wallet-summary{grid-template-columns:1fr}
+  .referral-activity-item{flex-direction:column;align-items:stretch;gap:6px}
+  .referral-activity-item>b{white-space:normal}
+  .play-ticket-meta{grid-template-columns:1fr}
+  .play-prediction-row{grid-template-columns:23px minmax(0,1fr) 95px}
+  .history-row [data-play-details]{margin-left:0;width:100%}
+}
