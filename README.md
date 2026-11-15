@@ -1,3 +1,16 @@
+## Ajustes de cartilla, cuotas y pagos — 15 noviembre 2026
+
+- **Apuestas deportivas / Premium Live:** un mensaje breve de carga con indicador visual. Si el catálogo no entrega encuentros, se muestra «Por el momento no hay partidos disponibles» o «Por el momento no hay partidos en vivo», y un enlace interno para visitar PremiumGol. Nunca se presentan números simulados como cuotas reales.
+- **Premium Live:** se oculta la franja «EN JUEGO» cuando no hay partidos en curso cargados; cuando llegan encuentros de la API, se siguen mostrando en el catálogo informativo.
+- **Cartilla móvil:** tres badges en una línea («Mié 18 Nov» · «6:30 p. m.» · «Pozo S/ 10,000»), fechas abreviadas por partido.
+- **Cartilla de PC:** tarjetas más compactas, local alineado con el badge de liga, separación equilibrada del VS y visitante, números de partido de mayor tamaño en lima `#DBFF26`. Se conserva el amarillo `#F7C85D`.
+- **Insignias:** hay un mapa de 13 distintivos provenientes de archivos identificados en Wikimedia Commons y del sitio oficial de Piast Gliwice; cuando no hay insignia identificada, aparece un monograma. Se cargan externamente y no necesitan ampliar el plan Free de API-FOOTBALL. Algunos archivos pueden estar sujetos a condiciones de atribución, marcas registradas o actualización del escudo.
+- **Mercado Pago:** guía técnica para Checkout Pro, solicitudes de recarga y jugadas en [docs/mercadopago-integracion.md](docs/mercadopago-integracion.md). **No hay pagos reales habilitados**; el botón sigue sin aceptar cobros hasta que exista infraestructura transaccional y autorización de la actividad.
+
+Referencias de insignias: [Wikimedia Commons](https://commons.wikimedia.org/wiki/Main_Page) y [Piast Gliwice](https://piast-gliwice.eu/klub/klub-pl/herb). Para el archivo «Almere City FC logo.jpg», autor Youri165, licencia [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/), sin modificaciones de la imagen: [archivo fuente](https://commons.wikimedia.org/wiki/File:Almere_City_FC_logo.jpg). Los distintivos y marcas de clubes pertenecen a sus titulares.
+
+---
+
 ## Seguridad OAuth y pruebas del plan Free (15/11/2026)
 El botón Google daba `401 invalid_client` porque el valor de `googleClientId` publicado comenzaba por `GOCSPX-`, prefijo de secreto OAuth, no de ID de cliente web. Se retiró inmediatamente del archivo público `assets/config.js`. Como también existió en un commit previo, **revocar/rotar esa credencial en Google Cloud es obligatorio**: borrarla del último commit NO elimina copias ni el historial. No registrar aquí el nuevo secreto.
 
