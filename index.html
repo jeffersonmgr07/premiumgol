@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=10">
+  <link rel="stylesheet" href="assets/styles.css?v=11">
   <script defer src="assets/config.js"></script>
-  <script defer src="assets/app.js?v=9"></script>
+  <script defer src="assets/app.js?v=11"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -49,7 +49,7 @@
       </nav>
       <div class="header-actions">
         <button class="wallet-chip" id="walletTop" title="Mis créditos" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO VIRTUAL</small><b id="topBalance">1,000</b></span></button>
-        <button class="btn btn-outline btn-login" id="loginTop"><svg><use href="#i-user"></use></svg><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
+        <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
       </div>
     </div>
   </header>
@@ -60,11 +60,10 @@
         <div class="hero-backdrop"></div><div class="hero-vignette"></div><div class="hero-fieldline"></div>
         <div class="container hero-content">
           <div class="hero-copy">
-            <div class="eyebrow"><span class="eyebrow-rule"></span> TU PASIÓN. TU PRONÓSTICO. TU PARTIDO.</div>
-            <h1>El fútbol se vive.<br><em>La emoción se juega.</em></h1>
-            <p>Elige local, empate o visita en 12 partidos, elige tus partidos favoritos y sigue la acción en vivo. Cada encuentro es una nueva oportunidad para demostrar cuánto sabes.</p>
-            <div class="hero-actions"><button class="btn btn-gold btn-xl" data-nav="gol">Empezar a jugar <svg><use href="#i-arrow"></use></svg></button><button class="btn btn-glass btn-xl" data-nav="match"><svg><use href="#i-ball"></use></svg> Ver partidos</button></div>
-            <div class="hero-foot"><span><svg><use href="#i-shield"></use></svg> Créditos virtuales</span><span class="hero-sep"></span><span><svg><use href="#i-pulse"></use></svg> Pronósticos deportivos</span><span class="hero-sep"></span><span>+18</span></div>
+            <div class="eyebrow"><span class="eyebrow-rule"></span> PLATAFORMA DE APUESTAS DEPORTIVAS</div>
+            <h1>Haz de cada encuentro de fútbol<br><em>una emoción entre patas.</em></h1>
+            <div class="hero-actions"><button class="btn btn-gold btn-xl" data-nav="gol">Empezar a jugar <svg><use href="#i-arrow"></use></svg></button><button class="btn btn-glass btn-xl hero-secondary-action" data-nav="match"><svg><use href="#i-ball"></use></svg> Ver partidos</button></div>
+            
           </div>
           <div class="hero-visual hero-player-visual" aria-hidden="true">
             <img class="hero-player" src="assets/hero-player.webp" width="620" height="918" alt="" fetchpriority="high" decoding="async">
@@ -73,15 +72,15 @@
         <div class="hero-bottom-fade"></div>
       </div>
       <div class="container home-content">
-        <div class="section-heading"><div><span class="overline">TRES FORMAS DE VIVIR EL FÚTBOL</span><h2>Elige cómo quieres jugar<span class="gold-dot">.</span></h2></div><span class="section-side">UN SOLO LUGAR. TODA LA EMOCIÓN.</span></div>
+        <div class="section-heading"><div><h2>Empieza a jugar ahora<span class="gold-dot">.</span></h2></div></div>
         <div class="modes-grid">
-          <button class="mode-card mode-gol" data-nav="gol"><div class="mode-top"><span class="mode-number">01 / 03</span><span class="mode-icon"><svg><use href="#i-trophy"></use></svg></span></div><div><span class="mode-tag">12 PARTIDOS · 1 / X / 2</span><h3>Premium<strong>Gol</strong></h3><p>Elige local, empate o visita en cada partido. ¡Cada acierto cuenta!</p></div><div class="mode-bottom"><span>Arma tu jugada</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div></button>
+          <button class="mode-card mode-gol" data-nav="gol"><div class="mode-top"><span class="mode-number">01 / 03</span><span class="mode-icon"><svg><use href="#i-trophy"></use></svg></span></div><div><span class="mode-tag">12 PARTIDOS · L / E / V</span><h3>Premium<strong>Gol</strong></h3><p>Elige local, empate o visita en cada partido. ¡Cada acierto cuenta!</p></div><div class="mode-bottom"><span>Arma tu jugada</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div></button>
           <button class="mode-card mode-match" data-nav="match"><div class="mode-top"><span class="mode-number">02 / 03</span><span class="mode-icon"><svg><use href="#i-ball"></use></svg></span></div><div><span class="mode-tag">ANTES DEL PITAZO INICIAL</span><h3>Apuestas <strong>deportivas</strong></h3><p>Explora los próximos encuentros, compara cuotas y elige tus pronósticos.</p></div><div class="mode-bottom"><span>Ver próximos partidos</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div></button>
           <button class="mode-card mode-live" data-nav="live"><div class="mode-top"><span class="mode-number">03 / 03</span><span class="mode-icon"><svg><use href="#i-pulse"></use></svg></span></div><div><span class="mode-tag"><span class="tiny-live"></span> LA EMOCIÓN EN DIRECTO</span><h3>Premium <strong>Live</strong></h3><p>Sigue el minuto a minuto y haz tus elecciones mientras rueda el balón.</p></div><div class="mode-bottom"><span>Entrar al Live</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div></button>
         </div>
-        <div class="welcome-strip"><div class="welcome-icon"><svg><use href="#i-shield"></use></svg></div><div><b>La emoción comienza con tu cuenta.</b><p>Regístrate para guardar tus jugadas, seguir tus pronósticos y disfrutar de tus créditos virtuales.</p></div><button class="btn btn-mini btn-outline" id="registerStart">Registrarme <svg><use href="#i-arrow"></use></svg></button></div>
-        <div class="section-heading preview-heading"><div><span class="overline">UN ADELANTO DE LA ACCIÓN</span><h2>Partidos destacados<span class="gold-dot">.</span></h2></div><button class="text-link" data-nav="match">Ver todos <svg><use href="#i-arrow"></use></svg></button></div>
-        <div class="preview-list" id="homeFixtures"></div>
+        
+        <div class="section-heading preview-heading"><div><h2>Partidos destacados<span class="gold-dot">.</span></h2></div><button class="text-link" data-nav="match">Ver todos <svg><use href="#i-arrow"></use></svg></button></div>
+        <div class="preview-list" id="homeFixtures" aria-live="polite"></div>
       </div>
     </section>
 
