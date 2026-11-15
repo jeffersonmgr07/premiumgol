@@ -106,6 +106,7 @@ function pgVerifyCode_(x){
   });
 }
 function pgGoogleLogin_(x){
+  const startedAt=Date.now();
   const idToken=pgClean_(x.idToken,5000);
   if(!idToken||!pgProp_('GOOGLE_CLIENT_ID'))pgErr_('No se pudo validar el acceso con Google.');
   let claims;
@@ -120,6 +121,7 @@ function pgGoogleLogin_(x){
     !['true', '1'].includes(String(claims.email_verified))||Number(claims.exp)*1000<=Date.now()){
       pgErr_('No se pudo validar el acceso con Google.');
   }
+  console.log('PremiumGol Google: ID token validado; tiempo ms='+String(Date.now()-startedAt));
   const email=pgEmail_(claims.email);
   return pgLock_(()=>{
     let row=pgIdentityByEmail_(email);
@@ -137,7 +139,9 @@ function pgGoogleLogin_(x){
         row=pgFind_('users','email',email);
       }
     }
-    return {ok:true,...pgSession_(row)};
+    const output={ok:true,...pgSession_(row)};
+    console.log('PremiumGol Google: sesión creada; tiempo total ms='+String(Date.now()-startedAt));
+    return output;
   });
 }
 function pgRequireSession_(token){
