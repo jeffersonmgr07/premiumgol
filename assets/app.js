@@ -298,7 +298,7 @@
     return Number.isFinite(n)&&n>=30&&n<=10000&&Math.round(n*100)===n*100?n:null;
   }
   function renderTopup(){
-    $('[data-topup-amount]').forEach(el=>{
+    document.querySelectorAll('[data-topup-amount]').forEach(el=>{
       const active=el.dataset.topupAmount===topupSelection;
       el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
     });
@@ -345,7 +345,7 @@
     $('#profileDocType').value=account?.docType||'';
     $('#profileDocNumber').value=account?.docNumber||'';
     renderTopup();
-    $('[data-account-tab]').forEach(el=>el.classList.toggle('active',el.dataset.accountTab===accountTab));
+    document.querySelectorAll('[data-account-tab]').forEach(el=>el.classList.toggle('active',el.dataset.accountTab===accountTab));
     $$('.account-content').forEach(el=>el.classList.remove('is-active'));
     $(`#account${accountTab.charAt(0).toUpperCase()+accountTab.slice(1)}`)?.classList.add('is-active');
   }
