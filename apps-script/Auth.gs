@@ -65,7 +65,11 @@ function pgVerifyCode_(x){
   return pgLock_(()=>{
     const existing=pgIdentityByEmail_(email);
     // Validar datos antes de consumir el código cuando se va a crear una cuenta.
-    if(!existing&&mode==='register'){pgName_(x);pgContact_(x);}
+    if(!existing&&mode==='register'){
+      pgName_(x);
+      const contact=pgContact_(x);
+      if(!contact.phone)pgErr_('Ingresa tu número de WhatsApp para registrarte.');
+    }
     pgCheckCode_(email,pgClean_(x.code,6),mode);
     if(mode==='login'&&!existing)pgErr_('Regístrate primero para crear tu cuenta.');
     if(mode==='register'&&existing)pgErr_('El correo ya tiene una cuenta. Utiliza Ingresar.');
