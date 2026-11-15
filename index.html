@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=24">
+  <link rel="stylesheet" href="assets/styles.css?v=25">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=24"></script>
+  <script defer src="assets/app.js?v=25"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -67,8 +67,15 @@
         <button class="nav-link" data-nav="live">Premium Live <span class="live-mini"></span></button>
       </nav>
       <div class="header-actions">
-        <button class="wallet-chip" id="walletTop" title="Mis créditos" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO VIRTUAL</small><b id="topBalance">1,000</b></span></button>
+        <button class="wallet-chip" id="walletTop" title="Mis créditos" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO VIRTUAL</small><b id="topBalance">10.00</b></span></button>
         <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
+        <div class="account-menu" id="accountMenu" role="menu" aria-label="Mi cuenta" hidden>
+          <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
+          <button type="button" data-account-tab="history" role="menuitem"><svg><use href="#i-ticket"></use></svg>Mis jugadas</button>
+          <button type="button" data-account-tab="wallet" role="menuitem"><svg><use href="#i-wallet"></use></svg>Recargar saldo</button>
+          <button type="button" data-account-tab="profile" role="menuitem"><svg><use href="#i-shield"></use></svg>Mi perfil</button>
+          <button type="button" data-account-signout="1" role="menuitem"><svg><use href="#i-arrow"></use></svg>Cerrar sesión</button>
+        </div>
       </div>
     </div>
   </header>
@@ -128,10 +135,20 @@
     </section>
 
     <section id="view-account" class="view" aria-label="Mi cuenta">
-      <div class="page-hero account-hero"><div class="container"><span class="overline">TU ESPACIO PERSONAL</span><h1>Mi <span>cuenta</span></h1><p>Tu actividad, tus jugadas y tus créditos en un solo lugar.</p></div></div>
-      <div class="container page-body account-layout"><aside class="profile-side"><div class="avatar-circle" id="avatarInitial">P</div><h3 id="profileName">Jugador</h3><span id="profileSubtitle">Tu cuenta PremiumGol</span><div class="side-divider"></div><button class="account-side-link active" data-account-tab="overview"><svg><use href="#i-user"></use></svg> Resumen</button><button class="account-side-link" data-account-tab="history"><svg><use href="#i-ticket"></use></svg> Mis jugadas</button><button class="account-side-link" data-account-tab="wallet"><svg><use href="#i-wallet"></use></svg> Recargar saldo</button><button class="account-side-link" data-account-tab="profile"><svg><use href="#i-shield"></use></svg> Mi perfil</button><button class="account-side-link" id="accountSignout"><svg><use href="#i-arrow"></use></svg> Cerrar sesión</button></aside><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus créditos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Créditos disponibles</span><b id="accountBalance">1,000</b><small>Saldo virtual</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><div class="wallet-note"><svg><use href="#i-wallet"></use></svg><div><b>Tu billetera virtual</b><span>Administra tus créditos y disfruta tus jugadas. Las recargas en línea estarán disponibles al habilitar los medios de pago.</span></div><button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button></div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
+      
+      <div class="container page-body account-layout"><aside class="profile-side"><div class="avatar-circle" id="avatarInitial"><span id="avatarInitialText">P</span><img id="avatarPhoto" alt="" loading="lazy" hidden></div><h3 id="profileName">Jugador</h3><span id="profileSubtitle">Tu cuenta PremiumGol</span><div class="side-divider"></div><button class="account-side-link active" data-account-tab="overview"><svg><use href="#i-user"></use></svg> Resumen</button><button class="account-side-link" data-account-tab="history"><svg><use href="#i-ticket"></use></svg> Mis jugadas</button><button class="account-side-link" data-account-tab="wallet"><svg><use href="#i-wallet"></use></svg> Recargar saldo</button><button class="account-side-link" data-account-tab="profile"><svg><use href="#i-shield"></use></svg> Mi perfil</button><button class="account-side-link" id="accountSignout"><svg><use href="#i-arrow"></use></svg> Cerrar sesión</button></aside><div class="account-quick-tabs" role="group" aria-label="Navegación de cuenta">
+  <button type="button" data-account-tab="overview" title="Resumen" aria-label="Resumen"><svg><use href="#i-user"></use></svg></button>
+  <button type="button" data-account-tab="history" title="Mis jugadas" aria-label="Mis jugadas"><svg><use href="#i-ticket"></use></svg></button>
+  <button type="button" data-account-tab="wallet" title="Recargar saldo" aria-label="Recargar saldo"><svg><use href="#i-wallet"></use></svg></button>
+  <button type="button" data-account-tab="profile" title="Mi perfil" aria-label="Mi perfil"><svg><use href="#i-shield"></use></svg></button>
+  <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg><use href="#i-arrow"></use></svg></button>
+</div><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus créditos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Créditos disponibles</span><b id="accountBalance">10.00</b><small>Saldo virtual</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><div class="wallet-note"><svg><use href="#i-wallet"></use></svg><div><b>Tu billetera virtual</b><span>Administra tus créditos y disfruta tus jugadas. Las recargas en línea estarán disponibles al habilitar los medios de pago.</span></div><button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button></div><div class="account-panel referral-panel"><div class="panel-head"><h3>Invita a tus amigos</h3></div>
+  <p class="referral-description">Comparte tu enlace de invitación. Próximamente podrás obtener un beneficio por cada amigo que se registre y complete su primera recarga.</p>
+  <div class="referral-link"><input id="referralLink" type="text" value="Tu enlace de invitación" readonly aria-label="Mi enlace de invitación"><button id="copyReferral" type="button" class="btn btn-outline btn-mini">Copiar enlace</button></div>
+  <p class="referral-detail" id="referralCount">Invitaciones pendientes de activación</p>
+</div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
   <div class="panel-head"><h2>Recargar saldo</h2></div>
-  <p class="profile-info">Selecciona cuánto quieres recargar a tu billetera.</p>
+  <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 30. Al habilitarse el pago en línea podrás elegir un medio de pago disponible, incluido Yape, si la pasarela lo ofrece.</p>
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
       <button type="button" data-topup-amount="30" class="recharge-amount active" aria-pressed="true">S/ 30</button>
@@ -146,7 +163,7 @@
     <div class="recharge-total"><span>Importe solicitado</span><b id="rechargeSelected">S/ 30.00</b></div>
     <button type="button" class="btn btn-gold btn-full" id="rechargeGenerate">Generar orden de recarga <svg><use href="#i-arrow"></use></svg></button>
     <div class="recharge-order" id="rechargeOrder" role="status" aria-live="polite" hidden></div>
-    <p class="recharge-status-note">Las recargas con dinero real todavía no están habilitadas. Generar una orden no realiza ningún cobro ni aumenta el saldo.</p>
+
   </div>
 </div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div><div id="fullHistory"></div></div><div id="accountProfile" class="account-content"><h2>Mi perfil</h2><p class="profile-info">Completa tus datos personales y mantén tu cuenta actualizada.</p><form id="profileForm" class="profile-form">
               <div class="form-grid"><label class="field"><span>Nombres</span><input id="profileFirst" autocomplete="given-name" maxlength="70" required></label><label class="field"><span>Apellidos</span><input id="profileLast" autocomplete="family-name" maxlength="70" required></label></div>
@@ -187,6 +204,9 @@
     <button type="button" class="btn btn-gold btn-full" id="claimCoupon">Activar mi bono</button>
     <small>Promoción limitada a un bono por cuenta. Saldo virtual de demostración; no canjeable por dinero.</small>
   </div></dialog>
+  <div id="authBusyOverlay" class="auth-busy-overlay" hidden aria-live="polite" role="status">
+    <div class="auth-busy-box"><span class="auth-busy-spinner" aria-hidden="true"></span><strong id="authBusyTitle">Verificando tu cuenta…</strong><p>Estamos confirmando tu acceso a PremiumGol.</p></div>
+  </div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
