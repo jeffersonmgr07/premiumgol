@@ -44,6 +44,7 @@ function rpc(requestJson){
       'Se debe elegir una opción por partido.','Solo puedes usar de 1 a 1,000 créditos.',
       'Créditos insuficientes.','La selección de un partido ya no está disponible.',
       'El número de documento no es válido.','El número de WhatsApp no es válido.',
+      'Ingresa tu número de WhatsApp para registrarte.',
       'El tipo de documento no es válido.','La jugada ya fue registrada.','Esta jugada ya fue registrada en la jornada.',
       'Selecciona una jugada entre A y D.','Saldo virtual insuficiente.',
       'Ingresa un monto válido entre S/ 30 y S/ 10,000.',
