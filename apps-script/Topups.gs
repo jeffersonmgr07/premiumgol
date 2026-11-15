@@ -7,7 +7,7 @@
  */
 function pgMpConfig_(requireEnabled){
   const env=pgProp_('MP_ENV')==='production'?'production':'test';
-  const token=pgProp_('MP_ACCESS_TOKEN')||(env==='test'?pgProp_('MP_TEST_ACCESS_TOKEN'):'');
+  const token=env==='test'?pgProp_('MP_TEST_ACCESS_TOKEN'):pgProp_('MP_ACCESS_TOKEN');
   const collector=pgProp_('MP_COLLECTOR_ID');
   const enabled=pgProp_('MP_CHECKOUT_ENABLED')==='true';
   if(requireEnabled&&!enabled)pgErr_('El pago en línea todavía no está disponible.');
@@ -309,8 +309,8 @@ function testPremiumGolCheckoutConfiguration(){
   const props=PropertiesService.getScriptProperties();
   const id=pgProp_('SPREADSHEET_ID');
   const results={
-    tokenConfigured:Boolean(pgProp_('MP_ACCESS_TOKEN')||
-      (pgProp_('MP_ENV')!=='production'&&pgProp_('MP_TEST_ACCESS_TOKEN'))),
+    tokenConfigured:Boolean(pgProp_('MP_ENV')==='production'?pgProp_('MP_ACCESS_TOKEN'):
+      pgProp_('MP_TEST_ACCESS_TOKEN')),
     collectorConfigured:/^\d+$/.test(pgProp_('MP_COLLECTOR_ID')),
     mode:pgProp_('MP_ENV')==='production'?'production':'test',
     enabled:pgProp_('MP_CHECKOUT_ENABLED')==='true',
@@ -328,8 +328,7 @@ function testPremiumGolCheckoutConfiguration(){
 /** Solo información de diagnóstico; no registra ni imprime tokens. */
 function testPremiumGolMerchantId(){
   const mode=pgProp_('MP_ENV')==='production'?'production':'test';
-  const token=pgProp_('MP_ACCESS_TOKEN')||
-    (mode==='test'?pgProp_('MP_TEST_ACCESS_TOKEN'):'');
+  const token=mode==='test'?pgProp_('MP_TEST_ACCESS_TOKEN'):pgProp_('MP_ACCESS_TOKEN');
   if(!token)pgErr_('La conexión de pago todavía no está configurada.');
   const resp=UrlFetchApp.fetch('https://api.mercadolibre.com/users/me',{
     method:'get',muteHttpExceptions:true,
