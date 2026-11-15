@@ -1,3 +1,23 @@
+# Actualización de interfaz y catálogo · 14 de noviembre de 2026
+
+- Inicio: portada más breve («Haz de cada encuentro de fútbol una emoción entre patas»), botón Empezar a jugar y futbolista un poco más abajo; texto superior de plataforma deportiva oculto en móvil.
+- Quitada la franja de invitación redundante, títulos abreviados, y modo móvil con un solo ícono para ingresar/registrarse.
+- Logo oficial más grande, textos y navegación de blanco puro `#FFFFFF`. Se conserva el dorado `#F7C85D`; borde del modal de acceso en `#DBFF26` con resplandor animado suave.
+- Partidos destacados: tres mercados 1/X/2 con cuotas mostradas solo si existen, evento pulsable que abre su filtro dentro de «Apuestas deportivas». Si procede de API-FOOTBALL, se identifica como **solo consulta** y no puede registrarse jugada.
+- Sin conexión al backend la interfaz conserva ejemplos **marcados como demostración**, nunca presentados como cuotas reales.
+- `apps-script/SportsCatalog.gs` ahora incluye paginación limitada de cuotas previas y compatibilidad con la respuesta `bets` para cuotas en vivo. La información de Premium Live puede tener hasta una hora de caché: **no es adecuada para aceptar apuestas en vivo**.
+
+## Para activar acceso Google y datos API reales
+1. En `assets/config.js` coloca **solo** la URL `/exec` de tu implementación Apps Script y el **Client ID OAuth web** público de Google, nunca el secreto ni la clave deportiva.
+2. En Google Cloud, el cliente OAuth de tipo aplicación web debe autorizar el origen JavaScript `https://premiumgol.website` (sin barra final). En Apps Script, las propiedades `GOOGLE_CLIENT_ID` y `FRONTEND_ORIGIN=https://premiumgol.website` deben coincidir.
+3. En las propiedades privadas de Apps Script establece `API_SPORTS_KEY` y `API_SPORTS_CATALOG_MODE=preview`. La clave **no** debe aparecer en GitHub.
+4. Copia a tu proyecto Apps Script el nuevo contenido de `SportsCatalog.gs` y actualiza la implementación desde **Implementar → Administrar implementaciones → Editar → Nueva versión**. Verifica `testApiSportsConnection` y `testPremiumGolSportsCatalog`.
+5. La web estática `premiumgol.website` no puede por sí sola consultar una propiedad privada del Apps Script: necesita que `assets/config.js` apunte al despliegue correcto.
+
+No se habilitaron pagos con dinero real ni apuestas con cuotas de API. El modo `preview` es informativo; se necesitan controles y autorizaciones adicionales para operar apuestas reales.
+
+---
+
 # PremiumGol — actualización de la cartilla y vista deportiva (14 noviembre 2026)
 
 ## Cambios ya publicados en GitHub Pages
