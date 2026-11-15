@@ -1,3 +1,19 @@
+## Diagnóstico del enlace Sandbox — 15/11/2026
+
+Si el navegador sigue abriendo `https://sandbox.mercadopago.com.pe/...` aun cuando `MP_ENV=production`, comprueba primero lo siguiente:
+
+1. **Órdenes históricas.** El historial puede contener URLs de preferencias creadas en modo test antes de cambiar las credenciales. **No utilices «Pagar» en una orden antigua.** Desde la actualización de `Topups.gs` la web deja de devolver estos enlaces al estar en modo producción. Las órdenes antiguas se conservan para auditoría.
+2. **Versión publicada.** Reemplaza `Topups.gs` y `Main.gs` por sus versiones más recientes, guarda y publica la misma implementación de Apps Script con **Nueva versión**. Modificar solo las propiedades no reescribe los enlaces ya creados en Google Sheets.
+3. Ejecuta `testPremiumGolCheckoutOrigin`: informa `configuredMode`, `expectedCredentialProperty`, `historicalSandboxOrders`, sin imprimir el Access Token.
+4. Ejecuta `testPremiumGolMerchantId` con `MP_ENV=production`, comprueba `collectorMatches:true`. El ID obtenido anteriormente en test puede ser el de otra cuenta y debe corregirse si no coincide.
+5. Para probar la configuración actual, entra a **Mi cuenta → Recargar saldo → Generar orden** y crea **una orden nueva**. No reabras enlaces guardados. El checkout de producción no debe usar el dominio `sandbox.`.
+6. Si una preferencia nueva sigue redirigiendo a Sandbox, comprueba la habilitación de las credenciales productivas en Mercado Pago y la cuenta real a la que pertenece el token. Una cuenta de pruebas puede usar un token con prefijo `APP_USR-`; el prefijo por sí solo no garantiza que esa cuenta sea comercial o apta para cobros reales.
+7. El nombre comercial que se muestra en Checkout Pro depende de la configuración de la cuenta de Mercado Pago. Si aparece **My Cusco Trip**, revisa la cuenta receptora y sus datos comerciales.
+
+**Seguridad:** cambia o regenera las claves privadas si alguna captura compartida reveló sus valores; el API key de deportes debe rotarse porque apareció visible en una captura.
+
+---
+
 # Mercado Pago en PremiumGol · Apps Script como único backend de pagos
 
 **Actualización: 15 de noviembre de 2026.** La web pública sigue en **https://premiumgol.website/** (GitHub Pages), con Google Login y correo OTP. El checkout se genera y verifica exclusivamente desde el **mismo Apps Script que ya administra los usuarios**. No requiere Cloud Run, Firestore, Secret Manager, un servidor aparte ni otra página de checkout. La interfaz dirige al comprador a Checkout Pro de Mercado Pago.
