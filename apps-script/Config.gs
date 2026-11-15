@@ -12,7 +12,8 @@ const PG = Object.freeze({
     sessions:['tokenHash','uid','createdAt','expiresAt','revokedAt'],
     plays:['playId','uid','type','roundId','picksJson','stake','combinedOdds','potentialReturn','createdAt','note'],
     ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt'],
-    topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt']
+    topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt','preferenceId','checkoutUrl','paymentId','paidAt','lastCheckAt'],
+    payments_ledger:['entryId','uid','orderId','paymentId','deltaPEN','type','createdAt']
   },
   INITIAL_CREDITS:10,
   MAX_STAKE:1000,
@@ -44,6 +45,17 @@ function setupPremiumGol(){
     if(sh.getLastRow()===0){
       sh.getRange(1,1,1,PG.SHEETS[name].length).setValues([PG.SHEETS[name]]);
       sh.setFrozenRows(1);
+    }else if(name==='topup_requests'){
+      const original=PG.SHEETS.topup_requests.slice(0,6);
+      const header=sh.getRange(1,1,1,6).getValues()[0].map(String);
+      if(JSON.stringify(header)!==JSON.stringify(original))
+        pgErr_('El esquema de órdenes de recarga no coincide; revisa la hoja.');
+      if(sh.getMaxColumns()<PG.SHEETS.topup_requests.length)
+        sh.insertColumnsAfter(sh.getMaxColumns(),PG.SHEETS.topup_requests.length-sh.getMaxColumns());
+      const extras=sh.getRange(1,7,1,5).getValues()[0].map(String);
+      if(extras.some((v,i)=>v&&v!==PG.SHEETS.topup_requests[i+6]))
+        pgErr_('La hoja de recargas tiene columnas adicionales; migración detenida.');
+      sh.getRange(1,7,1,5).setValues([PG.SHEETS.topup_requests.slice(6)]);
     }else if(name==='users'){
       const current=sh.getRange(1,1,1,12).getValues()[0].map(String);
       if(JSON.stringify(current)!==JSON.stringify(PG.SHEETS.users.slice(0,12))){
@@ -80,6 +92,13 @@ function pgObject_(name,values){return Object.fromEntries(PG.SHEETS[name].map((k
 function pgSheetValue_(value){return typeof value==='string'&&/^[=+@-]/.test(value)?String.fromCharCode(39)+value:value;}
 function pgWrite_(name,item){pgSheet_(name).appendRow(PG.SHEETS[name].map(key=>pgSheetValue_(item[key]===undefined?'':item[key])));}
 function pgUpdate_(name,rowIndex,obj){const sh=pgSheet_(name);const cols=PG.SHEETS[name];const prev=sh.getRange(rowIndex,1,1,cols.length).getValues()[0];sh.getRange(rowIndex,1,1,cols.length).setValues([cols.map((key,i)=>pgSheetValue_(obj[key]===undefined?prev[i]:obj[key]))]);}
+/** Libro de dinero separado de saldo de demostración; nunca inferir de la URL. */
+function pgMoneyBalance_(uid){
+  if(!pgProp_('SPREADSHEET_ID'))return 0;
+  return Math.round(pgRows_('payments_ledger').rows
+    .filter(r=>String(r[1])===String(uid))
+    .reduce((sum,row)=>sum+Math.round(Number(row[4]||0)*100),0))/100;
+}
 function pgPublicUser_(u){
   return {id:String(u.uid),email:String(u.email),firstName:String(u.firstName),
     lastName:String(u.lastName),countryCode:String(u.countryCode||'+51'),
@@ -100,10 +119,12 @@ function pgSnapshot_(row){
     if(p.type!=='gol'||p.roundId!==PG.ROUND_ID)return;
     try{const data=JSON.parse(p.picksJson);if(['A','B','C','D'].includes(data.slot)&&Array.isArray(data.picks))golSlots[data.slot]={picks:data.picks,id:p.playId};}catch(e){}
   });
+  // El dinero confirmado se lleva en libro independiente de los créditos de prueba.
+  const paidBalancePEN=pgMoneyBalance_(String(user.uid));
   const couponClaimed=pgRows_('ledger').rows.some(r=>String(r[1])===String(user.uid)&&String(r[3])==='BONO_PREMIUM_50');
   const joined=pgRows_('users').rows.filter(r=>String(r[14]||'')===String(user.uid)).length;
   return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,
-    history,golSlots,couponClaimed,referralCount:joined};
+    history,golSlots,couponClaimed,referralCount:joined,paidBalancePEN};
 }
 
 /** Verificación sin datos personales ni claves: ejecutar desde el editor. */
