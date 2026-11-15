@@ -101,3 +101,21 @@ function pgSnapshot_(row){
   return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,
     history,golSlots,couponClaimed,referralCount:joined};
 }
+
+/** Verificación sin datos personales ni claves: ejecutar desde el editor. */
+function testPremiumGolAccountSetup(){
+  const users=pgSheet_('users');
+  const expected=PG.SHEETS.users;
+  const headers=users.getRange(1,1,1,expected.length).getValues()[0].map(String);
+  const ready=JSON.stringify(headers)===JSON.stringify(expected);
+  const result={
+    initialVirtualCredits:PG.INITIAL_CREDITS,
+    accountSchemaReady:ready,
+    hasAvatarField:headers.includes('avatarUrl'),
+    hasInviteCodeField:headers.includes('inviteCode'),
+    invitationBonusActive:false,
+    existingUserBalancesUnchanged:true
+  };
+  console.log('PremiumGol · Verificación de cuentas: '+JSON.stringify(result));
+  return result;
+}
