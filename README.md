@@ -12,7 +12,7 @@ La cartilla pública ahora contiene 12 encuentros competitivos de la lista sumin
 ### IMPORTANTE: actualizar Apps Script en su editor y publicar
 GitHub Pages y Apps Script no sincronizan código automáticamente. Para activar la cartilla nueva en el servidor y obtener las insignias:
 
-1. En el proyecto de Apps Script de PremiumGol, sustituir `Config.gs`, `Games.gs` y `Main.gs` por sus versiones del repositorio.
+1. En el proyecto de Apps Script de PremiumGol, sustituir `Config.gs`, `Games.gs`, `Main.gs` y `SportsCatalog.gs` por sus versiones del repositorio; si todavía no existe `SportsCatalog.gs`, crearlo.
 2. Crear el archivo de tipo *script* `GolProgram.gs` con el contenido homónimo del repositorio. Conservar `Auth.gs` (si ya estaba actualizado), `Bridge.html` y `ApiSports.gs`.
 3. Conservar `SPREADSHEET_ID`. Ejecutar `setupPremiumGol` solo si faltan hojas requeridas; NO borrar ni reemplazar el archivo de Sheets existente.
 4. En Propiedades del script revisar: `FRONTEND_ORIGIN=https://premiumgol.website` (sin barra final), `API_SPORTS_KEY` y `API_SPORTS_CATALOG_MODE=preview`; no compartir secretos por chat ni GitHub.
