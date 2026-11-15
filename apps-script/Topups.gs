@@ -52,10 +52,16 @@ function pgTopupAmount_(value){
     pgErr_('Ingresa un monto válido entre S/ 30 y S/ 10,000.');
   return c;
 }
+/** No presentar enlaces sandbox guardados cuando el servidor está en producción. */
+function pgMpIsSandboxUrl_(value){
+  return /^https:\/\/sandbox\./i.test(String(value||''));
+}
 function pgMpPublicOrder_(o){
   const created=o.createdAt instanceof Date?o.createdAt.toISOString():String(o.createdAt||'');
+  const checkout=pgMpUrl_(o.checkoutUrl);
+  const safeCheckout=pgProp_('MP_ENV')==='production'&&pgMpIsSandboxUrl_(checkout)?'':checkout;
   return {ok:true,orderId:String(o.orderId),amount:Number(o.amountPEN),
-    status:String(o.status||'PENDING'),checkoutUrl:pgMpUrl_(o.checkoutUrl),
+    status:String(o.status||'PENDING'),checkoutUrl:safeCheckout,
     createdAt:created,paidAt:String(o.paidAt||'')};
 }
 function pgMpPreference_(o,config){
@@ -73,7 +79,9 @@ function pgMpPreference_(o,config){
   };
   const data=pgMpHttp_('/checkout/preferences','post',body,config);
   const url=pgMpUrl_(data.init_point);
-  if(!data.id||!url)pgErr_('Mercado Pago no devolvió un enlace válido.');
+  if(!data.id||!url||
+     (config.env==='production'&&pgMpIsSandboxUrl_(url)))
+    pgErr_('Mercado Pago no devolvió un enlace válido.');
   return {preferenceId:String(data.id),checkoutUrl:url};
 }
 /** Crea una orden idempotente y su preferencia, o devuelve la existente.
@@ -95,8 +103,13 @@ function pgCreateTopupRequest_(x){
          pgTopupAmount_(order.amountPEN)!==amountCents)
         pgErr_('Solicitud inválida.');
       orderIndex=existing.index;
-      if(order.checkoutUrl)return {...pgMpPublicOrder_(order),
-        paidBalancePEN:pgMoneyBalance_(user.uid)};
+      if(order.checkoutUrl){
+        // Nunca transformar ni reabrir una preferencia sandbox antigua.
+        if(config.env==='production'&&pgMpIsSandboxUrl_(order.checkoutUrl))
+          pgErr_('Esta orden fue creada en pruebas. Genera una recarga nueva.');
+        return {...pgMpPublicOrder_(order),
+          paidBalancePEN:pgMoneyBalance_(user.uid)};
+      }
       if(order.status==='APPROVED')return {...pgMpPublicOrder_(order),
         paidBalancePEN:pgMoneyBalance_(user.uid)};
     }else{
@@ -117,7 +130,9 @@ function pgCreateTopupRequest_(x){
           const detail=pgMpHttp_('/checkout/preferences/'+encodeURIComponent(String(item.id)),
             'get',null,config);
           const link=pgMpUrl_(detail.init_point);
-          if(link){preference={preferenceId:String(item.id),checkoutUrl:link};break;}
+          if(link&&!(config.env==='production'&&pgMpIsSandboxUrl_(link))){
+            preference={preferenceId:String(item.id),checkoutUrl:link};break;
+          }
         }
       }
     }catch(e){
@@ -342,5 +357,25 @@ function testPremiumGolMerchantId(){
   const id=String(data.id||'');
   const result={collectorId:id,collectorMatches:id===pgProp_('MP_COLLECTOR_ID'),mode};
   console.log('Mercado Pago · Cuenta receptora: '+JSON.stringify(result));
+  return result;
+}
+
+/** Diagnóstico de órdenes antiguas sin publicar tokens ni IDs de compradores. */
+function testPremiumGolCheckoutOrigin(){
+  const mode=pgProp_('MP_ENV')==='production'?'production':'test';
+  const token=mode==='production'?pgProp_('MP_ACCESS_TOKEN'):pgProp_('MP_TEST_ACCESS_TOKEN');
+  const data=pgRows_('topup_requests').rows;
+  const oldSandbox=data.filter(r=>pgMpIsSandboxUrl_(r[7])).length;
+  const result={
+    configuredMode:mode,
+    expectedCredentialProperty:mode==='production'?'MP_ACCESS_TOKEN':'MP_TEST_ACCESS_TOKEN',
+    credentialConfigured:Boolean(token),
+    collectorConfigured:/^\d+$/.test(pgProp_('MP_COLLECTOR_ID')),
+    checkoutEnabled:pgProp_('MP_CHECKOUT_ENABLED')==='true',
+    historicalSandboxOrders:oldSandbox,
+    blockedHistoricalSandboxLinks:mode==='production',
+    recommendation:'Crea una orden nueva despues de actualizar la implementacion.'
+  };
+  console.log('PremiumGol · Diagnóstico de checkout: '+JSON.stringify(result));
   return result;
 }
