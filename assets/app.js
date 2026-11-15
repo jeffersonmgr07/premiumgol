@@ -486,11 +486,23 @@
   function renderTopupHistory(){
     const holder=$('#topupHistory');
     if(!holder)return;
-    holder.innerHTML=recentTopupOrders.length?recentTopupOrders.map(o=>{
+    holder.innerHTML=recentTopupOrders.length?recentTopupOrders.map((o,i)=>{
       const url=o.status==='APPROVED'?'':mpSafeUrl(o.checkoutUrl);
       const id=String(o.orderId||'');
-      return '<div class="topup-history-item"><div><strong>S/ '+fmt2(o.amount)+
-        '</strong><span>'+esc(paymentStatusLabel(o.status))+
+      const created=new Date(o.createdAt);
+      const dateLabel=Number.isFinite(created.getTime())
+        ?new Intl.DateTimeFormat('es-PE',{
+          timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric',
+          hour:'numeric',minute:'2-digit',hour12:true
+        }).format(created)
+        :'Fecha no disponible';
+      return '<div class="topup-history-item"><div class="topup-history-details">'+
+        '<strong>S/ '+fmt2(o.amount)+'</strong>'+
+        (i===0?'<small class="topup-history-latest">Más reciente</small>':'')+
+        '<time class="topup-history-date"'+
+        (Number.isFinite(created.getTime())?' datetime="'+esc(created.toISOString())+'"':'')+
+        '>Generada: '+esc(dateLabel)+'</time>'+
+        '<span class="topup-history-status">'+esc(paymentStatusLabel(o.status))+
         '</span></div><div class="topup-history-actions">'+
         '<button type="button" data-topup-check="'+esc(id)+
         '" class="btn btn-outline btn-mini">Verificar</button>'+
@@ -941,6 +953,47 @@
   renderAll();
   refreshCoupon();setInterval(refreshCoupon,15000);
   initBridge();
+  // La actividad real del usuario prolonga su sesión; las consultas automáticas
+  // no la prolongan. El servidor verifica la inactividad en cada operación.
+  function onSessionInteraction(){
+    if(!sessionToken)return;
+    if(sessionExpired()){signout('idle');return;}
+    const now=Date.now();
+    if(now-lastSessionInteraction>=SESSION_ACTIVITY_THROTTLE_MS)saveSessionActivity(true);
+    if(hasUser()&&document.visibilityState==='visible'&&
+       now-lastSessionVerification>=SESSION_HEARTBEAT_MS)refreshAccount();
+  }
+  document.addEventListener('pointerdown',onSessionInteraction,{passive:true});
+  document.addEventListener('keydown',onSessionInteraction);
+  document.addEventListener('scroll',onSessionInteraction,{passive:true});
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState!=='visible'||!sessionToken)return;
+    if(sessionExpired())signout('idle');
+    else if(hasUser())refreshAccount();
+  });
+  window.addEventListener('focus',()=>{
+    if(sessionExpired())signout('idle');
+  });
+  window.addEventListener('storage',e=>{
+    if(e.key!==SESSION_KEY||!sessionToken)return;
+    if(e.newValue===null){
+      // Sincroniza el cierre de sesión entre pestañas del mismo navegador.
+      const old=sessionToken;
+      sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
+      recentTopupOrders=[];playHistory=[];golLocked={};
+      lastSessionInteraction=0;sessionCreatedAt=0;
+      try{sessionStorage.removeItem(LEGACY_SESSION_KEY);}catch{}
+      renderAll();showView('home');
+      toast('Has cerrado sesión en otra pestaña.');
+    }
+  });
+  setInterval(()=>{
+    if(!sessionToken)return;
+    if(sessionExpired()){signout('idle');return;}
+    if(hasUser()&&document.visibilityState==='visible'&&
+       Date.now()-lastSessionInteraction<SESSION_HEARTBEAT_MS&&
+       Date.now()-lastSessionVerification>=SESSION_HEARTBEAT_MS)refreshAccount();
+  },60000);
   if(sessionToken)refreshAccount();
   // Consultas deportivas bajo demanda, no al iniciar sesión.
   // Esto evita bloquear el login mientras se consulta la API en el plan Free.
