@@ -53,9 +53,10 @@ function pgTopupAmount_(value){
   return c;
 }
 function pgMpPublicOrder_(o){
+  const created=o.createdAt instanceof Date?o.createdAt.toISOString():String(o.createdAt||'');
   return {ok:true,orderId:String(o.orderId),amount:Number(o.amountPEN),
     status:String(o.status||'PENDING'),checkoutUrl:pgMpUrl_(o.checkoutUrl),
-    paidAt:String(o.paidAt||'')};
+    createdAt:created,paidAt:String(o.paidAt||'')};
 }
 function pgMpPreference_(o,config){
   const origin=pgProp_('FRONTEND_ORIGIN').replace(/\/+$/,'');
@@ -238,10 +239,11 @@ function pgListTopupOrders_(x){
   const userRow=pgRequireSession_(x.sessionToken);
   const user=pgObject_('users',userRow.values);
   const rows=pgRows_('topup_requests').rows.filter(r=>String(r[1])===String(user.uid));
-  return {ok:true,orders:rows.slice(-15).reverse().map(r=>{
-    const o=pgObject_('topup_requests',r);
-    return {...pgMpPublicOrder_(o),createdAt:String(o.createdAt)};
-  }),paidBalancePEN:pgMoneyBalance_(user.uid)};
+  const recent=rows.map(r=>pgObject_('topup_requests',r))
+    .sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime())
+    .slice(0,15);
+  return {ok:true,orders:recent.map(pgMpPublicOrder_),
+    paidBalancePEN:pgMoneyBalance_(user.uid)};
 }
 /** Activador periódico, también recupera pagos completados horas después.
  * Máximo de 8 órdenes por ejecución para limitar el consumo de API.
