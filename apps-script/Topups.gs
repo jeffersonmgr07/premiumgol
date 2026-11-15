@@ -7,7 +7,7 @@
  */
 function pgMpConfig_(requireEnabled){
   const env=pgProp_('MP_ENV')==='production'?'production':'test';
-  const token=pgProp_('MP_ACCESS_TOKEN');
+  const token=pgProp_('MP_ACCESS_TOKEN')||(env==='test'?pgProp_('MP_TEST_ACCESS_TOKEN'):'');
   const collector=pgProp_('MP_COLLECTOR_ID');
   const enabled=pgProp_('MP_CHECKOUT_ENABLED')==='true';
   if(requireEnabled&&!enabled)pgErr_('El pago en línea todavía no está disponible.');
@@ -71,7 +71,7 @@ function pgMpPreference_(o,config){
     payer:{email:String(o.email||'')}
   };
   const data=pgMpHttp_('/checkout/preferences','post',body,config);
-  const url=pgMpUrl_(config.env==='test'?(data.sandbox_init_point||data.init_point):data.init_point);
+  const url=pgMpUrl_(data.init_point);
   if(!data.id||!url)pgErr_('Mercado Pago no devolvió un enlace válido.');
   return {preferenceId:String(data.id),checkoutUrl:url};
 }
@@ -115,8 +115,7 @@ function pgCreateTopupRequest_(x){
         if(String(item.external_reference)===reference&&item.id){
           const detail=pgMpHttp_('/checkout/preferences/'+encodeURIComponent(String(item.id)),
             'get',null,config);
-          const link=pgMpUrl_(config.env==='test'?
-            (detail.sandbox_init_point||detail.init_point):detail.init_point);
+          const link=pgMpUrl_(detail.init_point);
           if(link){preference={preferenceId:String(item.id),checkoutUrl:link};break;}
         }
       }
@@ -284,7 +283,7 @@ function testPremiumGolCheckoutConfiguration(){
   const props=PropertiesService.getScriptProperties();
   const id=pgProp_('SPREADSHEET_ID');
   const results={
-    tokenConfigured:Boolean(pgProp_('MP_ACCESS_TOKEN')),
+    tokenConfigured:Boolean(pgProp_('MP_ACCESS_TOKEN')||pgProp_('MP_TEST_ACCESS_TOKEN')),
     collectorConfigured:/^\d+$/.test(pgProp_('MP_COLLECTOR_ID')),
     mode:pgProp_('MP_ENV')==='production'?'production':'test',
     enabled:pgProp_('MP_CHECKOUT_ENABLED')==='true',
@@ -295,4 +294,20 @@ function testPremiumGolCheckoutConfiguration(){
   };
   console.log('PremiumGol Mercado Pago: '+JSON.stringify(results));
   return results;
+}
+
+/** Solo información de diagnóstico; no registra ni imprime tokens. */
+function testPremiumGolMerchantId(){
+  const cfg=pgMpConfig_(false);
+  const resp=UrlFetchApp.fetch('https://api.mercadolibre.com/users/me',{
+    method:'get',muteHttpExceptions:true,
+    headers:{Authorization:'Bearer '+cfg.token}
+  });
+  if(resp.getResponseCode()!==200)
+    pgErr_('No fue posible consultar el identificador de Mercado Pago.');
+  const data=JSON.parse(resp.getContentText()||'{}');
+  const id=String(data.id||'');
+  const result={collectorId:id,collectorMatches:id===cfg.collector,mode:cfg.env};
+  console.log('Mercado Pago · Cuenta receptora: '+JSON.stringify(result));
+  return result;
 }
