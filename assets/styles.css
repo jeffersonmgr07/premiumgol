@@ -837,3 +837,32 @@ body.auth-request-busy{overflow:hidden}
  .auth-busy-google{animation:none}
  .auth-busy-spinner{animation:none}
 }
+
+/* PremiumGol V28 · Billetera de recargas verificadas */
+.paid-wallet-balance{
+  display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  border:1px solid #DBFF2670;border-radius:14px;
+  background:linear-gradient(120deg,#132536,#0b182c);padding:18px 21px;
+  margin-bottom:18px;max-width:700px;
+}
+.paid-wallet-balance>span{font-size:12px;font-weight:800;color:#fff}
+.paid-wallet-balance>strong{font-size:26px;font-weight:900;color:#DBFF26}
+.paid-wallet-balance>small{color:#fff;font-size:11px;opacity:.9}
+.topup-history{margin-top:18px;border-top:1px solid #33475e;padding-top:14px}
+.topup-history h3{font-size:14px;margin:0 0 11px;color:#fff}
+.topup-history-list{display:flex;flex-direction:column;gap:8px}
+.topup-history-item{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:#101e30;border:1px solid #394861;border-radius:11px;padding:11px 13px;
+}
+.topup-history-item>div:first-child{display:flex;flex-direction:column;gap:5px}
+.topup-history-item strong{font-size:14px;color:#fff}
+.topup-history-item span{font-size:11px;color:#DBFF26}
+.topup-history-actions{display:flex;flex-wrap:wrap;gap:6px}
+.topup-history-actions .btn{padding:8px 10px;font-size:11px;min-height:34px}
+@media(max-width:480px){
+  .paid-wallet-balance{padding:14px}
+  .topup-history-item{align-items:flex-start;flex-direction:column}
+  .topup-history-actions{width:100%}
+  .topup-history-actions .btn{flex:1}
+}
