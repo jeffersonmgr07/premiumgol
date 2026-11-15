@@ -14,6 +14,11 @@ function pgGolTeamLogo_(team){
 }
 function pgGolCrests_(){
   if(!pgProp_('API_SPORTS_KEY'))return {};
+  const access=pgSportsPlanInfo_();
+  if(String(access.plan).toLowerCase()==='free'){
+    console.warn('Escudos de la jornada 2026: la consulta por fixtures está limitada por el plan Free.');
+    return {};
+  }
   return pgSportsCached_('premiumgol:gol-logos:20261118-v1',21600,()=>{
     const found={};
     const dates=['2026-11-18','2026-11-19','2026-11-20'];
