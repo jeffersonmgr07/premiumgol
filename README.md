@@ -1,3 +1,15 @@
+## Actualización: Google, cartilla y recargas — 15/11/2026
+
+- La verificación de Google utiliza ahora un diálogo modal bloqueante con G pulsante, indicador de giro y mensajes de estado; se libera tras respuesta o error. Se evita abrir otro login durante la restauración de una sesión válida.
+- El cierre de sesión desactiva la selección automática de Google; la pantalla de elección de cuentas y los consentimientos dependen del proveedor.
+- En móvil, el menú de usuario se ancla al botón de la barra inferior.
+- La cartilla de 12 partidos cuesta **5 créditos virtuales** por jugada, tanto en frontend como en `PG.GOL_STAKE` del backend. Para aplicar el descuento correcto, actualizar `apps-script/Config.gs` en el despliegue de Apps Script.
+- El enlace «Ver reglas y condiciones» muestra las reglas de pronóstico y clasificación. Los bonos de 11 y 10 aciertos siguen como propuestas, no premios garantizados.
+- Las solicitudes de recarga se muestran como órdenes pendientes en badges, sin exponer toda la referencia al jugador. No hay cobros ni abonos reales.
+- Nuevo archivo `apps-script/MercadoPagoTest.gs`: prueba **manual** de conectividad a Checkout Pro con credenciales del entorno Test; no se expone por RPC ni acredita saldo.
+- Instrucciones: [Mercado Pago (prueba técnica)](docs/mercadopago-pruebas-20261115.md) y [Arquitectura de pagos](docs/mercadopago-integracion.md).
+
+---
 ## Corrección del retorno Google y assets de marca · 15/11/2026
 
 **GitHub Pages:** Se corrigieron dos errores de JavaScript que detenían `renderAll()` antes de `initBridge()`: en `renderTopup()` y `renderAccount()`, `querySelector` devolvía un solo elemento y el programa intentaba ejecutar `.forEach()` sobre él. Ambos usan ahora `document.querySelectorAll()`. Google Identity Services permanece con el botón oficial (flujo `popup`); el modal muestra «Verificando tu cuenta de Google…» durante el intercambio del ID token con Apps Script y exhibe un error visible si el servidor rechaza la sesión. Solo se cierra el modal cuando la sesión se devuelve correctamente.
@@ -193,7 +205,7 @@ El modo `preview` usa `fixtures?next=50`, `odds` para el día actual y siguiente
 
 - Banner superior: texto animado de derecha a izquierda y firma «Una experiencia de PremiumLott» alineada al contenedor de la cabecera.
 - **Cupón Premium 50 BW:** aparece exclusivamente cuando la hora de Perú coincide con el minuto (00:00, 01:01, 02:02... 23:23), durante los **primeros cinco minutos** de ese intervalo. Ejemplos: 18:18–18:22. Clic abre una ventana y, al iniciar sesión, activa **50 créditos de bono virtual**, **máximo una vez por cuenta**. El backend verifica horario y unicidad; no se puede canjear por dinero.
-- **PremiumGol:** 12 partidos (1/X/2), selecciones independientes A, B, C y D. Cada una se guarda una sola vez por jornada; el servidor descuenta **3 créditos virtuales** (equivalentes a S/ 3 simulados en la pantalla) y conserva historial, resumen y saldo. No hay apuestas con soles reales.
+- **PremiumGol:** 12 partidos (1/X/2), selecciones independientes A, B, C y D. Cada una se guarda una sola vez por jornada; el servidor descuenta **5 créditos virtuales** (equivalentes a S/ 3 simulados en la pantalla) y conserva historial, resumen y saldo. No hay apuestas con soles reales.
 - Eliminadas las franjas introductorias grandes de PremiumGol, Apuestas deportivas y Premium Live; quedan sus títulos de sección y textos solicitados.
 - Modales: logotipo oficial completo en lugar del círculo anterior. Se dejó `assets/premiumgol-modal-logo.png` como archivo independiente para sustituirlo sin cambiar HTML cuando esté disponible la nueva imagen de modal; la versión actual usa **una copia intacta del logo oficial anterior**.
 - Botón **Continuar con Google**: se renderiza únicamente con Google Identity Services al configurar `GOOGLE_CLIENT_ID`; no hay botón imitado que simule Google sin conexión.
@@ -213,7 +225,7 @@ Esta etapa mantiene créditos **ficticios**. Si deseas asignar 50 créditos virt
 
 PremiumGol es la marca deportiva de PremiumLott. Esta entrega conserva la portada de estadio nocturno y el diseño azul oscuro/dorado del prototipo anterior, con las siguientes secciones:
 
-- **PremiumGol:** cartilla de 12 partidos, con cuatro jugadas independientes A, B, C y D (3 créditos virtuales cada una), un pronóstico por encuentro: **1 = local, X = empate, 2 = visita**. Se habilita **Colocar jugada** después de completar los 12.
+- **PremiumGol:** cartilla de 12 partidos, con cuatro jugadas independientes A, B, C y D (5 créditos virtuales cada una), un pronóstico por encuentro: **1 = local, X = empate, 2 = visita**. Se habilita **Colocar jugada** después de completar los 12.
 - **Apuestas deportivas:** próximos encuentros, mercado 1/X/2, filtros por equipo, liga y fecha, orden por liga/fecha/equipo y cupón con cuotas.
 - **Premium Live:** partidos en vivo y su cupón de créditos virtuales.
 - **Mi cuenta:** saldos, historial, datos de perfil y documentos opcionales para completar después.
