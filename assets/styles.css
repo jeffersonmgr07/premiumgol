@@ -512,3 +512,85 @@
 @media(prefers-reduced-motion:reduce){
  .gol-fixtures .result-option{transition:none}
 }
+
+
+/* PremiumGol V23 · Diseño de cartilla y catálogo disponible */
+/* Badges: abreviaciones visibles solo en móvil. */
+.gol-info-badge .badge-short{display:none}
+.gol-info-badge .badge-long{display:inline}
+.gol-info-badge{white-space:nowrap}
+.gol-info-badges{flex-wrap:nowrap;gap:8px}
+
+/* Cartilla de PC: números destacados y partidos compactos. */
+.gol-fixtures .fixture-number{
+  width:34px;height:34px;min-width:34px;
+  color:#DBFF26!important;border-color:#DBFF26a6;
+  background:#DBFF2614;font:900 16px var(--display);
+  box-shadow:0 0 9px #DBFF261e;
+}
+@media(min-width:901px){
+  .gol-fixtures .gol-fixture{
+    grid-template-columns:35px minmax(0,1fr) 165px;
+    min-height:76px;gap:9px;padding:8px 11px;
+  }
+  .gol-fixtures .gol-fixture .fixture-main{min-width:0}
+  .gol-fixtures .gol-fixture .gol-teams-row{
+    width:min(100%,440px);margin:0;
+    display:grid;grid-template-columns:minmax(115px,1fr) 26px minmax(115px,1fr);
+    gap:8px;align-items:center;
+  }
+  .gol-fixtures .gol-team-home{justify-content:flex-start}
+  .gol-fixtures .gol-team-away{justify-content:flex-start;padding-left:0}
+  .gol-fixtures .gol-team strong{font-size:12px;text-align:left}
+  .gol-fixtures .gol-versus{font-size:11px;text-align:center}
+  .gol-fixtures .gol-team-crest{width:29px;height:29px;min-width:29px}
+  .gol-fixtures .gol-fixture-meta{margin-bottom:5px}
+  .gol-fixtures .result-option{min-height:40px}
+  .gol-fixtures .gol-league-badge{font-size:11px;padding:4px 8px}
+}
+@media(max-width:900px){
+  .gol-fixtures .fixture-number{width:29px;height:29px;min-width:29px;font-size:14px}
+}
+@media(max-width:720px){
+  .gol-info-badge .badge-short{display:inline}
+  .gol-info-badge .badge-long{display:none}
+  .gol-info-badges{
+    display:flex;flex-wrap:nowrap;align-items:center;
+    gap:5px;width:100%;max-width:100%;overflow:visible;
+  }
+  .gol-info-badge{
+    padding:6px 6px;gap:4px;min-width:0;
+    font-size:clamp(8px,2.1vw,10px);min-height:29px;
+    white-space:nowrap;letter-spacing:-.2px;
+  }
+  .gol-info-badge svg{width:12px;height:12px}
+  .gol-info-pot b{font-size:clamp(9px,2.3vw,11px)}
+  .gol-fixtures .fixture-number{
+    width:29px;height:29px;min-width:29px;font-size:14px
+  }
+}
+@media(max-width:375px){
+  .gol-info-badges{gap:3px}
+  .gol-info-badge{padding:5px 4px;gap:3px;font-size:8px}
+  .gol-info-badge svg{width:10px;height:10px}
+  .gol-info-pot b{font-size:9px}
+}
+
+/* Estado accesible de carga o ausencia de encuentros. */
+.premium-empty-sports{
+  padding:48px 20px 46px;text-align:center;
+  color:#fff;background:#112036;border:1px solid #35475f;
+  border-radius:16px;min-height:185px;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;
+}
+.premium-empty-sports h3{color:#fff;font:850 19px var(--display);margin:0}
+.premium-empty-sports p{font-size:13px;color:#fff;margin:0 0 9px;max-width:380px;line-height:1.65}
+.premium-empty-sports .btn{margin:7px 0 0}
+.sports-loader{
+  display:inline-block;width:28px;height:28px;border-radius:50%;
+  border:2px solid #DBFF2660;border-top-color:#DBFF26;
+  animation:pgSportsLoading 1s linear infinite;
+}
+@keyframes pgSportsLoading{to{transform:rotate(360deg)}}
+.live-banner[hidden]{display:none!important}
+@media(prefers-reduced-motion:reduce){.sports-loader{animation:none}}
