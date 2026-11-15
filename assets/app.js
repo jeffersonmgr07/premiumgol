@@ -550,8 +550,9 @@
   refreshCoupon();setInterval(refreshCoupon,15000);
   initBridge();
   if(sessionToken)refreshAccount();
-  loadCatalog();
-  loadGolProgram();
+  // Primero el catálogo deportivo, después los escudos, para no competir
+  // por el bloqueo de consulta compartido de Google Apps Script.
+  loadCatalog().finally(()=>loadGolProgram());
   document.addEventListener('error',e=>{if(e.target?.matches?.('img.gol-crest-img'))e.target.remove();},true);
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
   // El navegador consulta el caché del servidor; no realiza solicitudes a API-FOOTBALL.
