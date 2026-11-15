@@ -12,23 +12,27 @@ const PG_LIVE=[
   ['l2','Academia Azul','Valle Verde','Copa Estelar',31,0,0,2.42,2.98,3.11],
   ['l3','Cóndor Club','Marineros','Liga Continental',82,1,2,7.40,4.80,1.31]
 ];
-/** Cartilla seleccionada a partir de los 14 partidos proporcionados por el propietario.
- * Los nombres no implican que los partidos estén próximos: fecha y disponibilidad requieren verificación externa.
+/** Jornada PremiumGol 18–20 nov 2026.
+ * Horarios en America/Lima contrastados con sitios de ligas/clubes (15 nov 2026).
+ * Partidos de la cartilla proporcionada por el propietario. Sin cuotas inventadas.
+ * Excluidos Cruzeiro–Palmeiras (comienza al cierre) e IFK Norrköping–KuPS (amistoso).
  */
 const PG_GOL_FIXTURES=[
-  ['España','Inglaterra','Selecciones'],
-  ['Bélgica','Italia','Selecciones'],
-  ['Letonia','Armenia','Selecciones'],
-  ['Panamá','Curazao','Selecciones'],
-  ['Alianza Atlético','Sporting Cristal','Fútbol peruano'],
-  ['Comerciantes Unidos','Sport Boys','Fútbol peruano'],
-  ['Juan Pablo II','Deportivo Garcilaso','Fútbol peruano'],
-  ['Eldense','Sabadell','Fútbol español'],
-  ['Amarante','Felgueiras','Fútbol portugués'],
-  ['Maastricht','Vitesse','Fútbol neerlandés'],
-  ['New Mexico United','Sacramento Republic','Fútbol estadounidense'],
-  ['Escocia Sub-21','Estados Unidos Sub-21','Selecciones Sub-21']
-].map((r,i)=>({id:'gol'+(i+1),home:r[0],away:r[1],league:r[2]}));
+  {id:'gol1',home:'Grêmio',away:'Bahia',league:'Brasileirão · Serie A',kickoff:'2026-11-18T19:30:00-05:00',aliases:['gremio','bahia']},
+  {id:'gol2',home:'Vitória',away:'RB Bragantino',league:'Brasileirão · Serie A',kickoff:'2026-11-19T17:30:00-05:00',aliases:['vitoria','bragantino']},
+  {id:'gol3',home:'São Paulo',away:'Fluminense',league:'Brasileirão · Serie A',kickoff:'2026-11-19T19:30:00-05:00',aliases:['sao paulo','fluminense']},
+  {id:'gol4',home:'Orlando City',away:'FC Cincinnati',league:'MLS Cup Playoffs',kickoff:'2026-11-19T19:30:00-05:00',aliases:['orlando','cincinnati']},
+  {id:'gol5',home:'Seattle Sounders',away:'Real Salt Lake',league:'MLS Cup Playoffs',kickoff:'2026-11-19T22:00:00-05:00',aliases:['seattle','real salt lake']},
+  {id:'gol6',home:'Septemvri Sofia',away:'Lokomotiv Plovdiv',league:'Primera Liga · Bulgaria',kickoff:'2026-11-20T11:00:00-05:00',aliases:['septemvri','lokomotiv plovdiv']},
+  {id:'gol7',home:'Piast Gliwice',away:'Korona Kielce',league:'Ekstraklasa · Polonia',kickoff:'2026-11-20T12:00:00-05:00',aliases:['piast','korona kielce']},
+  {id:'gol8',home:'Farul Constanța',away:'Universitatea Cluj',league:'SuperLiga · Rumanía',kickoff:'2026-11-20T13:30:00-05:00',aliases:['farul','cluj']},
+  {id:'gol9',home:'FC Andorra',away:'CD Leganés',league:'LaLiga Hypermotion · España',kickoff:'2026-11-20T13:30:00-05:00',aliases:['andorra','leganes']},
+  {id:'gol10',home:'Almere City',away:'NAC Breda',league:'Eerste Divisie · Países Bajos',kickoff:'2026-11-20T14:00:00-05:00',aliases:['almere','nac breda']},
+  {id:'gol11',home:'Helmond Sport',away:'FC Dordrecht',league:'Eerste Divisie · Países Bajos',kickoff:'2026-11-20T14:00:00-05:00',aliases:['helmond','dordrecht']},
+  {id:'gol12',home:'Cercle Brugge',away:'KVC Westerlo',league:'Jupiler Pro League · Bélgica',kickoff:'2026-11-20T14:45:00-05:00',aliases:['cercle brugge','westerlo']}
+].map(g=>({...g,dateLabel:Utilities.formatDate(new Date(g.kickoff),'America/Lima','dd MMM · HH:mm'),
+  homeLogo:'',awayLogo:''}));
+
 const PG_RETO_IDs=PG_GOL_FIXTURES.map(g=>g.id);
 function pgDemoCatalog_(){
   return {ok:true,mode:'DEMO',games:{
@@ -51,6 +55,7 @@ function pgIdempotent_(uid,playId){
 }
 function pgSavePremiumGol_(x){
   return pgLock_(()=>{
+    if(Date.now()>=new Date(PG.GOL_CUTOFF_ISO).getTime())pgErr_('La cartilla está cerrada para nuevas jugadas.');
     const player=pgRequireSession_(x.sessionToken),u=pgObject_('users',player.values);
     const slot=pgClean_(x.slot,1).toUpperCase();
     if(!['A','B','C','D'].includes(slot))pgErr_('Selecciona una jugada entre A y D.');
