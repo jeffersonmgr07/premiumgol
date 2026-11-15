@@ -108,7 +108,23 @@
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function renderHome(){
-    $('#homeFixtures').innerHTML=matches.slice(0,3).map(g=>`<article class="preview-card"><div class="preview-card-head"><span>${icon('ball')} ${esc(g.league)}</span><span class="game-date">${esc(visibleDate(g))}</span></div><div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div><div class="preview-bottom"><span>Mercado 1 · X · 2</span><button data-nav="match">Ver cuotas →</button></div></article>`).join('');
+    const withOdds=matches.filter(g=>g.odds?.some(v=>Number(v)>1));
+    const featured=[...withOdds,...matches.filter(g=>!withOdds.some(x=>x.id===g.id))].slice(0,3);
+    const source=catalogMode==='API_PREVIEW'?'Cuotas consultadas · solo información':'Cuotas ilustrativas · demostración';
+    $('#homeFixtures').innerHTML=featured.length?featured.map(g=>`<article class="preview-card featured-clickable" data-featured-match="${esc(g.id)}" role="button" tabindex="0" aria-label="Ver cuotas de ${esc(g.home)} contra ${esc(g.away)}">
+      <div class="preview-card-head"><span>${icon('ball')} ${esc(g.league)}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
+      <div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>
+      <div class="featured-odds" aria-label="Cuotas local empate visita">${['1','X','2'].map((name,n)=>`<span><small>${name}</small><b>${Number(g.odds?.[n])>1?fmt2(g.odds[n]):'—'}</b></span>`).join('')}</div>
+      <div class="preview-bottom"><small>${source}</small><button type="button" class="text-link" data-featured-button="${esc(g.id)}">Ver cuotas →</button></div>
+    </article>`).join(''):`<div class="empty-state featured-empty">${catalogMode==='API_PREVIEW'?'Estamos actualizando los próximos encuentros disponibles.':'Los encuentros y cuotas se mostrarán al conectar el servicio deportivo.'}</div>`;
+  }
+  function openFeaturedGame(id){
+    const match=matches.find(g=>String(g.id)===String(id));
+    if(!match)return;
+    leagueFilter='all';dateFilter='all';searchFilter=match.home;sortFilter='date';
+    $('#matchSearch').value=match.home;
+    $('#matchDate').value='all';
+    showView('match');
   }
   function completedPicks(slot=activeCard){return golGames.filter(g=>outcomes.includes(draft.golCards[slot]?.[g.id])).length;}
   function renderGol(){
@@ -289,7 +305,7 @@
     if(hasUser()){showView('account');return;}
     setAuthMode(mode);
     const el=$('#authDialog');if(!el.open)el.showModal();
-    if(CONFIG.googleClientId)setupGoogle();
+    if(CONFIG.googleClientId && CONFIG.appsScriptUrl)setupGoogle();
   }
   function closeAuth(){if($('#authDialog').open)$('#authDialog').close();}
   function acceptSession(result){
@@ -348,10 +364,10 @@
   }
   let googleStarted=false;
   function setupGoogle(){
-    if(googleStarted||!CONFIG.googleClientId)return;googleStarted=true;
+    if(googleStarted||!CONFIG.googleClientId||!CONFIG.appsScriptUrl)return;googleStarted=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onload=()=>{
-      if(!window.google?.accounts?.id)return;
+      if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;return;}
       window.google.accounts.id.initialize({client_id:CONFIG.googleClientId,callback:async({credential})=>{
         try{acceptSession(await remote('googleLogin',{idToken:credential}));}
         catch(e){toast(e.message||'No se pudo ingresar con Google.');}
@@ -359,7 +375,7 @@
       $('#googleButtonMount').style.display='flex';$('#googleUnavailable').hidden=true;
       window.google.accounts.id.renderButton($('#googleButtonMount'),{theme:'outline',size:'large',text:'continue_with',shape:'rectangular',width:300,locale:'es'});
     };
-    script.onerror=()=>{googleStarted=false;toast('No se pudo cargar el acceso Google.');};
+    script.onerror=()=>{googleStarted=false;$('#googleUnavailable').hidden=false;toast('No se pudo cargar el acceso Google.');};
     document.head.appendChild(script);
   }
   async function refreshAccount(){
@@ -385,12 +401,12 @@
   $('#loginTop').addEventListener('click',()=>hasUser()?showView('account'):openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
   $('#walletTop').addEventListener('click',()=>showView('account'));
-  $('#registerStart').addEventListener('click',()=>openAuth('register'));
+  // El registro se abre desde la pestaña «Registrarse» del modal de acceso.
   $('#tabLogin').addEventListener('click',()=>setAuthMode('login'));
   $('#tabRegister').addEventListener('click',()=>setAuthMode('register'));
   $('#closeAuth').addEventListener('click',closeAuth);
   $('#authDialog').addEventListener('click',e=>{if(e.target===$('#authDialog'))closeAuth();});
-  $('#googleUnavailable').hidden=Boolean(CONFIG.googleClientId);
+  $('#googleUnavailable').hidden=Boolean(CONFIG.googleClientId && CONFIG.appsScriptUrl);
   $('#emailForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const email=$('#authEmail').value.trim().toLowerCase();
@@ -446,6 +462,7 @@
   document.addEventListener('click',e=>{
     const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
     const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
+    const highlighted=e.target.closest('[data-featured-match]');if(highlighted){e.preventDefault();openFeaturedGame(highlighted.dataset.featuredMatch);return;}
     const nav=e.target.closest('[data-nav]');if(nav){e.preventDefault();showView(nav.dataset.nav);return;}
     const tab=e.target.closest('[data-account-tab]');if(tab){accountTab=tab.dataset.accountTab;renderAccount();return;}
     const amountButton=e.target.closest('[data-topup-amount]');if(amountButton){topupSelection=amountButton.dataset.topupAmount;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();if(topupSelection==='custom')$('#rechargeOther').focus();return;}
@@ -454,6 +471,7 @@
     if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
+  document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-featured-match]')){e.preventDefault();openFeaturedGame(e.target.dataset.featuredMatch);}});
   $('#footerYear').textContent=new Date().getFullYear();
   renderAll();
   refreshCoupon();setInterval(refreshCoupon,15000);
