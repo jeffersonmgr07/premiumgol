@@ -13,7 +13,8 @@ const PG = Object.freeze({
     plays:['playId','uid','type','roundId','picksJson','stake','combinedOdds','potentialReturn','createdAt','note'],
     ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt'],
     topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt','preferenceId','checkoutUrl','paymentId','paidAt','lastCheckAt'],
-    payments_ledger:['entryId','uid','orderId','paymentId','deltaPEN','type','createdAt']
+    payments_ledger:['entryId','uid','orderId','paymentId','deltaPEN','type','createdAt'],
+    bonus_ledger:['entryId','uid','sourceUid','amountPEN','status','createdAt','note']
   },
   INITIAL_CREDITS:10,
   MAX_STAKE:1000,
@@ -116,26 +117,59 @@ function pgPublicUser_(u){
     phone:String(u.phone||''),docType:String(u.docType||''),docNumber:String(u.docNumber||''),
     avatarUrl:String(u.avatarUrl||''),inviteCode:String(u.inviteCode||'')};
 }
+/** Resumen de referidos con datos limitados al usuario invitador.
+ * NO acredita bonos: solo informa quién se registró y si la primera
+ * recarga real fue confirmada; la activación depende de reglas futuras.
+ */
+function pgReferralSummary_(user){
+  const invited=pgRows_('users').rows.map(r=>pgObject_('users',r))
+    .filter(p=>String(p.invitedBy||'')===String(user.uid));
+  const credits=pgRows_('payments_ledger').rows;
+  const referrals=invited.map(p=>{
+    const verified=credits.some(v=>String(v[1])===String(p.uid)&&
+      String(v[5])==='TOPUP_APPROVED'&&Number(v[4])>0);
+    const first=pgClean_(p.firstName,70);
+    const initial=pgClean_(p.lastName,70).charAt(0);
+    return {label:first+(initial?' '+initial+'.':''),
+      joinedAt:String(p.createdAt||''),firstTopupVerified:verified,
+      projectedBonusPEN:verified?5:0,status:verified?'PENDIENTE_ACTIVACION':'REGISTRADO'};
+  }).sort((a,b)=>new Date(b.joinedAt).getTime()-new Date(a.joinedAt).getTime());
+  const bonus=pgRows_('bonus_ledger').rows
+    .filter(r=>String(r[1])===String(user.uid)&&String(r[4])==='AVAILABLE')
+    .reduce((n,r)=>n+Math.round(Number(r[3]||0)*100),0)/100;
+  return {referralCount:referrals.length,referrals:referrals.slice(0,30),
+    referralPendingPEN:referrals.reduce((sum,r)=>sum+r.projectedBonusPEN,0),
+    bonusBalancePEN:Math.round(bonus*100)/100};
+}
 function pgSnapshot_(row){
   const user=pgObject_('users',row.values);
   const recent=pgRows_('plays').rows.filter(r=>String(r[1])===String(user.uid));
   const history=recent.slice(-200).reverse().map(r=>{
-    const p=pgObject_('plays',r);let slot='';
-    try{const data=JSON.parse(p.picksJson);if(!Array.isArray(data))slot=String(data.slot||'');}catch(e){}
-    return {id:String(p.playId),type:p.type==='gol'?'gol':'match',title:p.type==='gol'?('PremiumGol · Jugada '+(slot||'registrada')):'Cupón de partidos',at:String(p.createdAt),note:String(p.note)};
-  });
-  const golSlots={};
-  recent.forEach(r=>{
     const p=pgObject_('plays',r);
-    if(p.type!=='gol'||p.roundId!==PG.ROUND_ID)return;
-    try{const data=JSON.parse(p.picksJson);if(['A','B','C','D'].includes(data.slot)&&Array.isArray(data.picks))golSlots[data.slot]={picks:data.picks,id:p.playId};}catch(e){}
+    let picks=[],slot='';
+    if(p.type==='gol'){
+      try{
+        const data=JSON.parse(p.picksJson);
+        picks=Array.isArray(data.picks)?
+          data.picks.map(v=>({id:String(v.id),outcome:String(v.outcome)})):[];
+        slot=String(data.slot||'');
+      }catch(e){}
+    }
+    const id=String(p.playId);
+    const code='PG-'+id.replace(/[^a-zA-Z0-9]/g,'').slice(-10).toUpperCase();
+    return {id,code,type:p.type==='gol'?'gol':'match',
+      title:p.type==='gol'?'PremiumGol · '+code:'Cupón de partidos',
+      at:String(p.createdAt),stake:Number(p.stake)||0,
+      note:String(p.note||''),roundId:String(p.roundId||''),picks,slot};
   });
-  // El dinero confirmado se lleva en libro independiente de los créditos de prueba.
+  // Las cuatro pestañas son borradores locales; los tickets ya
+  // presentados permanecen en el historial, sin bloquear A/B/C/D.
+  const golSlots={};
   const paidBalancePEN=pgMoneyBalance_(String(user.uid));
   const couponClaimed=pgRows_('ledger').rows.some(r=>String(r[1])===String(user.uid)&&String(r[3])==='BONO_PREMIUM_50');
-  const joined=pgRows_('users').rows.filter(r=>String(r[14]||'')===String(user.uid)).length;
+  const reward=pgReferralSummary_(user);
   return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,
-    history,golSlots,couponClaimed,referralCount:joined,paidBalancePEN};
+    history,golSlots,couponClaimed,paidBalancePEN,...reward};
 }
 
 /** Verificación sin datos personales ni claves: ejecutar desde el editor. */
