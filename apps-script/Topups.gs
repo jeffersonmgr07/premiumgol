@@ -59,7 +59,7 @@ function pgMpIsSandboxUrl_(value){
 const PG_MP_ORDER_VALID_MS=48*60*60*1000;
 function pgMpPendingExpired_(o){
   const state=String(o.status||'PENDING').toUpperCase();
-  if(!['PENDING','CREATING','IN_PROCESS','EXPIRED'].includes(state))return false;
+  if(!['PENDING','PENDIENTE','CREATING','IN_PROCESS','EXPIRED'].includes(state))return false;
   const stamp=new Date(o.createdAt).getTime();
   return Number.isFinite(stamp)&&Date.now()-stamp>=PG_MP_ORDER_VALID_MS;
 }
@@ -296,7 +296,7 @@ function pgMpReconcilePendingOrders(){
     const checked=r[10]?now-new Date(r[10]).getTime():Infinity;
     // Mantener la conciliación incluso después de 48 horas:
     // pagos offline tardíos no pueden perderse por ocultar la orden.
-    return ['PENDING','IN_PROCESS','CREATING','EXPIRED'].includes(status)
+    return ['PENDING','PENDIENTE','IN_PROCESS','CREATING','EXPIRED'].includes(status)
       &&age>=0&&age<30*86400000&&checked>4*60000&&Boolean(r[6]);
   });
   const props=PropertiesService.getScriptProperties();
