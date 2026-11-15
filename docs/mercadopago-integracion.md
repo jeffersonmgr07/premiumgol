@@ -1,6 +1,6 @@
 # Mercado Pago en PremiumGol — plan de integración segura
 
-**Estado (15/11/2026): EN PREPARACIÓN. NO COBRAR EN PRODUCCIÓN.** El sitio está en GitHub Pages y el backend actual utiliza Apps Script con créditos de demostración. La vista de recargas ya permite elegir S/30, 50, 100, 200, 500, 1,000 y otro monto (mínimo S/30), y crea solicitudes `PENDIENTE` en `Topups.gs`. El botón de Mercado Pago todavía está deshabilitado deliberadamente. `savePremiumGol` descuenta 3 créditos simulados por jugada.
+**Estado (15/11/2026): EN PREPARACIÓN. NO COBRAR EN PRODUCCIÓN.** El sitio está en GitHub Pages y el backend actual utiliza Apps Script con créditos de demostración. La vista de recargas ya permite elegir S/30, 50, 100, 200, 500, 1,000 y otro monto (mínimo S/30), y crea solicitudes `PENDIENTE` en `Topups.gs`. El botón de Mercado Pago todavía está deshabilitado deliberadamente. `savePremiumGol` descuenta 5 créditos virtuales por jugada.
 
 ## 0. Requisitos antes de habilitar dinero real
 
@@ -20,7 +20,7 @@ En el panel https://www.mercadopago.com.pe/developers/panel/app crea o utiliza t
 ```
 Usuario autenticado en premiumgol.website
   |-- Recargar billetera: S/ 30, 50, 100, 200, 500, 1000 u otro ≥ 30
-  |-- Comprar jugada PremiumGol: S/ 3 por jugada A, B, C o D
+  |-- Comprar jugada PremiumGol: S/ 5 por jugada A, B, C o D
          |
          v
 Backend privado: autenticar sesión y verificar la cuenta
@@ -39,7 +39,7 @@ back_urls: URLs HTTPS de tu dominio
 notification_url: URL HTTPS de backend con capacidad de leer x-signature
          |
          v
-Backend devuelve init_point / sandbox_init_point de esa orden
+Backend devuelve init_point / init_point de esa orden
 Usuario redirigido al Checkout Pro
          |
          v
@@ -83,10 +83,10 @@ Una alternativa adecuada es **Google Cloud Run** con una base de datos transacci
 ## 5. Pruebas de integración antes del lanzamiento
 
 1. Crear orden de pruebas y verificar que `external_reference` corresponde a su `orderId`.
-2. Abrir `sandbox_init_point`; cancelar, rechazar, dejar pendiente y aprobar utilizando únicamente herramientas/cuentas de prueba permitidas por Mercado Pago.
+2. Abrir `init_point`; cancelar, rechazar, dejar pendiente y aprobar utilizando únicamente herramientas/cuentas de prueba permitidas por Mercado Pago.
 3. Comprobar que éxito/pendiente/fallo no acreditan sin webhook verificado.
 4. Simular dos notificaciones iguales, notificaciones fuera de orden y reintentos: solo un asiento.
-5. Probar recargas de S/30, S/50 y monto personalizado. Probar compra directa de S/3 si es un producto legalmente autorizado.
+5. Probar recargas de S/30, S/50 y monto personalizado. Probar compra directa de S/5 si es un producto legalmente autorizado.
 6. Simular sesión inválida, usuario no titular, pago de importe erróneo y pagos expirados.
 7. Auditar saldos y conciliar sumatoria del ledger con pagos realmente aprobados.
 8. Tras licencias/aprobaciones, ejecutar pruebas de producción de monto mínimo supervisadas antes de habilitar públicamente.
