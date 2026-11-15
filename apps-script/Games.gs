@@ -65,14 +65,12 @@ function pgSavePremiumGol_(x){
     const requestId=pgClean_(x.clientRequestId,90);
     if(!/^[A-Z0-9-]{10,90}$/i.test(requestId))pgErr_('Solicitud inválida.');
     if(pgIdempotent_(u.uid,requestId))return pgSnapshot_(player);
-    const alreadySaved=pgRows_('plays').rows.some(row=>{
-      if(String(row[1])!==String(u.uid)||String(row[2])!=='gol'||String(row[3])!==PG.ROUND_ID)return false;
-      try{return JSON.parse(row[4]).slot===slot;}catch(e){return false;}
-    });
-    if(alreadySaved)pgErr_('Esta jugada ya fue registrada en la jornada.');
+    // A/B/C/D identifica borradores simultáneos, NO limita el número
+    // de tickets válidos que un usuario puede enviar en la jornada.
+    // pgIdempotent_ sigue impidiendo cobrar dos veces la misma solicitud.
     if(Number(u.balance)<PG.GOL_STAKE)pgErr_('Saldo virtual insuficiente.');
     const balanceAfter=Number(u.balance)-PG.GOL_STAKE,when=pgNow_();
-    pgWrite_('plays',{playId:requestId,uid:u.uid,type:'gol',roundId:PG.ROUND_ID,picksJson:JSON.stringify({slot,picks}),stake:PG.GOL_STAKE,combinedOdds:0,potentialReturn:0,createdAt:when,note:'Jugada '+slot+' · 12 pronósticos · '+PG.GOL_STAKE+' créditos virtuales'});
+    pgWrite_('plays',{playId:requestId,uid:u.uid,type:'gol',roundId:PG.ROUND_ID,picksJson:JSON.stringify({slot,picks}),stake:PG.GOL_STAKE,combinedOdds:0,potentialReturn:0,createdAt:when,note:'12 pronósticos · '+PG.GOL_STAKE+' créditos virtuales'});
     pgUpdate_('users',player.index,{balance:balanceAfter,updatedAt:when});
     pgWrite_('ledger',{txId:pgUuid_(),uid:u.uid,playId:requestId,action:'PREMIUMGOL_VIRTUAL',delta:-PG.GOL_STAKE,balanceAfter,createdAt:when});
     return pgSnapshot_(pgFind_('users','uid',u.uid));
