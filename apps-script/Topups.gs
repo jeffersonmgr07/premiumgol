@@ -109,8 +109,8 @@ function pgCreateTopupRequest_(x){
     // preferencia creada por MP con esta misma referencia.
     let preference=null;
     try{
-      const found=pgMpHttp_('/checkout/preferences/search?external_reference='+
-        encodeURIComponent(reference)+'&limit=5','get',null,config);
+      const found=existing?pgMpHttp_('/checkout/preferences/search?external_reference='+
+        encodeURIComponent(reference)+'&limit=5','get',null,config):{elements:[]};
       for(const item of (found.elements||[])){
         if(String(item.external_reference)===reference&&item.id){
           const detail=pgMpHttp_('/checkout/preferences/'+encodeURIComponent(String(item.id)),
@@ -231,6 +231,16 @@ function pgGetTopupStatus_(x){
     pgErr_('Solicitud inválida.');
   let order=pgMpReconcileOne_(reference);
   return {...order,paidBalancePEN:pgMoneyBalance_(user.uid)};
+}
+/** Historial de solicitudes del usuario, sin IDs de cuentas del proveedor. */
+function pgListTopupOrders_(x){
+  const userRow=pgRequireSession_(x.sessionToken);
+  const user=pgObject_('users',userRow.values);
+  const rows=pgRows_('topup_requests').rows.filter(r=>String(r[1])===String(user.uid));
+  return {ok:true,orders:rows.slice(-15).reverse().map(r=>{
+    const o=pgObject_('topup_requests',r);
+    return {...pgMpPublicOrder_(o),createdAt:String(o.createdAt)};
+  }),paidBalancePEN:pgMoneyBalance_(user.uid)};
 }
 /** Activador periódico, también recupera pagos completados horas después.
  * Máximo de 8 órdenes por ejecución para limitar el consumo de API.
