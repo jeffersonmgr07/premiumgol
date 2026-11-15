@@ -31,7 +31,7 @@ En **Configuración del proyecto → Propiedades del script**, definir:
 | `PAYMENTS_ASSERTION_SECRET` | Secreto aleatorio de al menos 32 caracteres, **exactamente el mismo** que el backend |
 | `PAYMENTS_CHECKOUT_READY` | `false` hasta finalizar despliegue, pruebas y autorizaciones |
 
-Actualizar `Topups.gs` y `Main.gs`, guardar y publicar **una nueva versión de la misma implementación /exec**. El identificador y ruta de Apps Script usados por la web deben seguir siendo los mismos.
+Actualizar `Topups.gs` y `Main.gs`, guardar y ejecutar `testPremiumGolCheckoutConfiguration` para comprobar los indicadores sin publicar secretos. Después publicar **una nueva versión de la misma implementación /exec**. El identificador y ruta de Apps Script usados por la web deben seguir siendo los mismos.
 
 ## Configuración de Cloud Run
 
