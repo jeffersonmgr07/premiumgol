@@ -46,17 +46,45 @@ function pgContact_(x){
   if(phone&&!/^\d{6,15}$/.test(phone))pgErr_('El número de WhatsApp no es válido.');
   return {countryCode,phone};
 }
+/** Invitaciones preparadas para futuros beneficios; ningún registro acredita dinero. */
+function pgInviteCode_(){
+  for(let attempt=0;attempt<7;attempt++){
+    const code=pgUuid_().replace(/-/g,'').slice(0,12).toUpperCase();
+    if(!pgFind_('users','inviteCode',code))return code;
+  }
+  pgErr_('No se pudo crear tu enlace de invitación.');
+}
+function pgInviter_(code){
+  code=pgClean_(code,16).toUpperCase();
+  if(!/^[A-Z0-9]{10,16}$/.test(code))return '';
+  const row=pgFind_('users','inviteCode',code);
+  return row?String(pgObject_('users',row.values).uid):'';
+}
+function pgGoogleAvatar_(value){
+  const url=pgClean_(value,500);
+  return /^https:\/\/(?:lh\d+|[a-z0-9-]+)\.googleusercontent\.com\//i.test(url)?url:'';
+}
 function pgCreateUser_(email,details,provider){
   if(pgIdentityByEmail_(email))pgErr_('El correo ya tiene una cuenta. Utiliza Ingresar.');
   const person=pgName_(details),contact=pgContact_(details),date=pgNow_(),uid=pgUuid_();
-  pgWrite_('users',{uid,email,...person,...contact,docType:'',docNumber:'',provider,balance:PG.INITIAL_CREDITS,createdAt:date,updatedAt:date});
-  pgWrite_('ledger',{txId:pgUuid_(),uid,playId:'',action:'BONO_INICIAL',delta:PG.INITIAL_CREDITS,balanceAfter:PG.INITIAL_CREDITS,createdAt:date});
+  const inviteCode=pgInviteCode_(),invitedBy=pgInviter_(details.referralCode||'');
+  pgWrite_('users',{uid,email,...person,...contact,docType:'',docNumber:'',
+    provider,balance:PG.INITIAL_CREDITS,createdAt:date,updatedAt:date,
+    avatarUrl:pgGoogleAvatar_(details.avatarUrl),inviteCode,invitedBy:invitedBy===uid?'':invitedBy});
+  pgWrite_('ledger',{txId:pgUuid_(),uid,playId:'',action:'BONO_INICIAL',
+    delta:PG.INITIAL_CREDITS,balanceAfter:PG.INITIAL_CREDITS,createdAt:date});
   return pgIdentityByEmail_(email);
 }
 function pgSession_(userRow){
+  let u=pgObject_('users',userRow.values);
+  if(!u.inviteCode){
+    pgUpdate_('users',userRow.index,{inviteCode:pgInviteCode_()});
+    userRow=pgFind_('users','uid',u.uid);
+    u=pgObject_('users',userRow.values);
+  }
   const token=pgUuid_()+'.'+pgUuid_(),date=Date.now();
-  const u=pgObject_('users',userRow.values);
-  pgWrite_('sessions',{tokenHash:pgHash_(token),uid:u.uid,createdAt:date,expiresAt:date+PG.SESSION_DAYS*86400000,revokedAt:''});
+  pgWrite_('sessions',{tokenHash:pgHash_(token),uid:u.uid,createdAt:date,
+    expiresAt:date+PG.SESSION_DAYS*86400000,revokedAt:''});
   return {sessionToken:token,...pgSnapshot_(userRow)};
 }
 function pgVerifyCode_(x){
@@ -99,7 +127,15 @@ function pgGoogleLogin_(x){
       const display=pgClean_(claims.name,140),parts=display.split(/\s+/).filter(Boolean);
       const first=pgClean_(claims.given_name||parts[0]||'Jugador',70);
       const last=pgClean_(claims.family_name||parts.slice(1).join(' ')||'Premium Gol',70);
-      row=pgCreateUser_(email,{firstName:first,lastName:last,countryCode:'+51',phone:''},'google');
+      row=pgCreateUser_(email,{firstName:first,lastName:last,countryCode:'+51',
+        phone:'',avatarUrl:claims.picture,referralCode:x.referralCode},'google');
+    }else{
+      const avatar=pgGoogleAvatar_(claims.picture);
+      const u=pgObject_('users',row.values);
+      if(avatar&&avatar!==u.avatarUrl){
+        pgUpdate_('users',row.index,{avatarUrl:avatar});
+        row=pgFind_('users','email',email);
+      }
     }
     return {ok:true,...pgSession_(row)};
   });
