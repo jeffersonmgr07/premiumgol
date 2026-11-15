@@ -1,7 +1,8 @@
 /** Entrada del iframe de GitHub Pages. El puente nunca contiene lógica de juegos. */
 function doGet(e){
   if(!e||String((e.parameter||{}).bridge)!=='1')return HtmlService.createHtmlOutput('Premium Gol · Acceso');
-  const allowed=pgProp_('FRONTEND_ORIGIN');
+  // Aceptar accidentalmente una barra final, sin ampliar los orígenes autorizados.
+  const allowed=pgProp_('FRONTEND_ORIGIN').replace(/\/+$/,'');
   if(!/^https?:\/\/[^/]+$/.test(allowed))return HtmlService.createHtmlOutput('Falta configurar FRONTEND_ORIGIN');
   const t=HtmlService.createTemplateFromFile('Bridge');
   t.allowedOrigin=allowed;
