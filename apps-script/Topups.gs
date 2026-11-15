@@ -56,20 +56,38 @@ function pgTopupAmount_(value){
 function pgMpIsSandboxUrl_(value){
   return /^https:\/\/sandbox\./i.test(String(value||''));
 }
+const PG_MP_ORDER_VALID_MS=48*60*60*1000;
+function pgMpPendingExpired_(o){
+  const state=String(o.status||'PENDING').toUpperCase();
+  if(!['PENDING','CREATING','IN_PROCESS','EXPIRED'].includes(state))return false;
+  const stamp=new Date(o.createdAt).getTime();
+  return Number.isFinite(stamp)&&Date.now()-stamp>=PG_MP_ORDER_VALID_MS;
+}
 function pgMpPublicOrder_(o){
   const created=o.createdAt instanceof Date?o.createdAt.toISOString():String(o.createdAt||'');
   const checkout=pgMpUrl_(o.checkoutUrl);
-  const safeCheckout=pgProp_('MP_ENV')==='production'&&pgMpIsSandboxUrl_(checkout)?'':checkout;
+  const expired=pgMpPendingExpired_(o);
+  const safeCheckout=expired||(
+    pgProp_('MP_ENV')==='production'&&pgMpIsSandboxUrl_(checkout))?'':checkout;
   return {ok:true,orderId:String(o.orderId),amount:Number(o.amountPEN),
-    status:String(o.status||'PENDING'),checkoutUrl:safeCheckout,
-    createdAt:created,paidAt:String(o.paidAt||'')};
+    status:expired?'EXPIRED':String(o.status||'PENDING'),
+    checkoutUrl:safeCheckout,createdAt:created,
+    expiresAt:Number.isFinite(new Date(created).getTime())?
+      new Date(new Date(created).getTime()+PG_MP_ORDER_VALID_MS).toISOString():'',
+    paidAt:String(o.paidAt||'')};
 }
 function pgMpPreference_(o,config){
   const origin=pgProp_('FRONTEND_ORIGIN').replace(/\/+$/,'');
   if(!/^https:\/\/[^/]+$/.test(origin))
     pgErr_('El pago en línea todavía no está disponible.');
   const back=origin+'/?mp_return=1&order='+encodeURIComponent(o.orderId)+'#account';
+  const start=new Date(o.createdAt).getTime();
+  if(!Number.isFinite(start)||Date.now()-start>=PG_MP_ORDER_VALID_MS)
+    pgErr_('Esta orden venció. Genera una recarga nueva.');
   const body={
+    expires:true,
+    expiration_date_from:new Date(start).toISOString(),
+    expiration_date_to:new Date(start+PG_MP_ORDER_VALID_MS).toISOString(),
     items:[{id:'pg-topup',title:'Recarga de saldo PremiumGol',
       quantity:1,currency_id:'PEN',unit_price:Number(o.amountPEN)}],
     external_reference:String(o.orderId),
@@ -103,6 +121,8 @@ function pgCreateTopupRequest_(x){
          pgTopupAmount_(order.amountPEN)!==amountCents)
         pgErr_('Solicitud inválida.');
       orderIndex=existing.index;
+      if(pgMpPendingExpired_(order))
+        pgErr_('Esta orden venció. Genera una recarga nueva.');
       if(order.checkoutUrl){
         // Nunca transformar ni reabrir una preferencia sandbox antigua.
         if(config.env==='production'&&pgMpIsSandboxUrl_(order.checkoutUrl))
@@ -254,7 +274,10 @@ function pgListTopupOrders_(x){
   const userRow=pgRequireSession_(x.sessionToken);
   const user=pgObject_('users',userRow.values);
   const rows=pgRows_('topup_requests').rows.filter(r=>String(r[1])===String(user.uid));
+  // Las pendientes vencidas se ocultan. Conservamos las aprobadas,
+  // rechazadas y reembolsadas para conciliación y estado de cuenta.
   const recent=rows.map(r=>pgObject_('topup_requests',r))
+    .filter(o=>!pgMpPendingExpired_(o))
     .sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime())
     .slice(0,15);
   return {ok:true,orders:recent.map(pgMpPublicOrder_),
@@ -271,7 +294,9 @@ function pgMpReconcilePendingOrders(){
     const status=String(r[3]);
     const age=now-new Date(r[4]).getTime();
     const checked=r[10]?now-new Date(r[10]).getTime():Infinity;
-    return ['PENDING','IN_PROCESS','CREATING'].includes(status)
+    // Mantener la conciliación incluso después de 48 horas:
+    // pagos offline tardíos no pueden perderse por ocultar la orden.
+    return ['PENDING','IN_PROCESS','CREATING','EXPIRED'].includes(status)
       &&age>=0&&age<30*86400000&&checked>4*60000&&Boolean(r[6]);
   });
   const props=PropertiesService.getScriptProperties();
@@ -377,5 +402,17 @@ function testPremiumGolCheckoutOrigin(){
     recommendation:'Crea una orden nueva despues de actualizar la implementacion.'
   };
   console.log('PremiumGol · Diagnóstico de checkout: '+JSON.stringify(result));
+  return result;
+}
+
+/** Revisión de vencimientos sin borrar órdenes ni movimientos monetarios. */
+function testPremiumGolOrderExpiry(){
+  const old={status:'PENDING',createdAt:new Date(Date.now()-49*3600000)};
+  const fresh={status:'PENDING',createdAt:new Date(Date.now()-3600000)};
+  const paid={status:'APPROVED',createdAt:new Date(Date.now()-72*3600000)};
+  const result={expiredHidden:pgMpPendingExpired_(old),
+    recentVisible:!pgMpPendingExpired_(fresh),
+    settledPreserved:!pgMpPendingExpired_(paid)};
+  console.log('PremiumGol · Vencimiento 48h: '+JSON.stringify(result));
   return result;
 }
