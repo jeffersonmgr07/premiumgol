@@ -27,6 +27,7 @@ function rpc(requestJson){
       case 'updateProfile':return pgUpdateProfile_(x);
       case 'savePremiumGol':return pgSavePremiumGol_(x);
       case 'createTopupRequest':return pgCreateTopupRequest_(x);
+      case 'getTopupStatusTicket':return pgTopupStatusTicket_(x);
       case 'claimCoupon':return pgClaimCoupon_(x);
       case 'saveBet':return pgSaveBet_(x);
       case 'signout':return pgSignout_(x);
