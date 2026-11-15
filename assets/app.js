@@ -444,6 +444,7 @@
     sessionToken=result.sessionToken;
     sessionStorage.setItem(SESSION_KEY,sessionToken);
     updateAccount(result);
+    setAuthBusy(false);
     closeAuth();toast('¡Bienvenido a PremiumGol!');
     const next=pendingAfterAuth;pendingAfterAuth=null;
     accountTab='overview';
