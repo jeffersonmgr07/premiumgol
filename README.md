@@ -1,3 +1,15 @@
+## V31 · Tickets, recargas e invitaciones (15/11/2026)
+
+- Las órdenes nuevas de Mercado Pago tienen vigencia de **48 horas**. Las pendientes vencidas desaparecen de Últimas recargas; las órdenes y pagos confirmados permanecen en la base para auditoría.
+- **PremiumGol permite múltiples tickets A, B, C o D en la misma jornada.** Esas letras identifican cuatro borradores reutilizables; cada ticket guarda un código único, fecha, costo y sus doce pronósticos.
+- El historial de jugadas tiene **Ver detalles** y el Resumen tiene un acceso directo a Mis jugadas.
+- **Billeteras separadas**: dinero recargado verificado, saldo de bonos y créditos virtuales de prueba. Las invitaciones muestran su estado de registro/primera recarga y el bono futuro pendiente sin acreditación automática.
+- El programa de recomendación de S/5 y la conversión de bonos tras jugadas permanecen **inactivos** hasta establecer reglas completas.
+- **Actualizar en Apps Script**: `Config.gs`, `Games.gs`, `Topups.gs` y `Main.gs`; ejecutar `setupPremiumGol` y publicar nueva versión.
+- [Guía completa de actualización](docs/ajustes-ordenes-tickets-bonos-20261115.md).
+
+---
+
 ## Ajuste de sesión e historial de recargas · 15/11/2026
 
 - Las sesiones se conservan al actualizar, regresar de Mercado Pago o abrir otra pestaña; se cierran tras **60 minutos sin actividad**, con validación en Apps Script y un límite absoluto de siete días.
