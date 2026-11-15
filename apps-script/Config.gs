@@ -9,7 +9,7 @@
 const PG = Object.freeze({
   SHEETS: {
     users:['uid','email','firstName','lastName','countryCode','phone','docType','docNumber','provider','balance','createdAt','updatedAt','avatarUrl','inviteCode','invitedBy'],
-    sessions:['tokenHash','uid','createdAt','expiresAt','revokedAt'],
+    sessions:['tokenHash','uid','createdAt','expiresAt','revokedAt','lastActivityAt'],
     plays:['playId','uid','type','roundId','picksJson','stake','combinedOdds','potentialReturn','createdAt','note'],
     ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt'],
     topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt','preferenceId','checkoutUrl','paymentId','paidAt','lastCheckAt'],
@@ -18,6 +18,7 @@ const PG = Object.freeze({
   INITIAL_CREDITS:10,
   MAX_STAKE:1000,
   SESSION_DAYS:7,
+  SESSION_IDLE_MINUTES:60,
   ROUND_ID:'premiumgol12-jornada-20261118',
   GOL_CUTOFF_ISO:'2026-11-18T18:30:00-05:00',
   GOL_STAKE:5,
@@ -45,6 +46,16 @@ function setupPremiumGol(){
     if(sh.getLastRow()===0){
       sh.getRange(1,1,1,PG.SHEETS[name].length).setValues([PG.SHEETS[name]]);
       sh.setFrozenRows(1);
+    }else if(name==='sessions'){
+      // Agrega la hora de última actividad sin modificar ni eliminar sesiones previas.
+      const original=PG.SHEETS.sessions.slice(0,5);
+      const header=sh.getRange(1,1,1,5).getValues()[0].map(String);
+      if(JSON.stringify(header)!==JSON.stringify(original))
+        pgErr_('El esquema de sesiones no coincide; revisa la hoja.');
+      if(sh.getMaxColumns()<6)sh.insertColumnsAfter(sh.getMaxColumns(),6-sh.getMaxColumns());
+      const sixth=String(sh.getRange(1,6,1,1).getValue()||'');
+      if(sixth&&sixth!=='lastActivityAt')pgErr_('La hoja de sesiones tiene otra columna adicional.');
+      sh.getRange(1,6).setValue('lastActivityAt');
     }else if(name==='topup_requests'){
       const original=PG.SHEETS.topup_requests.slice(0,6);
       const header=sh.getRange(1,1,1,6).getValues()[0].map(String);
