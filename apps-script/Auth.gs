@@ -128,6 +128,7 @@ function pgSignout_(x){
 function pgUpdateProfile_(x){
   return pgLock_(()=>{
     const row=pgRequireSession_(x.sessionToken),person=pgName_(x),contact=pgContact_(x);
+    if(!contact.phone)pgErr_('Ingresa tu número de WhatsApp para registrarte.');
     const docType=pgClean_(x.docType,3).toUpperCase();
     const docNumber=pgClean_(x.docNumber,20).toUpperCase();
     if(!['','DNI','CE','PAS'].includes(docType))pgErr_('El tipo de documento no es válido.');
