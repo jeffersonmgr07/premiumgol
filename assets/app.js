@@ -30,6 +30,7 @@
   draft.slips = Array.isArray(draft.slips) ? draft.slips : [];
   const saveDraft = () => {try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));}catch{}};
   let sessionToken = sessionStorage.getItem(SESSION_KEY) || '';
+  let accountRefreshPromise=null;
   let account = null;
   let accountBalance = 0;
   let playHistory = [];
@@ -144,7 +145,15 @@
   function showView(name,skipHash=false){
     closeAccountMenu();
     if(!['home','gol','match','live','account'].includes(name))name='home';
-    if(name==='account'&&!hasUser()){pendingAfterAuth='account';openAuth('login');return;}
+    if(name==='account'&&!hasUser()){
+      if(sessionToken){
+        setAuthBusy(true,'Restaurando tu sesión…','general');
+        refreshAccount().then(()=>{
+          if(hasUser())showView('account');else openAuth('login');
+        }).finally(()=>setAuthBusy(false));
+      }else{pendingAfterAuth='account';openAuth('login');}
+      return;
+    }
     activeView=name;
     $$('.view').forEach(e=>e.classList.toggle('is-active',e.id===`view-${name}`));
     $$('[data-nav]').forEach(e=>e.classList.toggle('active',e.dataset.nav===name));
@@ -257,6 +266,10 @@
     if(golClosed()){toast('La cartilla está cerrada para nuevas jugadas.');renderGol();return;}
     if(golLocked[activeCard]){toast('Esta jugada ya fue registrada. Elige otra letra.');return;}
     if(completedPicks()!==12){toast(`Completa los 12 partidos. Llevas ${completedPicks()} de 12.`);return;}
+    if(!hasUser()&&sessionToken){
+      setAuthBusy(true,'Restaurando tu sesión…','general');
+      try{await refreshAccount();}finally{setAuthBusy(false);}
+    }
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
     if(accountBalance<5){toast('Saldo insuficiente. Cada jugada requiere 5 créditos virtuales.');return;}
     if(sendingPlay)return;
@@ -576,8 +589,12 @@
   }
   async function refreshAccount(){
     if(!sessionToken)return;
-    try{updateAccount(await remote('me',{sessionToken}));}
-    catch{sessionToken='';account=null;sessionStorage.removeItem(SESSION_KEY);renderAll();}
+    if(accountRefreshPromise)return accountRefreshPromise;
+    accountRefreshPromise=(async()=>{
+      try{updateAccount(await remote('me',{sessionToken}));}
+      catch{sessionToken='';account=null;sessionStorage.removeItem(SESSION_KEY);renderAll();}
+    })();
+    try{await accountRefreshPromise;}finally{accountRefreshPromise=null;}
   }
   async function loadGolProgram(){
     if(!CONFIG.appsScriptUrl)return;
