@@ -373,9 +373,10 @@
     if(hasUser()){showView('account');return;}
     setAuthMode(mode);
     const el=$('#authDialog');if(!el.open)el.showModal();
+    showGoogleLoginStatus('',false);
     if(validGoogleClientId && CONFIG.appsScriptUrl)setupGoogle();
   }
-  function closeAuth(){if($('#authDialog').open)$('#authDialog').close();}
+  function closeAuth(){if($('#authDialog').open)$('#authDialog').close();showGoogleLoginStatus('',false);}
   function acceptSession(result){
     if(!result.sessionToken||!result.user)throw new Error('El servidor no devolvió una sesión válida.');
     sessionToken=result.sessionToken;
@@ -408,7 +409,7 @@
     if(!CONFIG.appsScriptUrl) return Promise.reject(new Error('El inicio de sesión estará disponible al conectar el servidor de PremiumGol.'));
     return new Promise((resolve,reject)=>{
       const id=randomId();
-      const timeout=(action==='catalog'||action==='golProgram')?30000:20000;
+      const timeout=(action==='catalog'||action==='golProgram'||action==='googleLogin')?45000:20000;
       const timer=setTimeout(()=>{bridge.pending.delete(id);bridge.queue=bridge.queue.filter(p=>p.id!==id);reject(new Error('La conexión tardó demasiado. Vuelve a intentarlo.'));},timeout);
       bridge.pending.set(id,{resolve,reject,timer});sendBridgeRequest({id,action,data});
     });
@@ -437,16 +438,41 @@
       frame.referrerPolicy='strict-origin-when-cross-origin';frame.src=url.toString();document.body.appendChild(frame);
     }catch(e){console.error('No se pudo inicializar el puente:',e);}
   }
-  let googleStarted=false;
+  let googleStarted=false,googleLoggingIn=false;
+  function showGoogleLoginStatus(message,isError){
+    const field=$('#googleLoginStatus');
+    if(!field)return;
+    field.hidden=!message;
+    field.textContent=message||'';
+    field.classList.toggle('is-error',Boolean(isError));
+    $('#googleSigninShell')?.classList.toggle('is-loading',Boolean(message)&&!isError);
+  }
   function setupGoogle(){
     if(googleStarted||!validGoogleClientId||!CONFIG.appsScriptUrl)return;googleStarted=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onload=()=>{
       if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;return;}
-      window.google.accounts.id.initialize({client_id:CONFIG.googleClientId,callback:async({credential})=>{
-        try{acceptSession(await remote('googleLogin',{idToken:credential}));}
-        catch(e){toast(e.message||'No se pudo ingresar con Google.');}
-      }});
+      window.google.accounts.id.initialize({
+        client_id:CONFIG.googleClientId,
+        ux_mode:'popup',auto_select:false,
+        callback:async response=>{
+          if(googleLoggingIn)return;
+          if(!response?.credential){
+            showGoogleLoginStatus('No se recibió la autorización de Google. Intenta nuevamente.',true);
+            return;
+          }
+          googleLoggingIn=true;
+          showGoogleLoginStatus('Verificando tu cuenta de Google…',false);
+          try{
+            const result=await remote('googleLogin',{idToken:response.credential});
+            acceptSession(result);
+            showGoogleLoginStatus('',false);
+          }catch(err){
+            showGoogleLoginStatus(err?.message||'No se pudo iniciar sesión con Google.',true);
+            console.warn('PremiumGol OAuth: la sesión no se completó; revisa el despliegue de Apps Script.');
+          }finally{googleLoggingIn=false;}
+        }
+      });
       $('#googleButtonMount').style.display='flex';$('#googleUnavailable').hidden=true;
       const host=$('#googleButtonMount');
       host.replaceChildren();
@@ -510,7 +536,7 @@
   $('#tabRegister').addEventListener('click',()=>setAuthMode('register'));
   $('#closeAuth').addEventListener('click',closeAuth);
   $('#authDialog').addEventListener('click',e=>{if(e.target===$('#authDialog'))closeAuth();});
-  $('#googleUnavailable').hidden=Boolean(CONFIG.googleClientId && CONFIG.appsScriptUrl);
+  $('#googleUnavailable').hidden=validGoogleClientId && Boolean(CONFIG.appsScriptUrl);
   $('#emailForm').addEventListener('submit',async e=>{
     e.preventDefault();
     const email=$('#authEmail').value.trim().toLowerCase();
