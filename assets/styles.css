@@ -664,3 +664,91 @@
 .google-login-status.is-error{color:#ffbdc0}
 .google-login-status[hidden]{display:none}
 .google-signin-shell.is-loading{border-color:#DBFF26;box-shadow:0 0 14px #DBFF2645}
+
+/* PremiumGol V25 · Panel de cuenta y acceso responsive */
+.account-menu[hidden],.auth-busy-overlay[hidden]{display:none!important}
+.header-actions{position:relative}
+.account-menu{
+  position:absolute;right:0;top:calc(100% + 10px);z-index:120;
+  width:225px;display:flex;flex-direction:column;gap:3px;
+  padding:9px;background:#101e30;border:1px solid #DBFF2688;
+  border-radius:14px;box-shadow:0 12px 45px #000b,0 0 18px #DBFF2620;
+}
+.account-menu button{
+  display:flex;align-items:center;gap:12px;padding:12px;
+  width:100%;border:0;border-radius:9px;background:transparent;color:#fff;
+  text-align:left;font:750 13px var(--body);cursor:pointer;
+}
+.account-menu button svg{width:18px;height:18px;flex:none;color:#F7C85D}
+.account-menu button:hover,.account-menu button:focus-visible{background:#DBFF2618;color:#DBFF26;outline:1px solid #DBFF2650}
+#loginTop[aria-expanded="true"]{border-color:#DBFF26!important;box-shadow:0 0 16px #DBFF264a}
+.account-quick-tabs{display:none}
+.account-layout{padding-top:26px}
+.avatar-circle{overflow:hidden;position:relative}
+.avatar-circle img{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  border-radius:inherit;border:0
+}
+.recharge-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.recharge-amount{min-height:44px;padding:8px 5px;font-size:13px}
+.recharge-custom{font-size:12px}
+.wallet-recharge-panel{max-width:700px}
+.referral-panel{margin-top:20px}
+.referral-description,.referral-detail{color:#fff;font-size:12px;line-height:1.6}
+.referral-link{display:flex;align-items:stretch;gap:8px;max-width:100%;margin-top:10px}
+.referral-link input{
+  min-width:0;flex:1;background:#081726;border:1px solid #455774;
+  border-radius:9px;color:#fff;font-size:12px;padding:12px;
+}
+.referral-link input:focus{outline:2px solid #DBFF26}
+.referral-link .btn{white-space:nowrap}
+.auth-busy-overlay{
+  position:fixed;inset:0;z-index:2147483000;
+  display:grid;place-items:center;background:rgba(2,8,19,.88);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  overscroll-behavior:contain;touch-action:none;
+}
+.auth-busy-box{
+  width:min(350px,calc(100vw - 40px));padding:28px 20px;
+  background:#132238;border:1px solid #DBFF26;border-radius:18px;
+  color:#fff;display:flex;flex-direction:column;align-items:center;gap:13px;
+  text-align:center;box-shadow:0 0 34px #DBFF2638;
+}
+.auth-busy-box strong{font:850 19px var(--display)}
+.auth-busy-box p{font-size:12px;color:#fff;line-height:1.55;margin:0}
+.auth-busy-spinner{width:44px;height:44px;border:3px solid #F7C85D55;border-top-color:#DBFF26;border-radius:50%;animation:pgBusySpin 1s linear infinite}
+@keyframes pgBusySpin{to{transform:rotate(360deg)}}
+body.auth-request-busy{overflow:hidden}
+@media(max-width:900px){
+  .account-layout{grid-template-columns:minmax(0,1fr)!important;gap:12px;padding-top:13px}
+  .account-layout .profile-side{display:none!important}
+  .account-quick-tabs{
+    display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+    grid-column:1;gap:5px;width:100%;
+    background:#101e30;border:1px solid #42536e;
+    border-radius:12px;padding:7px;
+  }
+  .account-quick-tabs button{
+    display:flex;align-items:center;justify-content:center;
+    min-width:0;height:45px;border:1px solid transparent;border-radius:9px;
+    color:#fff;background:transparent;cursor:pointer;
+  }
+  .account-quick-tabs button svg{width:21px;height:21px}
+  .account-quick-tabs button.active{color:#F7C85D;border-color:#F7C85D88;background:#F7C85D15}
+  .account-quick-tabs button:focus-visible{outline:2px solid #DBFF26}
+  .account-main{grid-column:1;min-width:0}
+  .account-menu{position:fixed;top:auto;bottom:calc(73px + env(safe-area-inset-bottom));right:12px;max-width:calc(100vw - 24px);z-index:80}
+}
+@media(max-width:540px){
+  .recharge-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+  .recharge-amount{min-height:41px;font-size:12px;padding:7px 4px}
+  .recharge-custom{font-size:11px}
+  .referral-link{flex-wrap:wrap}
+  .referral-link input{width:100%;flex-basis:100%}
+  .referral-link .btn{flex:1}
+}
+@media(max-width:365px){
+  .recharge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .account-quick-tabs{gap:3px;padding:5px}
+}
+@media(prefers-reduced-motion:reduce){.auth-busy-spinner{animation:none}}
