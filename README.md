@@ -1,3 +1,14 @@
+## Ajuste de sesión e historial de recargas · 15/11/2026
+
+- Las sesiones se conservan al actualizar, regresar de Mercado Pago o abrir otra pestaña; se cierran tras **60 minutos sin actividad**, con validación en Apps Script y un límite absoluto de siete días.
+- Los fallos temporales de conexión ya no eliminan una sesión válida.
+- El historial de recargas muestra **fecha/hora de creación en Perú**, ordenado de más reciente a más antiguo.
+- Actualizar `Config.gs`, `Auth.gs` y `Topups.gs` en Apps Script y ejecutar `setupPremiumGol` antes de publicar una nueva versión.
+- [Instrucciones y pruebas](docs/ajustes-sesion-recargas-20261115.md).
+- Las capturas del Checkout Pro corresponden al entorno **sandbox**; no prueban cobros reales ni autorizan por sí solas el cambio a producción.
+
+---
+
 ## Checkout Pro en PremiumGol · solamente Google Apps Script (15/11/2026)
 
 La pantalla **Mi cuenta → Recargar saldo** crea la preferencia de Mercado Pago desde el mismo Google Apps Script que administra las sesiones de PremiumGol. No hay Cloud Run, Firestore, una segunda página QA ni Access Tokens públicos en GitHub.
