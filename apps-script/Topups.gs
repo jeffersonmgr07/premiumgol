@@ -186,6 +186,29 @@ function pgMpValid_(payment,order,config){
 function pgMpLedgerHas_(entryId){
   return Boolean(pgFind_('payments_ledger','entryId',entryId));
 }
+
+/** Concilia S/ 5 por la primera recarga vigente del referido. Debe ejecutarse bajo pgLock_. */
+function pgMpReconcileReferralBonus_(referredUid,when){
+  const referred=pgFind_('users','uid',referredUid);
+  if(!referred)return;
+  const person=pgObject_('users',referred.values);
+  const inviterUid=String(person.invitedBy||'');
+  if(!inviterUid||inviterUid===String(referredUid)||!pgFind_('users','uid',inviterUid))return;
+  const receipts=pgRows_('payments_ledger').rows.filter(r=>String(r[1])===String(referredUid));
+  const reversals=new Set(receipts.filter(r=>Number(r[4])<0&&
+    ['REFUNDED','CHARGED_BACK'].includes(String(r[5]))).map(r=>String(r[2])));
+  const eligible=receipts.some(r=>String(r[5])==='TOPUP_APPROVED'&&Number(r[4])>0&&
+    !reversals.has(String(r[2])));
+  const entries=pgRows_('bonus_ledger').rows.filter(r=>String(r[1])===inviterUid&&
+    String(r[2])===String(referredUid)&&String(r[4])==='AVAILABLE');
+  const existingCents=entries.reduce((n,r)=>n+Math.round(Number(r[3]||0)*100),0);
+  const targetCents=eligible?500:0;
+  if(existingCents===targetCents)return;
+  pgWrite_('bonus_ledger',{entryId:'REF-'+String(referredUid)+'-'+pgUuid_(),
+    uid:inviterUid,sourceUid:String(referredUid),
+    amountPEN:(targetCents-existingCents)/100,status:'AVAILABLE',createdAt:when,
+    note:targetCents?'Bono por primera recarga aprobada':'Reversión por recarga reembolsada'});
+}
 /** Escribe un único movimiento monetario por orden. Sin saldos demo mezclados. */
 function pgMpRecordVerified_(orderId,payment,config){
   return pgLock_(()=>{
@@ -229,6 +252,9 @@ function pgMpRecordVerified_(orderId,payment,config){
       pgUpdate_('topup_requests',row.index,{status,paymentId:pid,
         lastCheckAt:time,updatedAt:time});
     }
+    if(config.env==='production'&&
+      (status==='APPROVED'||status==='REFUNDED'||status==='CHARGED_BACK'))
+      pgMpReconcileReferralBonus_(String(order.uid),time);
     const latest=pgFind_('topup_requests','orderId',orderId);
     return pgMpPublicOrder_(pgObject_('topup_requests',latest.values));
   });
