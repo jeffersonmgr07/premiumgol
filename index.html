@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=25">
+  <link rel="stylesheet" href="assets/styles.css?v=26">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=25"></script>
+  <script defer src="assets/app.js?v=26"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -118,9 +118,10 @@
   <p class="slot-help" id="golSlotHint">Jugada A · marca local, empate o visita.</p>
   <div id="golSummary" class="gol-summary" aria-live="polite"></div>
   <div class="gol-stat"><span>Pronósticos completados</span><b id="golCountSide">0 de 12</b></div>
-  <div class="gol-price"><span>Valor de cada jugada</span><strong>S/ 3 (virtual)</strong></div>
+  <div class="gol-price"><span>Valor de cada jugada</span><strong>S/ 5 · 5 créditos de prueba</strong></div>
   <button class="btn btn-gold btn-full" id="submitGol">Colocar jugada <svg><use href="#i-arrow"></use></svg></button>
   <button class="text-link centered" id="resetGol">Borrar selección</button>
+  <button class="gol-rules-link" type="button" id="openGolRules"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Ver reglas y condiciones</button>
 </div><div class="help-card"><svg><use href="#i-shield"></use></svg><p>Esta versión utiliza encuentros y créditos de demostración. No hay apuestas ni premios de dinero real.</p></div></aside></div></div>
     </section>
 
@@ -204,9 +205,21 @@
     <button type="button" class="btn btn-gold btn-full" id="claimCoupon">Activar mi bono</button>
     <small>Promoción limitada a un bono por cuenta. Saldo virtual de demostración; no canjeable por dinero.</small>
   </div></dialog>
-  <div id="authBusyOverlay" class="auth-busy-overlay" hidden aria-live="polite" role="status">
-    <div class="auth-busy-box"><span class="auth-busy-spinner" aria-hidden="true"></span><strong id="authBusyTitle">Verificando tu cuenta…</strong><p>Estamos confirmando tu acceso a PremiumGol.</p></div>
-  </div>
+  <dialog id="authBusyOverlay" class="auth-busy-overlay" aria-labelledby="authBusyTitle" aria-describedby="authBusyDesc">
+    <div class="auth-busy-box"><span class="auth-busy-google" aria-hidden="true">G</span><span class="auth-busy-spinner" aria-hidden="true"></span><strong id="authBusyTitle">Verificando tu cuenta…</strong><p id="authBusyDesc">Estamos confirmando tu acceso a PremiumGol.</p></div>
+  </dialog>
+  <dialog id="golRulesDialog" class="gol-rules-dialog" aria-labelledby="golRulesTitle">
+    <div class="gol-rules-inner">
+      <button id="closeGolRules" class="modal-x" aria-label="Cerrar reglas" type="button"><svg><use href="#i-close"></use></svg></button>
+      <h2 id="golRulesTitle">Reglas de PremiumGol</h2>
+      <p>En cada jugada debes marcar un pronóstico para los 12 encuentros: <b>L</b> gana el local, <b>E</b> empate o <b>V</b> gana la visita.</p>
+      <p>Las jugadas A, B, C y D son independientes. La jornada se cierra en la fecha y hora anunciadas; no se admiten cambios después del cierre.</p>
+      <p>Los aciertos se calculan comparando tus selecciones con el resultado oficial de cada partido al finalizar el tiempo reglamentario, según las condiciones publicadas para la jornada.</p>
+      <p>La clasificación considera la cantidad de aciertos. Las condiciones de premios, desempates y posibles bonos se anunciarán antes de habilitar su entrega. El pozo mostrado no constituye una promesa de pago en esta versión de prueba.</p>
+      <p>El costo configurado actualmente es de <b>5 créditos de prueba por jugada</b>. La compra con dinero real todavía no está habilitada.</p>
+      <button type="button" id="acceptGolRules" class="btn btn-gold btn-full">Entendido</button>
+    </div>
+  </dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
