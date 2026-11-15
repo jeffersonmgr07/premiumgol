@@ -329,7 +329,9 @@
     $('#walletTop').hidden=!hasUser();
     $('#topBalance').textContent=fmt2(accountBalance);
     $('#loginTopLabel').textContent=hasUser()?'Mi cuenta':'Ingresar';
+    $('#loginTop').setAttribute('aria-label',hasUser()?'Abrir menú de Mi cuenta':'Ingresar o registrarse');
     $('#loginTop').setAttribute('aria-haspopup',hasUser()?'menu':'false');
+    $('[data-nav="account"]')?.setAttribute('aria-haspopup',hasUser()?'menu':'false');
     $('#loginTop').setAttribute('aria-expanded',String(hasUser()&&accountMenuOpen));
     $('#registerTop').hidden=hasUser();
   }
