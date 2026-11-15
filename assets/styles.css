@@ -594,3 +594,73 @@
 @keyframes pgSportsLoading{to{transform:rotate(360deg)}}
 .live-banner[hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){.sports-loader{animation:none}}
+
+/* PremiumGol V24: escudos completos y estado de autenticación Google */
+.gol-team-crest{
+  clip-path:none!important;
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  aspect-ratio:1;
+  border:1px solid #d6b86ba6;
+  border-radius:10px;
+  overflow:hidden;
+  flex-shrink:0;
+  box-sizing:border-box;
+}
+.gol-team-crest .gol-crest-img{
+  border-radius:9px;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:3px;
+  box-sizing:border-box;
+}
+.gol-team-crest .gol-crest-initial{
+  display:grid;
+  place-items:center;
+  min-height:100%;
+  font-size:11px;
+}
+@media(min-width:901px){
+  .gol-fixtures .gol-fixture{
+    min-height:102px;
+    padding:13px 12px;
+    align-items:center;
+  }
+  .gol-fixtures .gol-fixture .gol-fixture-meta{
+    margin-bottom:10px;
+  }
+  .gol-fixtures .gol-fixture .gol-teams-row{
+    min-height:42px;
+  }
+}
+@media(max-width:900px){
+  .gol-fixtures .gol-fixture{padding-block:13px}
+  .gol-team-crest{
+    width:36px!important;
+    height:36px!important;
+    min-width:36px!important;
+  }
+  .gol-fixtures .gol-fixture .gol-teams-row{min-height:62px}
+}
+@media(max-width:410px){
+  .gol-team-crest{
+    width:34px!important;
+    height:34px!important;
+    min-width:34px!important;
+  }
+}
+.google-login-status{
+  display:block;
+  color:#fff;
+  font-size:12px;
+  text-align:center;
+  line-height:1.5;
+  margin:8px auto 4px;
+  min-height:18px;
+}
+.google-login-status.is-error{color:#ffbdc0}
+.google-login-status[hidden]{display:none}
+.google-signin-shell.is-loading{border-color:#DBFF26;box-shadow:0 0 14px #DBFF2645}
