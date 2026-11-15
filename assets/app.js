@@ -67,6 +67,13 @@
   let accountRefreshPromise=null;
   function sessionExpired(){
     const now=Date.now();
+    // Otra pestaña activa mantiene vigente la misma sesión compartida.
+    try{
+      const shared=JSON.parse(localStorage.getItem(SESSION_KEY)||'null');
+      if(shared?.token===sessionToken&&Number.isFinite(shared.lastActivityAt)){
+        lastSessionInteraction=Math.max(lastSessionInteraction,shared.lastActivityAt);
+      }
+    }catch{}
     return Boolean(sessionToken)&&(!lastSessionInteraction||
       now-lastSessionInteraction>=SESSION_IDLE_MS||
       now-sessionCreatedAt>=7*86400000);
@@ -976,16 +983,21 @@
   });
   window.addEventListener('storage',e=>{
     if(e.key!==SESSION_KEY||!sessionToken)return;
-    if(e.newValue===null){
-      // Sincroniza el cierre de sesión entre pestañas del mismo navegador.
-      const old=sessionToken;
-      sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
-      recentTopupOrders=[];playHistory=[];golLocked={};
-      lastSessionInteraction=0;sessionCreatedAt=0;
-      try{sessionStorage.removeItem(LEGACY_SESSION_KEY);}catch{}
-      renderAll();showView('home');
-      toast('Has cerrado sesión en otra pestaña.');
+    let other=null;
+    try{other=e.newValue?JSON.parse(e.newValue):null;}catch{}
+    if(other?.token===sessionToken&&Number.isFinite(other.lastActivityAt)){
+      lastSessionInteraction=Math.max(lastSessionInteraction,other.lastActivityAt);
+      return;
     }
+    // El cierre o cambio de cuenta en otra pestaña invalida la vista local,
+    // sin revocar el token de la nueva sesión de la otra pestaña.
+    sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
+    recentTopupOrders=[];playHistory=[];golLocked={};
+    lastSessionInteraction=0;sessionCreatedAt=0;
+    try{sessionStorage.removeItem(LEGACY_SESSION_KEY);}catch{}
+    renderAll();showView('home');
+    toast(other?.token?'La cuenta cambió en otra pestaña. Actualiza para continuar.':
+      'Has cerrado sesión en otra pestaña.');
   });
   setInterval(()=>{
     if(!sessionToken)return;
