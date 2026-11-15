@@ -1,6 +1,8 @@
-# Mercado Pago en PremiumGol — plan de integración segura
+# Mercado Pago en PremiumGol — Checkout Pro integrado en Mi cuenta
+> **Documento principal actualizado:** [payments/README.md](../payments/README.md). La versión actual no utiliza una página de QA independiente; el botón de recarga pertenece a `premiumgol.website` y consulta un backend protegido dentro del mismo repositorio.
 
-**Estado (15/11/2026): EN PREPARACIÓN. NO COBRAR EN PRODUCCIÓN.** El sitio está en GitHub Pages y el backend actual utiliza Apps Script con créditos de demostración. La vista de recargas ya permite elegir S/30, 50, 100, 200, 500, 1,000 y otro monto (mínimo S/30), y crea solicitudes `PENDIENTE` en `Topups.gs`. El botón de Mercado Pago todavía está deshabilitado deliberadamente. `savePremiumGol` descuenta 5 créditos virtuales por jugada.
+
+**Estado (15/11/2026): código integrado en Mi cuenta, pendiente de despliegue y habilitación comercial/legal. NO COBRAR APUESTAS EN PRODUCCIÓN.** El sitio está en GitHub Pages y el backend actual utiliza Apps Script con créditos de demostración. La vista de recargas ya permite elegir S/30, 50, 100, 200, 500, 1,000 y otro monto (mínimo S/30), y crea solicitudes `PENDIENTE` en `Topups.gs`. El botón de Mercado Pago todavía está deshabilitado deliberadamente. `savePremiumGol` descuenta 5 créditos virtuales por jugada.
 
 ## 0. Requisitos antes de habilitar dinero real
 
