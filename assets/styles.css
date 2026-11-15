@@ -380,3 +380,39 @@
   .hero .hero-copy h1{left:18px;bottom:62px;width:195px;max-width:59vw;font-size:20px}
   .hero .hero-actions{left:18px;top:72px}
 }
+
+/* PremiumGol V19 · Cartilla con fecha, campeonato, insignias y conexión recuperable */
+.gol-deadline{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;margin-top:12px!important;border:1px solid #DBFF2670;border-radius:9px;background:#DBFF260b;color:#fff;font-size:12px;font-weight:800;line-height:1.5;box-shadow:0 0 12px #DBFF2617}
+.gol-deadline.expired{border-color:#e1a697;color:#fff;background:#5f282833;box-shadow:none}
+.gol-fixtures .gol-fixture{grid-template-columns:30px minmax(0,1fr) 168px;min-height:110px;gap:13px}
+.gol-fixtures .gol-fixture .fixture-main{min-width:0}
+.gol-fixture-meta{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin-bottom:11px}
+.gol-fixture-meta small{display:block;color:#f7c85d!important;font-size:10px;letter-spacing:.1px;font-weight:800}
+.gol-fixture-meta>span{font-size:11px;line-height:1.5;color:#fff;font-weight:650}
+.gol-teams-row{display:flex;align-items:center;gap:10px;width:100%;min-width:0}
+.gol-team{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.gol-team strong{min-width:0;color:#fff;font-weight:850;font-family:var(--display);font-size:13px;line-height:1.3;overflow-wrap:anywhere}
+.gol-versus{font-weight:900;font-family:var(--display);color:#f7c85d;font-size:10px;flex:0 0 auto}
+.gol-team-crest{position:relative;display:grid;place-items:center;width:35px;height:35px;min-width:35px;border:1px solid #d6b86b77;background:linear-gradient(150deg,#1d2e43,#0c1628);border-radius:9px;clip-path:polygon(8% 0,92% 0,100% 14%,100% 78%,50% 100%,0 78%,0 14%);overflow:hidden}
+.gol-crest-initial{font:900 10px var(--display);color:#f7c85d;text-align:center;letter-spacing:-.5px}
+.gol-crest-img{position:absolute;inset:0;object-fit:contain;width:100%;height:100%;padding:2px;box-sizing:border-box;background:#142035}
+.gol-fixtures .result-choices{min-width:0}
+.catalog-retry{display:block;margin:16px auto 0}
+@media(max-width:900px){
+ .gol-fixtures .gol-fixture{grid-template-columns:26px minmax(0,1fr);gap:11px;padding:13px}
+ .gol-fixtures .gol-fixture .result-choices{grid-column:2;grid-row:auto;justify-content:flex-start;width:100%;max-width:330px}
+ .gol-teams-row{gap:7px}
+ .gol-team strong{font-size:12px}
+ .gol-team-crest{width:31px;height:31px;min-width:31px}
+ .gol-fixture-meta{margin-bottom:8px}
+}
+@media(max-width:480px){
+ .gol-fixtures .gol-fixture{grid-template-columns:23px minmax(0,1fr);padding:11px;gap:9px}
+ .gol-team{gap:5px}
+ .gol-team-crest{width:27px;height:27px;min-width:27px}
+ .gol-team strong{font-size:11px;line-height:1.25}
+ .gol-versus{font-size:9px}
+ .gol-fixture-meta small,.gol-fixture-meta>span{font-size:10px}
+ .gol-fixtures .gol-fixture .result-choices{width:100%;max-width:290px}
+ .gol-deadline{font-size:11px;padding:8px 10px}
+}
