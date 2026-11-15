@@ -159,6 +159,8 @@ function pgMpRecordVerified_(orderId,payment,config){
     if(!pgMpValid_(payment,order,config))return pgMpPublicOrder_(order);
     const status=String(payment.status).toUpperCase();
     const pid=String(payment.id);
+    if(['REFUNDED','CHARGED_BACK'].includes(String(order.status))&&status==='APPROVED')
+      return pgMpPublicOrder_(order);
     // Una orden ya aprobada nunca se reasigna a otro paymentId.
     if(order.status==='APPROVED'&&order.paymentId&&String(order.paymentId)!==pid)
       return pgMpPublicOrder_(order);
@@ -283,7 +285,8 @@ function testPremiumGolCheckoutConfiguration(){
   const props=PropertiesService.getScriptProperties();
   const id=pgProp_('SPREADSHEET_ID');
   const results={
-    tokenConfigured:Boolean(pgProp_('MP_ACCESS_TOKEN')||pgProp_('MP_TEST_ACCESS_TOKEN')),
+    tokenConfigured:Boolean(pgProp_('MP_ACCESS_TOKEN')||
+      (pgProp_('MP_ENV')!=='production'&&pgProp_('MP_TEST_ACCESS_TOKEN'))),
     collectorConfigured:/^\d+$/.test(pgProp_('MP_COLLECTOR_ID')),
     mode:pgProp_('MP_ENV')==='production'?'production':'test',
     enabled:pgProp_('MP_CHECKOUT_ENABLED')==='true',
@@ -298,16 +301,19 @@ function testPremiumGolCheckoutConfiguration(){
 
 /** Solo información de diagnóstico; no registra ni imprime tokens. */
 function testPremiumGolMerchantId(){
-  const cfg=pgMpConfig_(false);
+  const mode=pgProp_('MP_ENV')==='production'?'production':'test';
+  const token=pgProp_('MP_ACCESS_TOKEN')||
+    (mode==='test'?pgProp_('MP_TEST_ACCESS_TOKEN'):'');
+  if(!token)pgErr_('La conexión de pago todavía no está configurada.');
   const resp=UrlFetchApp.fetch('https://api.mercadolibre.com/users/me',{
     method:'get',muteHttpExceptions:true,
-    headers:{Authorization:'Bearer '+cfg.token}
+    headers:{Authorization:'Bearer '+token}
   });
   if(resp.getResponseCode()!==200)
     pgErr_('No fue posible consultar el identificador de Mercado Pago.');
   const data=JSON.parse(resp.getContentText()||'{}');
   const id=String(data.id||'');
-  const result={collectorId:id,collectorMatches:id===cfg.collector,mode:cfg.env};
+  const result={collectorId:id,collectorMatches:id===pgProp_('MP_COLLECTOR_ID'),mode};
   console.log('Mercado Pago · Cuenta receptora: '+JSON.stringify(result));
   return result;
 }
