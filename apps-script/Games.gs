@@ -141,3 +141,41 @@ function pgSaveBet_(x){
     return pgSnapshot_(pgFind_('users','uid',u.uid));
   });
 }
+
+/** Cotejo de los 12 pronósticos contra resultados oficiales ya publicados. */
+function pgGolTicketStatus_(roundId,picks){
+  if(String(roundId)!==PG.ROUND_ID)return 'PENDIENTE';
+  let result;
+  try{
+    const raw=pgProp_('PG_RESULTS_'+PG.ROUND_ID);
+    if(!raw)return 'PENDIENTE';
+    result=JSON.parse(raw);
+  }catch(e){return 'PENDIENTE';}
+  if(!Array.isArray(result)||result.length!==PG_RETO_IDs.length||
+     result.some((v,i)=>String(v.id)!==PG_RETO_IDs[i]||!['1','X','2'].includes(String(v.outcome))))
+    return 'PENDIENTE';
+  if(!Array.isArray(picks)||picks.length!==PG_RETO_IDs.length||
+     picks.some((v,i)=>String(v.id)!==PG_RETO_IDs[i]||!['1','X','2'].includes(String(v.outcome))))
+    return 'PENDIENTE';
+  return picks.every((v,i)=>String(v.outcome)===String(result[i].outcome))?
+    'GANADOR':'SIN_PREMIO';
+}
+/** Uso exclusivo del administrador: 12 resultados oficiales, en orden gol1...gol12.
+ * Se llama manualmente desde el editor una vez que la jornada fue cotejada.
+ * Las cadenas permitidas son '1' (local), 'X' (empate), '2' (visita).
+ */
+function adminPublishPremiumGolResults(outcomes){
+  const admin=pgProp_('ADMIN_EMAIL').toLowerCase();
+  const caller=String(Session.getActiveUser().getEmail()||'').toLowerCase();
+  if(!admin||caller!==admin)pgErr_('No autorizado.');
+  if(!Array.isArray(outcomes)||outcomes.length!==PG_RETO_IDs.length||
+     outcomes.some(v=>!['1','X','2'].includes(String(v))))
+    pgErr_('Se necesitan los 12 resultados oficiales en orden.');
+  const property='PG_RESULTS_'+PG.ROUND_ID;
+  const completed=PG_GOL_FIXTURES.every(g=>
+    Date.now()>new Date(g.kickoff).getTime()+2*60*60*1000);
+  if(!completed)pgErr_('La jornada todavía no ha concluido.');
+  const verified=outcomes.map((outcome,i)=>({id:PG_RETO_IDs[i],outcome:String(outcome)}));
+  PropertiesService.getScriptProperties().setProperty(property,JSON.stringify(verified));
+  return {ok:true,roundId:PG.ROUND_ID,totalPartidos:verified.length};
+}
