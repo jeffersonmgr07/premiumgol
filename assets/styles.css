@@ -752,3 +752,88 @@ body.auth-request-busy{overflow:hidden}
   .account-quick-tabs{gap:3px;padding:5px}
 }
 @media(prefers-reduced-motion:reduce){.auth-busy-spinner{animation:none}}
+
+/* PremiumGol V26 · modal de verificación, menú y reglas del juego */
+.auth-busy-overlay{
+  padding:0;border:0;max-width:none;max-height:none;
+  width:100vw;height:100dvh;overflow:hidden;
+  margin:0;background:rgba(3,11,24,.7);
+}
+.auth-busy-overlay:not([open]){display:none!important}
+.auth-busy-overlay[open]{display:grid;place-items:center}
+.auth-busy-overlay::backdrop{
+  background:rgba(1,7,18,.87);backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px)
+}
+.auth-busy-google{
+  font-family:Arial,sans-serif;font-size:54px;font-weight:900;line-height:1;
+  background:conic-gradient(#4285F4 0 105deg,#34A853 105deg 190deg,#FBBC05 190deg 255deg,#EA4335 255deg 325deg,#4285F4 325deg);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:pgGooglePulse 1.25s ease-in-out infinite
+}
+.auth-busy-overlay[data-kind="general"] .auth-busy-google{display:none}
+.auth-busy-overlay[data-kind="google"] .auth-busy-google{display:block}
+.auth-busy-box{
+  width:min(350px,calc(100vw - 36px));border-radius:20px;padding:27px 22px;
+  background:#101f32;border:1px solid #DBFF26;
+  box-shadow:0 0 25px #DBFF263a,0 22px 85px #000b
+}
+.auth-busy-box .auth-busy-spinner{width:28px;height:28px}
+@keyframes pgGooglePulse{
+  0%,100%{transform:scale(.95);opacity:.86}
+  50%{transform:scale(1.12);opacity:1}
+}
+.gol-rules-link{
+ display:flex;align-items:center;gap:8px;justify-content:center;
+ background:transparent;border:1px solid #F7C85D80;border-radius:9px;
+ color:#fff;font-size:12px;font-weight:800;min-height:39px;
+ width:100%;margin-top:13px;cursor:pointer
+}
+.gol-rules-link:hover,.gol-rules-link:focus-visible{
+ border-color:#DBFF26;color:#DBFF26;outline:none
+}
+.gol-rules-link svg{width:16px;height:16px}
+.gol-rules-dialog{
+ color:#fff;background:#101e30;border:1px solid #DBFF26;
+ border-radius:17px;padding:0;width:min(530px,calc(100% - 26px));
+ max-height:calc(100dvh - 40px);overflow:auto;
+ box-shadow:0 0 35px #DBFF2635
+}
+.gol-rules-dialog:not([open]){display:none!important}
+.gol-rules-dialog::backdrop{background:rgba(0,6,17,.88);backdrop-filter:blur(5px)}
+.gol-rules-inner{padding:28px 26px 24px;position:relative}
+.gol-rules-inner h2{font:900 24px var(--display);margin:0 0 16px;padding-right:25px;color:#F7C85D}
+.gol-rules-inner p{color:#fff;font-size:13px;line-height:1.75;margin:0 0 14px}
+.gol-rules-inner .btn{margin-top:12px}
+.recharge-order{
+ background:#112136;border:1px solid #DBFF2665;border-radius:13px;
+ padding:18px;margin-top:16px
+}
+.recharge-order-head{display:flex;align-items:center;gap:12px}
+.recharge-order-head>div{display:flex;flex-direction:column;gap:5px}
+.recharge-order-head strong{font-size:15px;color:#fff}
+.recharge-order-head span{font-size:12px;color:#fff}
+.recharge-order-icon{
+ width:42px;height:42px;display:grid;place-items:center;border-radius:11px;
+ background:#DBFF2615;color:#DBFF26;flex-shrink:0;
+}
+.recharge-order-icon svg{width:23px;height:23px}
+.recharge-order-data{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.recharge-order-badge{
+ display:inline-flex;align-items:center;justify-content:center;padding:6px 11px;
+ font:800 12px var(--display);border:1px solid #F7C85D80;
+ border-radius:99px;color:#F7C85D;background:#F7C85D12
+}
+.recharge-order-badge.is-pending{border-color:#DBFF2670;color:#DBFF26;background:#DBFF2610}
+.recharge-order-small{font-size:12px;line-height:1.6;color:#fff;margin:14px 0 0}
+@media(max-width:900px){
+  .account-menu{width:225px;max-width:calc(100vw - 24px)}
+}
+@media(max-width:430px){
+  .gol-rules-inner{padding:24px 18px 20px}
+  .auth-busy-box{padding:24px 18px}
+}
+@media(prefers-reduced-motion:reduce){
+ .auth-busy-google{animation:none}
+ .auth-busy-spinner{animation:none}
+}
