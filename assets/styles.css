@@ -446,7 +446,7 @@
 .gol-team{display:flex;align-items:center;min-width:0;gap:7px}
 .gol-team-home{justify-content:flex-end}
 .gol-team-away{justify-content:flex-start;padding-left:8px}
-.gol-team strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere}
+.gol-team strong{font-size:12px;line-height:1.25;overflow-wrap:anywhere;margin-top:0;display:block}
 .gol-versus{display:grid;place-items:center;text-align:center;color:var(--gold);font-size:10px}
 .gol-team-crest{width:30px;height:30px;min-width:30px}
 .gol-fixtures .result-choices{gap:5px;grid-template-columns:repeat(3,minmax(0,1fr))}
