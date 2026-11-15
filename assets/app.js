@@ -34,7 +34,39 @@
   let accountBalance = 0;
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
-  let catalogWarning='',catalogLoading=true;
+  let accountMenuOpen=false,authBusy=false,referralsJoined=0;
+  const referralFromUrl=(()=>{
+    try{
+      const code=new URLSearchParams(location.search).get('ref')||'';
+      return /^[A-Z0-9]{10,16}$/i.test(code)?code.toUpperCase():'';
+    }catch{return '';}
+  })();
+  function setAuthBusy(on,message='Verificando tu cuenta…'){
+    authBusy=Boolean(on);
+    const overlay=$('#authBusyOverlay');
+    if(overlay){overlay.hidden=!authBusy;$('#authBusyTitle').textContent=message;}
+    document.body.classList.toggle('auth-request-busy',authBusy);
+    if($('#authDialog'))$('#authDialog').setAttribute('aria-busy',String(authBusy));
+  }
+  function closeAccountMenu(){
+    accountMenuOpen=false;
+    $('#accountMenu').hidden=true;
+    $('#loginTop').setAttribute('aria-expanded','false');
+    $('[data-nav="account"]')?.setAttribute('aria-expanded','false');
+  }
+  function toggleAccountMenu(){
+    if(!hasUser()){openAuth('login');return;}
+    accountMenuOpen=!accountMenuOpen;
+    $('#accountMenu').hidden=!accountMenuOpen;
+    $('#loginTop').setAttribute('aria-expanded',String(accountMenuOpen));
+    $('[data-nav="account"]')?.setAttribute('aria-expanded',String(accountMenuOpen));
+  }
+  function openAccountTab(tab){
+    if(!['overview','history','wallet','profile'].includes(tab))return;
+    accountTab=tab;closeAccountMenu();showView('account');
+    renderAccount();
+  }
+  let catalogWarning='',catalogLoading=false,catalogRequested=false,golProgramRequested=false;
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
   let topupSelection='30',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
@@ -92,6 +124,7 @@
   function initials(s){return String(s).split(' ').map(t=>t[0]).slice(0,2).join('').toUpperCase();}
   function badge(s,color){return `<span class="badge-crest" style="--crest:${/^#[0-9a-f]{6}$/i.test(color||'')?color:'#4c769d'}">${esc(initials(s))}</span>`;}
   function showView(name,skipHash=false){
+    closeAccountMenu();
     if(!['home','gol','match','live','account'].includes(name))name='home';
     if(name==='account'&&!hasUser()){pendingAfterAuth='account';openAuth('login');return;}
     activeView=name;
@@ -99,8 +132,12 @@
     $$('[data-nav]').forEach(e=>e.classList.toggle('active',e.dataset.nav===name));
     if(!skipHash)history.replaceState(null,'',name==='home'?'#inicio':`#${name}`);
     if(name==='account')renderAccount();
-    if(name==='match')renderMatch();
-    if(name==='live')renderLive();
+    if(name==='match'||name==='live'){
+      if(!catalogRequested){catalogRequested=true;catalogLoading=true;loadCatalog();}
+      if(name==='match')renderMatch();
+      else renderLive();
+    }
+    if(name==='gol'&&!golProgramRequested){golProgramRequested=true;loadGolProgram();}
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function renderHome(){
@@ -281,6 +318,7 @@
   }
   function updateAccount(result){
     if(result.user)account=result.user;
+    if(Number.isSafeInteger(Number(result.referralCount)))referralsJoined=Number(result.referralCount);
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Array.isArray(result.history))playHistory=result.history;
     if(result.golSlots&&typeof result.golSlots==='object'){golLocked=result.golSlots;for(const slot of SLOTS){if(golLocked[slot]?.picks){draft.golCards[slot]=Object.fromEntries(golLocked[slot].picks.map(p=>[p.id,p.outcome]));}}saveDraft();}
@@ -291,6 +329,8 @@
     $('#walletTop').hidden=!hasUser();
     $('#topBalance').textContent=fmt2(accountBalance);
     $('#loginTopLabel').textContent=hasUser()?'Mi cuenta':'Ingresar';
+    $('#loginTop').setAttribute('aria-haspopup',hasUser()?'menu':'false');
+    $('#loginTop').setAttribute('aria-expanded',String(hasUser()&&accountMenuOpen));
     $('#registerTop').hidden=hasUser();
   }
   function chosenTopup(){
@@ -327,7 +367,13 @@
   function renderAccount(){
     const name=[account?.firstName,account?.lastName].filter(Boolean).join(' ')||'Usuario';
     $('#profileName').textContent=name;
-    $('#avatarInitial').textContent=name.slice(0,1).toUpperCase();
+    $('#avatarInitialText').textContent=name.slice(0,1).toUpperCase();
+    const img=$('#avatarPhoto');
+    const photo=String(account?.avatarUrl||'');
+    const photoValid=/^https:\/\/(?:lh\d+|[a-z0-9-]+)\.googleusercontent\.com\//i.test(photo);
+    img.hidden=!photoValid;
+    if(photoValid&&img.src!==photo)img.src=photo;
+    if(!photoValid)img.removeAttribute('src');
     $('#profileSubtitle').textContent=account?.email||'Mi cuenta';
     $('#welcomeName').textContent=account?`¡Hola, ${account.firstName||'jugador'}!`:'¡El partido te espera!';
     $('#accountBalance').textContent=fmt2(accountBalance);
@@ -345,7 +391,19 @@
     $('#profileDocType').value=account?.docType||'';
     $('#profileDocNumber').value=account?.docNumber||'';
     renderTopup();
-    document.querySelectorAll('[data-account-tab]').forEach(el=>el.classList.toggle('active',el.dataset.accountTab===accountTab));
+    const code=String(account?.inviteCode||'');
+    const validCode=/^[A-Z0-9]{10,16}$/.test(code);
+    const link=validCode?'https://premiumgol.website/?ref='+encodeURIComponent(code):'';
+    $('#referralLink').value=link||'Disponible al actualizar tu cuenta';
+    $('#copyReferral').disabled=!validCode;
+    $('#referralCount').textContent=validCode?
+      referralsJoined+' amigo(s) registrados con tu enlace · Beneficio pendiente de activación':
+      'Tu invitación estará disponible después de actualizar la cuenta';
+    document.querySelectorAll('[data-account-tab]').forEach(el=>{
+      const active=el.dataset.accountTab===accountTab;
+      el.classList.toggle('active',active);
+      el.setAttribute('aria-pressed',String(active));
+    });
     $$('.account-content').forEach(el=>el.classList.remove('is-active'));
     $(`#account${accountTab.charAt(0).toUpperCase()+accountTab.slice(1)}`)?.classList.add('is-active');
   }
@@ -384,17 +442,17 @@
     updateAccount(result);
     closeAuth();toast('¡Bienvenido a PremiumGol!');
     const next=pendingAfterAuth;pendingAfterAuth=null;
-    if(!String(result.user.phone||'').trim()){
-      // Google no entrega el teléfono: pedirlo en el perfil al entrar por primera vez.
-      accountTab='profile';showView('account');
-      toast('Completa tu número de WhatsApp para terminar tu registro.');
-      return;
-    }
-    if(next==='gol')saveGol();else if(next==='bet')placeBet();else if(next==='coupon')claimCouponPrompt();else showView('account');
+    accountTab='overview';
+    if(next==='gol')saveGol();
+    else if(next==='bet')placeBet();
+    else if(next==='coupon')claimCouponPrompt();
+    else showView('account');
+    if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
   }
   async function signout(){
     const old=sessionToken;sessionToken='';account=null;accountBalance=0;playHistory=[];golLocked={};couponClaimed=false;
     sessionStorage.removeItem(SESSION_KEY);
+    closeAccountMenu();referralsJoined=0;
     renderAll();showView('home');toast('Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
   }
