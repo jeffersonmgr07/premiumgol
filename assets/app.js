@@ -9,7 +9,12 @@
   const validGoogleClientId = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i.test(String(CONFIG.googleClientId||''));
   const DRAFT_KEY = 'premiumgol_draft_20261118';
   const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
-  const SESSION_KEY = 'premiumgol_session_v2';
+  // Sesión persistente entre actualizaciones del navegador; caduca por inactividad.
+  const SESSION_KEY = 'premiumgol_session_v3';
+  const LEGACY_SESSION_KEY = 'premiumgol_session_v2';
+  const SESSION_IDLE_MS = 60*60*1000;
+  const SESSION_ACTIVITY_THROTTLE_MS = 30*1000;
+  const SESSION_HEARTBEAT_MS = 8*60*1000;
   const $ = sel => document.querySelector(sel);
   const $$ = sel => [...document.querySelectorAll(sel)];
   const esc = v => String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -29,8 +34,65 @@
   const currentPicks=()=>draft.golCards[activeCard];
   draft.slips = Array.isArray(draft.slips) ? draft.slips : [];
   const saveDraft = () => {try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));}catch{}};
-  let sessionToken = sessionStorage.getItem(SESSION_KEY) || '';
+  function readStoredSession(){
+    try{
+      const raw=localStorage.getItem(SESSION_KEY);
+      if(raw){
+        const item=JSON.parse(raw),now=Date.now();
+        if(typeof item?.token==='string'&&
+          /^[0-9a-f-]{36}\.[0-9a-f-]{36}$/i.test(item.token)&&
+          Number.isFinite(item.lastActivityAt)&&Number.isFinite(item.createdAt)&&
+          now-item.lastActivityAt>=0&&now-item.lastActivityAt<SESSION_IDLE_MS&&
+          now-item.createdAt>=0&&now-item.createdAt<7*86400000){
+            return item;
+        }
+        localStorage.removeItem(SESSION_KEY);
+        sessionStorage.removeItem(LEGACY_SESSION_KEY);
+        return null;
+      }
+      // Una única migración de la sesión de la versión previa.
+      const legacy=sessionStorage.getItem(LEGACY_SESSION_KEY);
+      if(legacy&&/^[0-9a-f-]{36}\.[0-9a-f-]{36}$/i.test(legacy)){
+        sessionStorage.removeItem(LEGACY_SESSION_KEY);
+        return {token:legacy,lastActivityAt:Date.now(),createdAt:Date.now()};
+      }
+    }catch(err){console.warn('No se pudo leer la sesión guardada.');}
+    return null;
+  }
+  const restoredSession=readStoredSession();
+  let sessionToken=restoredSession?.token||'';
+  let lastSessionInteraction=restoredSession?.lastActivityAt||0;
+  let sessionCreatedAt=restoredSession?.createdAt||0;
+  let lastSessionVerification=0;
   let accountRefreshPromise=null;
+  function sessionExpired(){
+    const now=Date.now();
+    return Boolean(sessionToken)&&(!lastSessionInteraction||
+      now-lastSessionInteraction>=SESSION_IDLE_MS||
+      now-sessionCreatedAt>=7*86400000);
+  }
+  function saveSessionActivity(force=false){
+    if(!sessionToken||sessionExpired())return;
+    const now=Date.now();
+    if(!force&&now-lastSessionInteraction<SESSION_ACTIVITY_THROTTLE_MS)return;
+    lastSessionInteraction=now;
+    try{
+      localStorage.setItem(SESSION_KEY,JSON.stringify({
+        token:sessionToken,lastActivityAt:now,createdAt:sessionCreatedAt
+      }));
+      sessionStorage.removeItem(LEGACY_SESSION_KEY);
+    }catch(err){
+      // El usuario puede restringir almacenamiento permanente; la pestaña actual
+      // conserva la sesión aunque el navegador bloquee localStorage.
+      try{sessionStorage.setItem(LEGACY_SESSION_KEY,sessionToken);}catch{}
+    }
+  }
+  function clearSavedSession(){
+    try{localStorage.removeItem(SESSION_KEY);}catch{}
+    try{sessionStorage.removeItem(LEGACY_SESSION_KEY);}catch{}
+    try{sessionStorage.removeItem(SESSION_KEY);}catch{}
+  }
+  if(sessionToken)saveSessionActivity(true);
   let account = null;
   let accountBalance = 0;
   let paidBalancePEN = 0;
@@ -139,7 +201,7 @@
   // Nunca pintar datos ficticios como cuotas disponibles.
   let matches=[];
   let liveGames=[];
-  const hasUser = () => Boolean(account && sessionToken);
+  const hasUser = () => Boolean(account && sessionToken && !sessionExpired());
   const allGames = () => [...matches,...liveGames];
   const visibleDate = g => g.dateLabel || `${fixtureDays(g.day||0)} · ${g.time||''}`;
   function initials(s){return String(s).split(' ').map(t=>t[0]).slice(0,2).join('').toUpperCase();}
@@ -151,7 +213,9 @@
       if(sessionToken){
         setAuthBusy(true,'Restaurando tu sesión…','general');
         refreshAccount().then(()=>{
-          if(hasUser())showView('account');else openAuth('login');
+          if(hasUser())showView('account');
+          else if(sessionToken)toast('No se pudo recuperar la sesión. Comprueba tu conexión e inténtalo de nuevo.');
+          else openAuth('login');
         }).finally(()=>setAuthBusy(false));
       }else{pendingAfterAuth='account';openAuth('login');}
       return;
@@ -570,7 +634,10 @@
   function acceptSession(result){
     if(!result.sessionToken||!result.user)throw new Error('El servidor no devolvió una sesión válida.');
     sessionToken=result.sessionToken;
-    sessionStorage.setItem(SESSION_KEY,sessionToken);
+    sessionCreatedAt=Date.now();
+    lastSessionInteraction=sessionCreatedAt;
+    lastSessionVerification=Date.now();
+    saveSessionActivity(true);
     updateAccount(result);
     setAuthBusy(false);
     closeAuth();toast('¡Bienvenido a PremiumGol!');
@@ -583,14 +650,15 @@
     checkMpReturn();
     if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
   }
-  async function signout(){
+  async function signout(reason){
     // Google no debe reabrir automáticamente una sesión después de salir.
     // La elección de cuenta/consentimiento sigue siendo controlada por Google.
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
     const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
-    sessionStorage.removeItem(SESSION_KEY);
+    clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();referralsJoined=0;
-    renderAll();showView('home');toast('Has cerrado sesión.');
+    renderAll();showView('home');
+    toast(reason==='idle'?'Tu sesión terminó tras una hora de inactividad.':'Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
   }
   // Puente Google Apps Script: el web app sirve un iframe HtmlService que llama google.script.run.
@@ -683,10 +751,26 @@
   }
   async function refreshAccount(){
     if(!sessionToken)return;
+    if(sessionExpired()){await signout('idle');return;}
     if(accountRefreshPromise)return accountRefreshPromise;
     accountRefreshPromise=(async()=>{
-      try{updateAccount(await remote('me',{sessionToken}));}
-      catch{sessionToken='';account=null;sessionStorage.removeItem(SESSION_KEY);renderAll();}
+      try{
+        const response=await remote('me',{sessionToken});
+        if(!sessionToken)return;
+        lastSessionVerification=Date.now();
+        updateAccount(response);
+      }catch(err){
+        // No cerrar sesión ante fallos temporales de red, del iframe o por timeout.
+        // Solo el mensaje explícito del servidor invalida el token existente.
+        if(/Sesión vencida\. Vuelve a ingresar\./.test(String(err?.message||''))){
+          sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
+          clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;
+          renderAll();toast('Tu sesión venció. Vuelve a ingresar.');
+        }else{
+          console.warn('La sesión se conserva tras un error temporal de conexión.');
+          if(!account)toast('No se pudo recuperar tu sesión. Revisa la conexión y vuelve a intentarlo.');
+        }
+      }
     })();
     try{await accountRefreshPromise;}finally{accountRefreshPromise=null;}
   }
