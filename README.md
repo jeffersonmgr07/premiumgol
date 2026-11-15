@@ -1,3 +1,33 @@
+## Jornada PremiumGol 18–20 noviembre 2026 y conexión del catálogo
+
+La cartilla pública ahora contiene 12 encuentros competitivos de la lista suministrada. Se retiraron Cruzeiro–Palmeiras (empieza exactamente a la hora límite) e IFK Norrköping–KuPS (amistoso). Esto **no** implica que esos dos fuesen los pronósticos más fáciles; se eligieron con criterios verificables de calendario y formato competitivo.
+
+- **Cierre irrevocable:** miércoles **18/11/2026, 18:30:00 (America/Lima)**; `Config.gs` define `GOL_CUTOFF_ISO` y `Games.gs` rechaza jugadas fuera de plazo. El navegador también deshabilita las selecciones.
+- **Jornada nueva:** `ROUND_ID=premiumgol12-jornada-20261118`; las selecciones antiguas del navegador no se reutilizan y las jugadas A–D permanecen independientes.
+- **Fechas y ligas:** se contrastaron calendarios oficiales de clubes y ligas, se convierten todos los horarios a Lima y se muestran al lado de cada encuentro.
+- **Escudos auténticos:** `GolProgram.gs` consulta el endpoint `fixtures` de API-FOOTBALL para las fechas 18–20/11/2026 y solo asigna logos cuando coinciden ambos equipos del enfrentamiento. Las insignias se muestran desde `media.api-sports.io/football/teams/{id}.png`. Si no hay cobertura o imagen, se presenta un monograma provisional, sin atribuir falsos escudos.
+- **Diagnóstico:** si falla la conexión entre la web y Apps Script, la vista «Apuestas deportivas» y «Premium Live» dejará de quedar esperando indefinidamente; mostrará un error y permitirá pulsar «Reintentar».
+- **No se ha habilitado dinero real**, ni aceptación de cuotas informativas como apuestas con dinero real.
+
+### IMPORTANTE: actualizar Apps Script en su editor y publicar
+GitHub Pages y Apps Script no sincronizan código automáticamente. Para activar la cartilla nueva en el servidor y obtener las insignias:
+
+1. En el proyecto de Apps Script de PremiumGol, sustituir `Config.gs`, `Games.gs` y `Main.gs` por sus versiones del repositorio.
+2. Crear el archivo de tipo *script* `GolProgram.gs` con el contenido homónimo del repositorio. Conservar `Auth.gs` (si ya estaba actualizado), `Bridge.html` y `ApiSports.gs`.
+3. Conservar `SPREADSHEET_ID`. Ejecutar `setupPremiumGol` solo si faltan hojas requeridas; NO borrar ni reemplazar el archivo de Sheets existente.
+4. En Propiedades del script revisar: `FRONTEND_ORIGIN=https://premiumgol.website` (sin barra final), `API_SPORTS_KEY` y `API_SPORTS_CATALOG_MODE=preview`; no compartir secretos por chat ni GitHub.
+5. Ejecutar `testPremiumGolProgram` (12 partidos, hora límite y nº de escudos) y `testPremiumGolSportsCatalog` (lista futura/live). Ejecutar `rpc(JSON.stringify({action:'health',data:{}}))` desde una función de test si se necesitan pruebas adicionales: devuelve versión, estado y si se configuró la API, nunca la clave.
+6. **Implementar → Administrar implementaciones → Editar → Nueva versión → Implementar** para actualizar el despliegue `/exec` existente. La URL pública en `assets/config.js` ya está definida.
+7. Recargar `https://premiumgol.website/` para visualizar la jornada. Si no se conecta el catálogo, pulsar «Reintentar» y consultar los registros de Apps Script.
+
+### Origen de los horarios
+- Brasil: CBF y calendario São Paulo, Grêmio, Vitória.
+- MLS: portales oficiales Seattle Sounders y FC Cincinnati.
+- Europa: calendarios oficiales de Cercle Brugge, Piast Gliwice, Universitatea Cluj, FC Andorra, NAC Breda y Helmond Sport. Septemvri: programación First League.
+- Todos los horarios se representan en America/Lima (UTC−05:00). Sujeto a cambios del organizador.
+
+---
+
 ## Catálogo API-FOOTBALL con cuotas reales (vista informativa) · noviembre de 2026
 
 **Hecho en GitHub:** los equipos ficticios dejan de aparecer en `Apuestas deportivas`, `Premium Live` y `Partidos destacados`. No se inventan cuotas. Las tarjetas 1/X/2 se muestran si API-FOOTBALL devuelve un mercado ganador 1X2 válido. Si falta cuota, se marca «—». Los partidos no permiten colocar jugadas, porque la validación actual de `saveBet` aún usa las cuotas ficticias del servidor y no es un motor de apuestas autorizado.
