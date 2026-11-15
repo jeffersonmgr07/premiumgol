@@ -61,3 +61,18 @@ function pgTopupStatusTicket_(x){
   return {ok:true,orderId:reference,amount:data.amountPEN,
     ...pgCheckoutTicket_(user.uid,reference,cents,true)};
 }
+
+/** Diagnóstico de configuración sin imprimir claves ni datos de usuario. */
+function testPremiumGolCheckoutConfiguration(){
+  const server=pgProp_('PAYMENTS_API_URL').replace(/\/+$/,'');
+  const secret=pgProp_('PAYMENTS_ASSERTION_SECRET');
+  const result={
+    checkoutEnabledInScript:pgProp_('PAYMENTS_CHECKOUT_READY')==='true',
+    backendUrlValid:/^https:\/\/[^/]+$/.test(server),
+    hmacSecretPresent:secret.length>=32,
+    webhookMustBeValidatedByCloudRun:true,
+    realWageringBalanceLinked:false
+  };
+  console.log('PremiumGol: '+JSON.stringify(result));
+  return result;
+}
