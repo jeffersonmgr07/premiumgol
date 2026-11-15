@@ -349,3 +349,34 @@
  .site-header .header-actions .btn-login{animation:none}
  .mode-card,.featured-clickable,.google-signin-shell{transition:none}
 }
+
+/* V17 · Solo móvil: CTA encima de la mano y titular debajo del codo. */
+@media(max-width:720px){
+  .hero .hero-content{position:relative;height:650px;min-height:650px;padding-top:0}
+  .hero .hero-copy{position:static;width:auto;max-width:none;padding:0}
+  .hero .hero-copy h1{
+    position:absolute;left:24px;bottom:78px;top:auto;
+    z-index:4;width:min(245px,64vw);max-width:min(245px,64vw);
+    margin:0;font-size:clamp(22px,5.8vw,28px);
+    line-height:1.1;letter-spacing:-.45px;
+    text-shadow:0 2px 14px rgba(0,0,0,.85);
+  }
+  .hero .hero-actions{
+    position:absolute;left:24px;top:82px;bottom:auto;
+    z-index:5;margin:0;
+  }
+  .hero .hero-actions .btn-gold{
+    width:auto;min-height:44px;height:44px;
+    padding:0 15px;border-radius:12px;font-size:13px;
+  }
+}
+@media(max-width:420px){
+  .hero .hero-content{height:610px;min-height:610px;padding-top:0}
+  .hero .hero-copy h1{left:22px;bottom:68px;width:min(218px,61vw);max-width:min(218px,61vw);font-size:clamp(21px,5.9vw,25px)}
+  .hero .hero-actions{left:22px;top:78px}
+}
+@media(max-width:360px){
+  .hero .hero-content{height:580px;min-height:580px}
+  .hero .hero-copy h1{left:18px;bottom:62px;width:195px;max-width:59vw;font-size:20px}
+  .hero .hero-actions{left:18px;top:72px}
+}
