@@ -106,7 +106,7 @@
   function renderHome(){
     const withOdds=matches.filter(g=>g.odds?.some(v=>Number(v)>1));
     const featured=[...withOdds,...matches.filter(g=>!withOdds.some(x=>x.id===g.id))].slice(0,3);
-    const source='Cuotas informativas · no disponibles para apostar';
+    const source='Encuentros de fútbol';
     $('#homeFixtures').innerHTML=featured.length?featured.map(g=>`<article class="preview-card featured-clickable" data-featured-match="${esc(g.id)}" role="button" tabindex="0" aria-label="Ver cuotas de ${esc(g.home)} contra ${esc(g.away)}">
       <div class="preview-card-head"><span>${icon('ball')} ${esc(g.league)}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
       <div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>
@@ -132,13 +132,36 @@
       new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',weekday:'long',day:'numeric',month:'long',
         hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(parsed).map(({type,value})=>[type,value])
     );
-    const weekday=values.weekday.charAt(0).toUpperCase()+values.weekday.slice(1);
-    return `${weekday} ${values.day} de ${values.month} · ${values.hour}:${values.minute}`;
+    const weekday=values.weekday.slice(0,3).charAt(0).toUpperCase()+values.weekday.slice(1,3);
+    const month=values.month.slice(0,3).charAt(0).toUpperCase()+values.month.slice(1,3);
+    return `${weekday} ${values.day} ${month} · ${values.hour}:${values.minute}`;
   }
+  // Archivos de insignias contrastados con las páginas de los clubes en Wikimedia Commons.
+  // Se cargan como imágenes, sin consumir el límite de API-FOOTBALL ni exponer una clave.
+  const golCommonsLogos={
+    'Grêmio':'Gremio logo.svg',
+    'Bahia':'Esporte Clube Bahia logo.svg',
+    'Vitória':'Esporte Clube Vitória (2024).svg',
+    'São Paulo':'São Paulo Futebol Clube logo (2022).svg',
+    'Fluminense':'Fluminense Football Club.svg',
+    'Septemvri Sofia':'Septemvri Sofia (logo).svg',
+    'Lokomotiv Plovdiv':'PFC Lokomotiv Plovdiv Logo.svg',
+    'FC Andorra':'Logo FC Andorra - 2021.svg',
+    'Almere City':'Almere City FC logo.jpg',
+    'NAC Breda':'Logo NAC Breda.svg',
+    'Cercle Brugge':'Logo Cercle Brugge 2022.png'
+  };
+  const golVerifiedExternal={
+    'Piast Gliwice':'https://piast-gliwice.eu/static/upload/store/materialy/file/PIAST_HERB.jpg'
+  };
   function golCrest(team,url){
-    const safe=String(url||'');
-    const valid=/^https:\/\/media\.api-sports\.io\/football\/teams\/[1-9]\d*\.png$/.test(safe);
-    return `<span class="gol-team-crest" aria-hidden="true"><span class="gol-crest-initial">${esc(initials(team))}</span>${valid?`<img class="gol-crest-img" src="${esc(safe)}" alt="" loading="lazy" decoding="async">`:''}</span>`;
+    const official=String(url||'');
+    const validOfficial=/^https:\/\/media\.api-sports\.io\/football\/teams\/[1-9]\d*\.png$/.test(official);
+    const commons=golCommonsLogos[team];
+    const verifiedUrl=commons?'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(commons)+'?width=96':golVerifiedExternal[team];
+    const src=validOfficial?official:verifiedUrl||'';
+    const fallback=validOfficial&&verifiedUrl?verifiedUrl:'';
+    return `<span class="gol-team-crest" aria-hidden="true"><span class="gol-crest-initial">${esc(initials(team))}</span>${src?`<img class="gol-crest-img" src="${esc(src)}" data-gol-logo-fallback="${esc(fallback)}" alt="" loading="lazy" decoding="async">`:''}</span>`;
   }
   function renderGol(){
     const selections=currentPicks(),locked=Boolean(golLocked[activeCard]),closed=golClosed();
@@ -204,15 +227,19 @@
     if(sortFilter==='league')games.sort((a,b)=>a.league.localeCompare(b.league,'es'));
     else if(sortFilter==='team')games.sort((a,b)=>a.home.localeCompare(b.home,'es'));
     else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
-    $('#matchSourceLabel').textContent='API-FOOTBALL · Cuotas informativas (no aptas para apostar)';
+    $('#matchSourceLabel').textContent=catalogLoading?'Cargando encuentros…':games.length?'Encuentros disponibles':'Por el momento no hay partidos disponibles';
     $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
-    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):`<div class="empty-state">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay partidos disponibles con esos filtros.')}${catalogLoading?'':'<button class="btn btn-outline btn-mini catalog-retry" data-retry-sports="1" type="button">Reintentar</button>'}</div>`;
+    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):
+      `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando próximos encuentros…</h3><p>Estamos actualizando los partidos disponibles.</p>':
+      '<h3>Por el momento no hay partidos disponibles</h3><p>Puedes explorar PremiumGol mientras se publica la próxima programación.</p><button type="button" class="btn btn-gold btn-mini" data-nav="gol">Ir a PremiumGol</button>'}</div>`;
     renderSlips();
   }
   function renderLive(){
     const ts=liveGames[0]?.fetchedAt?new Date(liveGames[0].fetchedAt).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
-    $('#liveSourceLabel').textContent='API-FOOTBALL · Live informativo'+(ts?' · Consultado '+ts:'');
-    $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):`<div class="empty-state">${catalogLoading?'Consultando partidos en curso…':(catalogWarning||'No hay encuentros en vivo disponibles en este momento.')}${catalogLoading?'':'<button class="btn btn-outline btn-mini catalog-retry" data-retry-sports="1" type="button">Reintentar</button>'}</div>`;
+    $('#liveSourceLabel').textContent=catalogLoading?'Cargando encuentros…':liveGames.length?'Partidos en vivo'+(ts?' · '+ts:''):'Por el momento no hay partidos en vivo';
+    $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):
+      `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando partidos en vivo…</h3><p>Estamos verificando los encuentros en curso.</p>':
+      '<h3>Por el momento no hay partidos en vivo</h3><p>Visita PremiumGol o vuelve más tarde para conocer los nuevos encuentros.</p><button type="button" class="btn btn-gold btn-mini" data-nav="gol">Ir a PremiumGol</button>'}</div>`;
     renderSlips();
   }
   function marketCard(g,live){
@@ -562,7 +589,16 @@
   // Primero el catálogo deportivo, después los escudos, para no competir
   // por el bloqueo de consulta compartido de Google Apps Script.
   loadCatalog().finally(()=>loadGolProgram());
-  document.addEventListener('error',e=>{if(e.target?.matches?.('img.gol-crest-img'))e.target.remove();},true);
+  document.addEventListener('error',e=>{
+    const img=e.target;
+    if(!img?.matches?.('img.gol-crest-img'))return;
+    const fallback=img.dataset.golLogoFallback;
+    if(fallback&&!img.dataset.triedFallback){
+      img.dataset.triedFallback='1';
+      img.removeAttribute('data-gol-logo-fallback');
+      img.src=fallback;
+    }else img.remove();
+  },true);
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
   // El navegador consulta el caché del servidor; no realiza solicitudes a API-FOOTBALL.
   setInterval(()=>{if(document.visibilityState==='visible'&&['home','match','live'].includes(activeView))loadCatalog();},300000);
