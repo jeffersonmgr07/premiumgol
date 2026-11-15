@@ -117,10 +117,7 @@ function pgPublicUser_(u){
     phone:String(u.phone||''),docType:String(u.docType||''),docNumber:String(u.docNumber||''),
     avatarUrl:String(u.avatarUrl||''),inviteCode:String(u.inviteCode||'')};
 }
-/** Resumen de referidos con datos limitados al usuario invitador.
- * NO acredita bonos: solo informa quién se registró y si la primera
- * recarga real fue confirmada; la activación depende de reglas futuras.
- */
+/** Resumen de invitados y bono acreditado, sin exponer cuentas de terceros. */
 function pgReferralSummary_(user){
   const invited=pgRows_('users').rows.map(r=>pgObject_('users',r))
     .filter(p=>String(p.invitedBy||'')===String(user.uid));
@@ -128,6 +125,13 @@ function pgReferralSummary_(user){
   const refunds=new Set(credits.filter(v=>
     ['REFUNDED','CHARGED_BACK'].includes(String(v[5]))&&Number(v[4])<0
   ).map(v=>String(v[2])));
+  const bonusRows=pgRows_('bonus_ledger').rows;
+  const referralBonusByUid=new Map();
+  for(const r of bonusRows){
+    if(String(r[1])!==String(user.uid)||String(r[4])!=='AVAILABLE')continue;
+    const sourceUid=String(r[2]);
+    referralBonusByUid.set(sourceUid,(referralBonusByUid.get(sourceUid)||0)+Number(r[3]||0));
+  }
   const referrals=invited.map(p=>{
     const verified=credits.some(v=>String(v[1])===String(p.uid)&&
       String(v[5])==='TOPUP_APPROVED'&&Number(v[4])>0&&!refunds.has(String(v[2])));
@@ -135,13 +139,13 @@ function pgReferralSummary_(user){
     const initial=pgClean_(p.lastName,70).charAt(0);
     return {label:first+(initial?' '+initial+'.':''),
       joinedAt:String(p.createdAt||''),firstTopupVerified:verified,
-      projectedBonusPEN:verified?5:0,status:verified?'PENDIENTE_ACTIVACION':'REGISTRADO'};
+      bonusAwarded:verified&&(referralBonusByUid.get(String(p.uid))||0)>=5,
+      status:verified?'RECARGA_CONFIRMADA':'REGISTRADO'};
   }).sort((a,b)=>new Date(b.joinedAt).getTime()-new Date(a.joinedAt).getTime());
-  const bonus=pgRows_('bonus_ledger').rows
+  const bonus=bonusRows
     .filter(r=>String(r[1])===String(user.uid)&&String(r[4])==='AVAILABLE')
     .reduce((n,r)=>n+Math.round(Number(r[3]||0)*100),0)/100;
   return {referralCount:referrals.length,referrals:referrals.slice(0,30),
-    referralPendingPEN:referrals.reduce((sum,r)=>sum+r.projectedBonusPEN,0),
     bonusBalancePEN:Math.round(bonus*100)/100};
 }
 function pgSnapshot_(row){
@@ -153,8 +157,12 @@ function pgSnapshot_(row){
     if(p.type==='gol'){
       try{
         const data=JSON.parse(p.picksJson);
-        picks=Array.isArray(data.picks)?
-          data.picks.map(v=>({id:String(v.id),outcome:String(v.outcome)})):[];
+        const source=Array.isArray(data)?data:Array.isArray(data.picks)?data.picks:
+          PG_RETO_IDs.every(id=>Object.prototype.hasOwnProperty.call(data,id))?
+            PG_RETO_IDs.map(id=>({id,outcome:data[id]})):[];
+        picks=source.map((v,i)=>typeof v==='string'?
+          {id:PG_RETO_IDs[i]||'',outcome:v}:
+          {id:String(v.id||PG_RETO_IDs[i]||''),outcome:String(v.outcome||v.pick||'')});
         slot=String(data.slot||'');
       }catch(e){}
     }
@@ -163,7 +171,8 @@ function pgSnapshot_(row){
     return {id,code,type:p.type==='gol'?'gol':'match',
       title:p.type==='gol'?'PremiumGol · '+code:'Cupón de partidos',
       at:String(p.createdAt),stake:Number(p.stake)||0,
-      note:String(p.note||''),roundId:String(p.roundId||''),picks,slot};
+      note:String(p.note||''),roundId:String(p.roundId||''),picks,slot,
+      resultStatus:p.type==='gol'?pgGolTicketStatus_(p.roundId,picks):'REGISTRADA'};
   });
   // Las cuatro pestañas son borradores locales; los tickets ya
   // presentados permanecen en el historial, sin bloquear A/B/C/D.
