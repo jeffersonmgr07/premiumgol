@@ -1,3 +1,15 @@
+## Actualización de acceso y portada móvil — 14/11/2026
+
+- El botón oficial de Google Identity Services usa `outline_dark`, `shape: pill`, texto blanco y el logotipo multicolor auténtico. Google administra su iframe, por lo que **no puede ser completamente transparente** mediante CSS sin abandonar el botón oficial.
+- Cabecera: borde `#DBFF26` con brillo tenue en el acceso; se mantuvo el amarillo de marca `#F7C85D`.
+- Hero móvil: imagen del futbolista posicionada como capa visual de fondo, texto compacto sobre ella, botón «Empezar a jugar» más pequeño. Sin alterar el hero de escritorio.
+- Registro por correo: «Código de país» y «Número de WhatsApp» (obligatorio). Si Google crea una cuenta sin teléfono, la web dirige al usuario a completar el perfil.
+- Se deben sincronizar también los cambios de `apps-script/Auth.gs` y `apps-script/Main.gs` en el proyecto real de Apps Script y publicar **nueva versión del despliegue**. GitHub Pages no actualiza por sí solo los archivos que viven dentro del editor de Apps Script.
+- `assets/config.js` ya contiene identificadores públicos de conexión; no almacenar `API_SPORTS_KEY` en GitHub.
+- No se modificó la lógica de apuestas ni los pagos. Las recargas con dinero real permanecen deshabilitadas.
+
+---
+
 # Actualización de interfaz y catálogo · 14 de noviembre de 2026
 
 - Inicio: portada más breve («Haz de cada encuentro de fútbol una emoción entre patas»), botón Empezar a jugar y futbolista un poco más abajo; texto superior de plataforma deportiva oculto en móvil.
