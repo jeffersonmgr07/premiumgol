@@ -475,7 +475,7 @@
         ?u.href:'';
     }catch{return '';}
   };
-  const paymentLabels={EXPIRED:'Orden vencida',APPROVED:'Pago aprobado',PENDING:'Pendiente de pago',
+  const paymentLabels={EXPIRED:'Orden vencida',APPROVED:'Pago aprobado',PENDING:'Pendiente de pago',PENDIENTE:'Pendiente de pago',
     IN_PROCESS:'Pago en proceso',REJECTED:'Pago rechazado',CANCELLED:'Pago cancelado',
     REFUNDED:'Pago devuelto',CHARGED_BACK:'Contracargo'};
   function paymentStatusLabel(status){
@@ -514,7 +514,7 @@
     // Se ocultan las pendientes a las 48 h incluso si la pestaña sigue abierta.
     // Pagos confirmados, reembolsos y errores permanecen disponibles.
     const displayOrders=recentTopupOrders.filter(o=>{
-      if(!['PENDING','IN_PROCESS','CREATING','EXPIRED'].includes(String(o.status)))return true;
+      if(!['PENDING','PENDIENTE','IN_PROCESS','CREATING','EXPIRED'].includes(String(o.status)))return true;
       if(o.status==='EXPIRED')return false;
       const date=new Date(o.createdAt).getTime();
       return Number.isFinite(date)&&Date.now()-date<48*3600000;
