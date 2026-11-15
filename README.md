@@ -1,3 +1,26 @@
+## Catálogo API-FOOTBALL con cuotas reales (vista informativa) · noviembre de 2026
+
+**Hecho en GitHub:** los equipos ficticios dejan de aparecer en `Apuestas deportivas`, `Premium Live` y `Partidos destacados`. No se inventan cuotas. Las tarjetas 1/X/2 se muestran si API-FOOTBALL devuelve un mercado ganador 1X2 válido. Si falta cuota, se marca «—». Los partidos no permiten colocar jugadas, porque la validación actual de `saveBet` aún usa las cuotas ficticias del servidor y no es un motor de apuestas autorizado.
+
+**Para activar los datos en el Apps Script desplegado (GitHub no despliega .gs):**
+
+1. Abre tu proyecto real en `script.google.com`; sustituye `SportsCatalog.gs` por la versión que está en GitHub. No pegues tu clave en el archivo: debe seguir en **Propiedades del script** como `API_SPORTS_KEY`.
+2. Comprueba `API_SPORTS_CATALOG_MODE=preview` y `FRONTEND_ORIGIN=https://premiumgol.website` (sin barra final); no necesitas cambiar el Client ID ni el ID de Google Sheets.
+3. Ejecuta **`testApiSportsConnection`**. Debería registrar HTTP 200 si API-FOOTBALL responde; si hay errores de cuota o suscripción, inspecciónalos en los registros.
+4. Ejecuta **`testPremiumGolSportsCatalog`**. Revisa `mode`, `upcoming` y `live`. Es normal que `live` sea vacío si no hay partidos con cobertura en vivo.
+5. Abre **Implementar → Administrar implementaciones → Editar → Nueva versión** para que la misma URL `/exec` use este código. Comprueba que el desplegado realmente incluya `SportsCatalog.gs` y el resto de archivos `Main.gs`, `Bridge.html`, `ApiSports.gs`, `Games.gs`.
+6. Abre `https://premiumgol.website` y verifica `Partidos destacados`, `Apuestas deportivas` y `Premium Live`. GitHub Pages ya apunta a tu URL pública de Apps Script desde `assets/config.js`.
+
+**Diseño técnico actual:** el catálogo consulta cuotas previas de 1/X/2 para hoy y mañana (primera página de cada día), luego obtiene nombre y hora mediante `fixtures?ids=...`; puede complementar con `fixtures?next=20` si hay pocas cuotas. Por defecto, caché de próximos eventos de 3 horas y de Live de **60 minutos**. El navegador vuelve a consultar el catálogo servido por Apps Script cada 5 minutos mientras la página esté visible. Este refresco **no equivale a una nueva consulta al proveedor** si sigue vigente el caché del servidor.
+
+**Si actualizas a un plan de mayor cuota**, añade `API_SPORTS_LIVE_CACHE_SECONDS=300` en las Propiedades del script para permitir caché Live de cinco minutos (hasta 2 llamadas de API por actualización, aproximadamente 576 consultas diarias si la vista se solicita continuamente durante 24h). **No lo actives con el plan Free de 100 solicitudes por día.** El modo de cinco minutos sigue siendo informativo, no apto para ejecutar apuestas en vivo ni para liquidación.
+
+**Diferencia de mercados:** API-FOOTBALL utiliza identificadores de tipo de apuesta distintos para `/odds` (prematch) y `/odds/live`. El parser no utiliza el ID 1 de prematch como si fuera 1X2 Live. Los mercados suspendidos, bloqueados o sin tres resultados se omiten.
+
+**Siguiente etapa para algo cercano al tiempo real:** backend con caché distribuida y un proceso de consultas independiente de los visitantes, una licencia comercial de cuotas, y publicación en tiempo casi real (WebSocket/SSE o sondeo). Si algún día se desean aceptar apuestas con dinero real, el backend debe consultar y bloquear la cuota vigente, validar mercado abierto, controlar riesgo, fondos, KYC, cuentas y liquidación con autorización de MINCETUR y aprobación de los medios de pago.
+
+---
+
 ## Actualización de acceso y portada móvil — 14/11/2026
 
 - El botón oficial de Google Identity Services usa `outline_dark`, `shape: pill`, texto blanco y el logotipo multicolor auténtico. Google administra su iframe, por lo que **no puede ser completamente transparente** mediante CSS sin abandonar el botón oficial.
