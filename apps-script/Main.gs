@@ -17,6 +17,8 @@ function rpc(requestJson){
     if(!req||typeof req.action!=='string'||typeof x!=='object')pgErr_('Solicitud inválida.');
     switch(req.action){
       case 'catalog':return pgPublicSportsCatalog_();
+      case 'golProgram':return pgPublicGolProgram_();
+      case 'health':return {ok:true,server:'premiumgol',version:'2026-11-15',sportsConfigured:Boolean(pgProp_('API_SPORTS_KEY')),catalogMode:pgProp_('API_SPORTS_CATALOG_MODE')==='preview'?'preview':'disabled'};
       case 'sendCode':return pgSendCode_(x);
       case 'verifyCode':return pgVerifyCode_(x);
       case 'googleLogin':return pgGoogleLogin_(x);
@@ -45,6 +47,7 @@ function rpc(requestJson){
       'Créditos insuficientes.','La selección de un partido ya no está disponible.',
       'El número de documento no es válido.','El número de WhatsApp no es válido.',
       'Ingresa tu número de WhatsApp para registrarte.',
+      'La cartilla está cerrada para nuevas jugadas.',
       'El tipo de documento no es válido.','La jugada ya fue registrada.','Esta jugada ya fue registrada en la jornada.',
       'Selecciona una jugada entre A y D.','Saldo virtual insuficiente.',
       'Ingresa un monto válido entre S/ 30 y S/ 10,000.',
