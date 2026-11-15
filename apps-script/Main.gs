@@ -60,6 +60,7 @@ function rpc(requestJson){
       'No se pudo conectar a Mercado Pago. Intenta nuevamente.',
       'Mercado Pago no pudo procesar la solicitud. Intenta nuevamente.',
       'Mercado Pago no devolvió un enlace válido.',
+      'Esta orden fue creada en pruebas. Genera una recarga nueva.',
       'Este cupón no está disponible en este momento.','Este cupón ya fue activado en tu cuenta.'
     ];
     const message=err&&publicMessages.includes(err.message)?err.message:'No se pudo completar la solicitud. Intenta nuevamente.';
