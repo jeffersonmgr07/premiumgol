@@ -8,13 +8,13 @@
  */
 const PG = Object.freeze({
   SHEETS: {
-    users:['uid','email','firstName','lastName','countryCode','phone','docType','docNumber','provider','balance','createdAt','updatedAt'],
+    users:['uid','email','firstName','lastName','countryCode','phone','docType','docNumber','provider','balance','createdAt','updatedAt','avatarUrl','inviteCode','invitedBy'],
     sessions:['tokenHash','uid','createdAt','expiresAt','revokedAt'],
     plays:['playId','uid','type','roundId','picksJson','stake','combinedOdds','potentialReturn','createdAt','note'],
     ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt'],
     topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt']
   },
-  INITIAL_CREDITS:1000,
+  INITIAL_CREDITS:10,
   MAX_STAKE:1000,
   SESSION_DAYS:7,
   ROUND_ID:'premiumgol12-jornada-20261118',
@@ -41,9 +41,21 @@ function setupPremiumGol(){
   Object.keys(PG.SHEETS).forEach(name=>{
     let sh=doc.getSheetByName(name);
     if(!sh)sh=doc.insertSheet(name);
-    if(sh.getLastRow()===0){sh.getRange(1,1,1,PG.SHEETS[name].length).setValues([PG.SHEETS[name]]);sh.setFrozenRows(1);}
+    if(sh.getLastRow()===0){
+      sh.getRange(1,1,1,PG.SHEETS[name].length).setValues([PG.SHEETS[name]]);
+      sh.setFrozenRows(1);
+    }else if(name==='users'){
+      const current=sh.getRange(1,1,1,12).getValues()[0].map(String);
+      if(JSON.stringify(current)!==JSON.stringify(PG.SHEETS.users.slice(0,12))){
+        throw new Error('El encabezado de users es diferente: verifica antes de migrar.');
+      }
+      if(sh.getMaxColumns()<PG.SHEETS.users.length){
+        sh.insertColumnsAfter(sh.getMaxColumns(),PG.SHEETS.users.length-sh.getMaxColumns());
+      }
+      sh.getRange(1,13,1,3).setValues([PG.SHEETS.users.slice(12)]);
+    }
   });
-  console.log('Base creada correctamente. ID:',id);
+  console.log('Esquema revisado y columnas adicionales creadas sin borrar usuarios.');
   return id;
 }
 function pgSheet_(name){
@@ -64,7 +76,12 @@ function pgObject_(name,values){return Object.fromEntries(PG.SHEETS[name].map((k
 function pgSheetValue_(value){return typeof value==='string'&&/^[=+@-]/.test(value)?String.fromCharCode(39)+value:value;}
 function pgWrite_(name,item){pgSheet_(name).appendRow(PG.SHEETS[name].map(key=>pgSheetValue_(item[key]===undefined?'':item[key])));}
 function pgUpdate_(name,rowIndex,obj){const sh=pgSheet_(name);const cols=PG.SHEETS[name];const prev=sh.getRange(rowIndex,1,1,cols.length).getValues()[0];sh.getRange(rowIndex,1,1,cols.length).setValues([cols.map((key,i)=>pgSheetValue_(obj[key]===undefined?prev[i]:obj[key]))]);}
-function pgPublicUser_(u){return {id:String(u.uid),email:String(u.email),firstName:String(u.firstName),lastName:String(u.lastName),countryCode:String(u.countryCode||'+51'),phone:String(u.phone||''),docType:String(u.docType||''),docNumber:String(u.docNumber||'')};}
+function pgPublicUser_(u){
+  return {id:String(u.uid),email:String(u.email),firstName:String(u.firstName),
+    lastName:String(u.lastName),countryCode:String(u.countryCode||'+51'),
+    phone:String(u.phone||''),docType:String(u.docType||''),docNumber:String(u.docNumber||''),
+    avatarUrl:String(u.avatarUrl||''),inviteCode:String(u.inviteCode||'')};
+}
 function pgSnapshot_(row){
   const user=pgObject_('users',row.values);
   const recent=pgRows_('plays').rows.filter(r=>String(r[1])===String(user.uid));
@@ -80,5 +97,7 @@ function pgSnapshot_(row){
     try{const data=JSON.parse(p.picksJson);if(['A','B','C','D'].includes(data.slot)&&Array.isArray(data.picks))golSlots[data.slot]={picks:data.picks,id:p.playId};}catch(e){}
   });
   const couponClaimed=pgRows_('ledger').rows.some(r=>String(r[1])===String(user.uid)&&String(r[3])==='BONO_PREMIUM_50');
-  return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,history,golSlots,couponClaimed};
+  const joined=pgRows_('users').rows.filter(r=>String(r[14]||'')===String(user.uid)).length;
+  return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,
+    history,golSlots,couponClaimed,referralCount:joined};
 }
