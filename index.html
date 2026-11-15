@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=29">
+  <link rel="stylesheet" href="assets/styles.css?v=31">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=30"></script>
+  <script defer src="assets/app.js?v=31"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -143,14 +143,23 @@
   <button type="button" data-account-tab="wallet" title="Recargar saldo" aria-label="Recargar saldo"><svg><use href="#i-wallet"></use></svg></button>
   <button type="button" data-account-tab="profile" title="Mi perfil" aria-label="Mi perfil"><svg><use href="#i-shield"></use></svg></button>
   <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg><use href="#i-arrow"></use></svg></button>
-</div><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus créditos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Créditos disponibles</span><b id="accountBalance">10.00</b><small>Saldo virtual</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><div class="wallet-note"><svg><use href="#i-wallet"></use></svg><div><b>Tu billetera virtual</b><span>Administra tus créditos y disfruta tus jugadas. Las recargas en línea estarán disponibles al habilitar los medios de pago.</span></div><button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button></div><div class="account-panel referral-panel"><div class="panel-head"><h3>Invita a tus amigos</h3></div>
+</div><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus créditos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Créditos disponibles</span><b id="accountBalance">10.00</b><small>Saldo virtual</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><button type="button" class="account-view-plays" data-account-tab="history">Ver mis jugadas <svg><use href="#i-arrow"></use></svg></button>
+<div class="wallet-note"><svg><use href="#i-wallet"></use></svg><div><b>Tu billetera virtual</b><span>Administra tus créditos y disfruta tus jugadas. Las recargas en línea estarán disponibles al habilitar los medios de pago.</span></div><button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button></div><div class="account-panel referral-panel"><div class="panel-head"><h3>Invita a tus amigos</h3></div>
   <p class="referral-description">Comparte tu enlace. Cuando se active el programa, recibirás un bono de S/ 5 por cada amigo que se registre y complete su primera recarga aprobada. El beneficio aún no está activo.</p>
   <div class="referral-link"><input id="referralLink" type="text" value="Tu enlace de invitación" readonly aria-label="Mi enlace de invitación"><button id="copyReferral" type="button" class="btn btn-outline btn-mini">Copiar enlace</button></div>
   <p class="referral-detail" id="referralCount">Invitaciones pendientes de activación</p>
+  <div class="referral-wallet-summary">
+    <div><span>Bono por recomendar · pendiente</span><strong id="referralPendingPEN">S/ 0.00</strong></div>
+    <div><span>Billetera de bonos disponibles</span><strong id="referralBonusBalance">S/ 0.00</strong></div>
+  </div>
+  <h4 class="referral-activity-title">Estado de tus invitaciones</h4>
+  <div id="referralActivity" class="referral-activity-list"><p>Aún no hay invitaciones registradas.</p></div>
+  <p class="referral-future-note">Los beneficios de recomendación están en preparación. Los importes pendientes no son dinero disponible ni se convierten automáticamente.</p>
 </div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
   <div class="panel-head"><h2>Recargar saldo</h2></div>
   <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 30. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.</p>
   <div class="paid-wallet-balance" role="status"><span>Saldo recargado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Movimientos verificados de Mercado Pago</small></div>
+  <div class="bonus-wallet-balance"><div><span>Billetera de bonos</span><strong id="bonusBalancePEN">S/ 0.00</strong></div><small>Promociones y recomendaciones. Uso y conversión sujetos a las condiciones de cada campaña.</small></div>
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
       <button type="button" data-topup-amount="30" class="recharge-amount active" aria-pressed="true">S/ 30</button>
@@ -168,7 +177,9 @@
     <div class="topup-history"><h3>Últimas recargas</h3><div id="topupHistory" class="topup-history-list"><p>Aún no has registrado recargas.</p></div></div>
 
   </div>
-</div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div><div id="fullHistory"></div></div><div id="accountProfile" class="account-content"><h2>Mi perfil</h2><p class="profile-info">Completa tus datos personales y mantén tu cuenta actualizada.</p><form id="profileForm" class="profile-form">
+</div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div>
+  <p class="profile-info">Consulta el código, la fecha, el costo y los 12 pronósticos de cada ticket de PremiumGol.</p>
+  <div id="fullHistory"></div></div><div id="accountProfile" class="account-content"><h2>Mi perfil</h2><p class="profile-info">Completa tus datos personales y mantén tu cuenta actualizada.</p><form id="profileForm" class="profile-form">
               <div class="form-grid"><label class="field"><span>Nombres</span><input id="profileFirst" autocomplete="given-name" maxlength="70" required></label><label class="field"><span>Apellidos</span><input id="profileLast" autocomplete="family-name" maxlength="70" required></label></div>
               <label class="field"><span>Correo electrónico</span><input id="profileEmail" type="email" readonly></label>
               <div class="form-grid"><label class="field"><span>Prefijo WhatsApp</span><select id="profileCountry"><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+57">🇨🇴 +57</option><option value="+56">🇨🇱 +56</option><option value="+54">🇦🇷 +54</option><option value="+52">🇲🇽 +52</option><option value="+1">🇺🇸 +1</option><option value="+34">🇪🇸 +34</option></select></label><label class="field"><span>Número de WhatsApp</span><input id="profilePhone" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="Número sin prefijo" maxlength="15" pattern="[0-9]{6,15}" required></label></div>
@@ -222,6 +233,14 @@
       <button type="button" id="acceptGolRules" class="btn btn-gold btn-full">Entendido</button>
     </div>
   </dialog>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <dialog id="playDetailsDialog" class="gol-rules-dialog play-details-dialog" aria-labelledby="playDetailsTitle">
+  <div class="gol-rules-inner">
+    <button type="button" class="modal-x" id="closePlayDetails" aria-label="Cerrar detalles"><svg><use href="#i-close"></use></svg></button>
+    <h2 id="playDetailsTitle">Detalles de tu jugada</h2>
+    <div id="playDetailsBody"></div>
+    <button type="button" class="btn btn-gold btn-full" id="donePlayDetails">Cerrar</button>
+  </div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
