@@ -125,10 +125,13 @@
   const golClosed=()=>Date.now()>=new Date(golCutoff).getTime();
   function golDateLabel(iso){
     const parsed=new Date(iso);
-    return Number.isFinite(parsed.getTime())?
-      new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',weekday:'short',day:'2-digit',month:'short',
-        hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(parsed).replace(/\./g,'')+' (Perú)':
-      'Horario por confirmar';
+    if(!Number.isFinite(parsed.getTime()))return 'Horario por confirmar';
+    const values=Object.fromEntries(
+      new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',weekday:'long',day:'numeric',month:'long',
+        hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(parsed).map(({type,value})=>[type,value])
+    );
+    const weekday=values.weekday.charAt(0).toUpperCase()+values.weekday.slice(1);
+    return `${weekday} ${values.day} de ${values.month} · ${values.hour}:${values.minute}`;
   }
   function golCrest(team,url){
     const safe=String(url||'');
@@ -138,13 +141,14 @@
   function renderGol(){
     const selections=currentPicks(),locked=Boolean(golLocked[activeCard]),closed=golClosed();
     const deadline=$('#golDeadline');
-    deadline.textContent=closed?'Jornada cerrada · Finalizó el miércoles 18 de noviembre de 2026, 6:30 p. m. (Perú)':
-      'Juega hasta el miércoles 18 de noviembre de 2026, 6:30 p. m. (hora de Perú)';
     deadline.classList.toggle('expired',closed);
+    deadline.setAttribute('aria-label',closed?'Jornada cerrada: miércoles 18 de noviembre a las 6:30 p. m. · Pozo anunciado S/ 10,000':
+      'Límite de participación: miércoles 18 de noviembre a las 6:30 p. m. · Pozo anunciado S/ 10,000');
+    deadline.title=closed?'Jornada cerrada':'Cierre de jugadas el miércoles 18 de noviembre';
     $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}">
       <span class="fixture-number">${String(i+1).padStart(2,'0')}</span>
       <div class="fixture-main">
-        <div class="gol-fixture-meta"><small>${esc(g.league)}</small><span>${esc(golDateLabel(g.kickoff))}</span></div>
+        <div class="gol-fixture-meta"><span class="gol-league-badge">${esc(g.league)}</span><time class="gol-fixture-date" datetime="${esc(g.kickoff)}">${esc(golDateLabel(g.kickoff))}</time></div>
         <div class="gol-teams-row">
           <span class="gol-team gol-team-home">${golCrest(g.home,g.homeLogo)}<strong>${esc(g.home)}</strong></span>
           <span class="gol-versus">VS</span>
