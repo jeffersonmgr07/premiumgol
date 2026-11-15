@@ -274,12 +274,36 @@ function pgMpReconcilePendingOrders(){
   props.setProperty('MP_SCAN_OFFSET',String(active.length?(offset+attempted)%active.length:0));
   return {ok:true,pendientes:active.length,consultadas:attempted,modo:cfg.env};
 }
+/** Auditoría diaria de pagos recientes: detecta devoluciones y contracargos.
+ * No se modifica el crédito virtual, solo el libro monetario.
+ */
+function pgMpAuditSettledOrders(){
+  if(!pgProp_('SPREADSHEET_ID'))return {ok:false};
+  const now=Date.now();
+  const orders=pgRows_('topup_requests').rows.filter(r=>
+    ['APPROVED','REFUNDED','CHARGED_BACK'].includes(String(r[3]))&&
+    now-new Date(r[4]).getTime()<45*86400000);
+  const prop=PropertiesService.getScriptProperties();
+  const cursor=Number(prop.getProperty('MP_AUDIT_CURSOR')||0);
+  const items=orders.length?
+    orders.slice(cursor%orders.length).concat(orders.slice(0,cursor%orders.length)):[];
+  let done=0;
+  for(const row of items.slice(0,6)){
+    try{pgMpReconcileOne_(String(row[0]));done++;}
+    catch(e){console.warn('Auditoría Mercado Pago: orden pendiente de revisión.');}
+  }
+  prop.setProperty('MP_AUDIT_CURSOR',String(orders.length?(cursor+Math.max(done,1))%orders.length:0));
+  return {ok:true,revisadas:done};
+}
 function setupPremiumGolMercadoPagoTrigger(){
   const name='pgMpReconcilePendingOrders';
   const present=ScriptApp.getProjectTriggers().some(t=>t.getHandlerFunction()===name);
   if(!present)ScriptApp.newTrigger(name).timeBased().everyMinutes(5).create();
-  console.log('Mercado Pago: conciliación cada 5 minutos '+(present?'ya configurada':'instalada'));
-  return {ok:true,triggerConfigured:true};
+  const audit='pgMpAuditSettledOrders';
+  const auditExists=ScriptApp.getProjectTriggers().some(t=>t.getHandlerFunction()===audit);
+  if(!auditExists)ScriptApp.newTrigger(audit).timeBased().everyDays(1).create();
+  console.log('Mercado Pago: conciliación pendiente cada 5 minutos y auditoría diaria configuradas.');
+  return {ok:true,triggerConfigured:true,auditConfigured:true};
 }
 function testPremiumGolCheckoutConfiguration(){
   const props=PropertiesService.getScriptProperties();
@@ -293,7 +317,9 @@ function testPremiumGolCheckoutConfiguration(){
     ordersSheet:!!id&&Boolean(SpreadsheetApp.openById(id).getSheetByName('topup_requests')),
     moneyLedgerSheet:!!id&&Boolean(SpreadsheetApp.openById(id).getSheetByName('payments_ledger')),
     automaticReconciliation:ScriptApp.getProjectTriggers().some(t=>
-      t.getHandlerFunction()==='pgMpReconcilePendingOrders')
+      t.getHandlerFunction()==='pgMpReconcilePendingOrders'),
+    dailyAudit:ScriptApp.getProjectTriggers().some(t=>
+      t.getHandlerFunction()==='pgMpAuditSettledOrders')
   };
   console.log('PremiumGol Mercado Pago: '+JSON.stringify(results));
   return results;
