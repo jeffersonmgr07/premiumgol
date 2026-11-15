@@ -29,7 +29,8 @@ function pgSportsPlanInfo_(){
       active:body.response?.subscription?.active===true,
       requestsRemaining:Math.max(0,Number(body.response?.requests?.limit_day||0)-
         Number(body.response?.requests?.current||0))};
-    cache.put(key,JSON.stringify(value),21600);
+    // Status no consume cuota; revalidar cada 15 minutos para detectar cambios de plan.
+    cache.put(key,JSON.stringify(value),900);
     return value;
   }catch(e){console.warn('No se pudo revisar el plan API-FOOTBALL.');return {plan:'unknown',active:null};}
 }
