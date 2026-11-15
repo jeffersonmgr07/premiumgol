@@ -235,6 +235,7 @@
     renderSlips();
   }
   function renderLive(){
+    $('#liveBanner').hidden=!liveGames.length;
     const ts=liveGames[0]?.fetchedAt?new Date(liveGames[0].fetchedAt).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
     $('#liveSourceLabel').textContent=catalogLoading?'Cargando encuentros…':liveGames.length?'Partidos en vivo'+(ts?' · '+ts:''):'Por el momento no hay partidos en vivo';
     $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):
