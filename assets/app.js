@@ -300,6 +300,8 @@
     $('#signupFields').hidden=authMode!=='register';
     $('#authFirst').required=authMode==='register';
     $('#authLast').required=authMode==='register';
+    $('#authCountry').required=authMode==='register';
+    $('#authPhone').required=authMode==='register';
     $('#emailForm').hidden=false;$('#verifyForm').hidden=true;
   }
   function openAuth(mode='login'){
@@ -375,7 +377,13 @@
         catch(e){toast(e.message||'No se pudo ingresar con Google.');}
       }});
       $('#googleButtonMount').style.display='flex';$('#googleUnavailable').hidden=true;
-      window.google.accounts.id.renderButton($('#googleButtonMount'),{theme:'outline',size:'large',text:'continue_with',shape:'rectangular',width:300,locale:'es'});
+      const host=$('#googleButtonMount');
+      host.replaceChildren();
+      const buttonWidth=Math.max(230,Math.min(360,Math.floor(host.getBoundingClientRect().width)||300));
+      window.google.accounts.id.renderButton(host,{
+        theme:'outline_dark',size:'large',text:'continue_with',
+        shape:'pill',width:buttonWidth,locale:'es',logo_alignment:'left'
+      });
     };
     script.onerror=()=>{googleStarted=false;$('#googleUnavailable').hidden=false;toast('No se pudo cargar el acceso Google.');};
     document.head.appendChild(script);
@@ -414,6 +422,9 @@
     const email=$('#authEmail').value.trim().toLowerCase();
     const btn=$('#requestCode');btn.disabled=true;
     try{
+      if(authMode==='register' && !/^\d{6,15}$/.test($('#authPhone').value.trim())){
+        throw new Error('Ingresa tu número de WhatsApp para registrarte.');
+      }
       await remote('sendCode',{email,mode:authMode});
       $('#emailForm').hidden=true;$('#verifyForm').hidden=false;$('#authCode').focus();
       toast('Revisa tu correo para encontrar el código de 6 dígitos.');
