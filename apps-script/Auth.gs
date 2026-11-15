@@ -138,3 +138,22 @@ function pgUpdateProfile_(x){
     return pgSnapshot_(pgFind_('users','uid',row.values[0]));
   });
 }
+
+
+/** Prueba de configuración OAuth sin imprimir credenciales ni secretos. */
+function testPremiumGolGoogleConfiguration(){
+  const id=pgProp_('GOOGLE_CLIENT_ID');
+  const origin=pgProp_('FRONTEND_ORIGIN').replace(/\/+$/,'');
+  const googleIdFormat=/^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i.test(id);
+  const result={
+    clientIdConfigured:Boolean(id),
+    clientIdWebFormatCorrect:googleIdFormat,
+    origin:origin,
+    originCorrect:origin==='https://premiumgol.website',
+    warning:googleIdFormat?
+      'Comprueba que este mismo Client ID figure en Google Cloud y en assets/config.js.':
+      'GOOGLE_CLIENT_ID debe ser el ID de cliente OAuth WEB, no el Client Secret.'
+  };
+  console.log('PremiumGol Google OAuth: '+JSON.stringify(result));
+  return result;
+}
