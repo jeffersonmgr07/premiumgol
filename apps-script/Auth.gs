@@ -84,7 +84,7 @@ function pgSession_(userRow){
   }
   const token=pgUuid_()+'.'+pgUuid_(),date=Date.now();
   pgWrite_('sessions',{tokenHash:pgHash_(token),uid:u.uid,createdAt:date,
-    expiresAt:date+PG.SESSION_DAYS*86400000,revokedAt:''});
+    expiresAt:date+PG.SESSION_DAYS*86400000,revokedAt:'',lastActivityAt:date});
   return {sessionToken:token,...pgSnapshot_(userRow)};
 }
 function pgVerifyCode_(x){
@@ -150,7 +150,16 @@ function pgRequireSession_(token){
   const session=pgFind_('sessions','tokenHash',pgHash_(token));
   if(!session)pgErr_('Sesión vencida. Vuelve a ingresar.');
   const data=pgObject_('sessions',session.values);
-  if(data.revokedAt||Number(data.expiresAt)<=Date.now())pgErr_('Sesión vencida. Vuelve a ingresar.');
+  const now=Date.now();
+  const lastActivity=Number(data.lastActivityAt)||Number(data.createdAt)||0;
+  if(data.revokedAt||Number(data.expiresAt)<=now||
+     !lastActivity||now-lastActivity>=PG.SESSION_IDLE_MINUTES*60000)
+    pgErr_('Sesión vencida. Vuelve a ingresar.');
+  // Evita escribir en Sheets con cada clic; el cliente renueva su sesión
+  // solo mientras exista interacción reciente y la pestaña esté visible.
+  if(now-lastActivity>=120000){
+    pgUpdate_('sessions',session.index,{lastActivityAt:now});
+  }
   const player=pgFind_('users','uid',data.uid);
   if(!player)pgErr_('Sesión vencida. Vuelve a ingresar.');
   return player;
