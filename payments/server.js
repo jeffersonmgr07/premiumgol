@@ -29,9 +29,12 @@ const COLLECTOR=String(process.env.MP_COLLECTOR_ID||'');
 const BASE=(process.env.PAYMENTS_API_BASE||'').replace(/\/+$/,'');
 const allowedBackHosts=new Set(['www.mercadopago.com.pe','mercadopago.com.pe','www.mercadopago.com','mercadopago.com']);
 
+function configured(){
+  return SIGNING_SECRET.length>=32&&!!TOKEN&&!!WEBHOOK_SECRET&&!!COLLECTOR
+    &&/^https:\/\/[^/]+$/.test(BASE);
+}
 function ready(){
-  return ENABLED&&SIGNING_SECRET.length>=32&&!!TOKEN&&!!WEBHOOK_SECRET&&!!COLLECTOR
-    &&/^https:\/\/[^/]+$/.test(BASE)&&(MODE!=='live'||LIVE_AUTHORIZED);
+  return ENABLED&&configured()&&(MODE!=='live'||LIVE_AUTHORIZED);
 }
 function denied(res,status,msg){return res.status(status).json({ok:false,message:msg});}
 function validIntent(token){
@@ -126,7 +129,8 @@ app.post('/payments/create',async(req,res)=>{
 // Consulta: solo el titular autenticado en Apps Script puede obtener una
 // nueva firma para el mismo orderId.
 app.post('/payments/status',async(req,res)=>{
-  if(!ready())return denied(res,503,'Consulta de pago no disponible.');
+  // Aun si se suspenden nuevos checkouts, conservar acceso al estado del pago.
+  if(!configured())return denied(res,503,'Consulta de pago no disponible.');
   if(req.get('origin')!==DOMAIN)return denied(res,403,'Origen no permitido.');
   const p=validIntent(req.body?.intent);
   if(!p)return denied(res,401,'La verificación de la orden ha vencido.');
@@ -146,7 +150,9 @@ async function verifyPayment(paymentId){
   return response.json();
 }
 app.post('/payments/webhook',async(req,res)=>{
-  if(!ready())return res.sendStatus(503);
+  // Notificaciones de órdenes existentes deben seguir procesándose aunque
+  // el operador desactive nuevas compras por seguridad.
+  if(!configured())return res.sendStatus(503);
   const id=String(req.query['data.id']||req.body?.data?.id||'');
   if(!/^\d{1,24}$/.test(id))return res.sendStatus(400);
   try{
