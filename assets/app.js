@@ -387,8 +387,8 @@
     try{
       const url=new URL(value);
       return url.protocol==='https:'&&
-        ['mercadopago.com.pe','www.mercadopago.com.pe','mercadopago.com','www.mercadopago.com'].includes(url.hostname)?
-        url.href:'';
+        ['mercadopago.com.pe','mercadopago.com'].some(d=>
+          url.hostname===d||url.hostname.endsWith('.'+d))?url.href:'';
     }catch{return '';}
   };
   async function pgPaymentApi(endpoint,params,base){
