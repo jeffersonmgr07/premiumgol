@@ -103,6 +103,7 @@
   let account = null;
   let accountBalance = 0;
   let paidBalancePEN = 0;
+  let bonusBalancePEN=0,referralPendingPEN=0,referralActivity=[];
   let recentTopupOrders = [];
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
@@ -353,9 +354,14 @@
       const picks=golGames.map(g=>({id:g.id,outcome:draft.golCards[slot][g.id]}));
       draft.golRequestIds[slot]=draft.golRequestIds[slot]||randomId();saveDraft();
       const res=await remote('savePremiumGol',{sessionToken,slot,picks,clientRequestId:draft.golRequestIds[slot]});
-      updateAccount(res);delete draft.golRequestIds[slot];saveDraft();
-      const next=SLOTS.find(s=>!golLocked[s]);if(next){activeCard=next;draft.activeCard=next;saveDraft();}
-      renderGol();toast(`¡Jugada ${slot} registrada! Se descontaron 5 créditos virtuales.`);
+      updateAccount(res);
+      // Cada letra es reutilizable: una jugada guardada tiene su propio
+      // ticket. Limpiar solo el borrador enviado, no los otros tres.
+      draft.golCards[slot]={};
+      delete draft.golRequestIds[slot];
+      activeCard=slot;draft.activeCard=slot;
+      saveDraft();
+      renderGol();toast('¡Ticket PremiumGol registrado! Se descontaron 5 créditos virtuales.');
     }catch(e){toast(e.message||'No se pudo guardar la jugada.');}
     finally{sendingPlay=false;setAuthBusy(false);renderGol();}
   }
@@ -424,6 +430,9 @@
   function updateAccount(result){
     if(result.user)account=result.user;
     if(Number.isSafeInteger(Number(result.referralCount)))referralsJoined=Number(result.referralCount);
+    if(Array.isArray(result.referrals))referralActivity=result.referrals;
+    if(Number.isFinite(Number(result.referralPendingPEN)))referralPendingPEN=Number(result.referralPendingPEN);
+    if(Number.isFinite(Number(result.bonusBalancePEN)))bonusBalancePEN=Number(result.bonusBalancePEN);
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Number.isFinite(Number(result.paidBalancePEN)))paidBalancePEN=Number(result.paidBalancePEN);
     if(Array.isArray(result.history))playHistory=result.history;
@@ -466,7 +475,7 @@
         ?u.href:'';
     }catch{return '';}
   };
-  const paymentLabels={APPROVED:'Pago aprobado',PENDING:'Pendiente de pago',
+  const paymentLabels={EXPIRED:'Orden vencida',APPROVED:'Pago aprobado',PENDING:'Pendiente de pago',
     IN_PROCESS:'Pago en proceso',REJECTED:'Pago rechazado',CANCELLED:'Pago cancelado',
     REFUNDED:'Pago devuelto',CHARGED_BACK:'Contracargo'};
   function paymentStatusLabel(status){
@@ -479,6 +488,7 @@
     const paid=order.status==='APPROVED';
     const url=!paid?mpSafeUrl(order.checkoutUrl):'';
     const detail=paid?'El pago está verificado y registrado en tu saldo monetario.':
+      order.status==='EXPIRED'?'La orden venció a las 48 horas. Genera una nueva si deseas recargar.':
       returning?'El pago aún no aparece aprobado. Puedes volver a consultar más tarde.':
       'Tu orden está registrada. Continúa al checkout para escoger cómo pagar.';
     box.innerHTML='<div class="recharge-order-head"><span class="recharge-order-icon">'+icon('wallet')+
@@ -571,7 +581,10 @@
       topupRequestId=null;
       await loadTopupOrders();
       toast('Orden de pago generada.');
-    }catch(err){toast(err?.message||'No se pudo generar la orden.');}
+    }catch(err){
+      if(/orden venció|orden fue creada en pruebas/i.test(String(err?.message||'')))topupRequestId=null;
+      toast(err?.message||'No se pudo generar la orden.');
+    }
     finally{topupBusy=false;setAuthBusy(false);renderTopup();}
   }
   function renderAccount(){
