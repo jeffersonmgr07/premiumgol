@@ -5,6 +5,8 @@
 (() => {
   'use strict';
   const CONFIG = window.PREMIUMGOL_CONFIG || {};
+  // Los ID OAuth WEB de Google no comienzan por GOCSPX: ese prefijo identifica secretos.
+  const validGoogleClientId = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i.test(String(CONFIG.googleClientId||''));
   const DRAFT_KEY = 'premiumgol_draft_20261118';
   const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
   const SESSION_KEY = 'premiumgol_session_v2';
@@ -333,13 +335,16 @@
     $('#authLast').required=authMode==='register';
     $('#authCountry').required=authMode==='register';
     $('#authPhone').required=authMode==='register';
+    const canUseGoogle=validGoogleClientId && Boolean(CONFIG.appsScriptUrl);
+    $('#googleSigninShell').hidden=!canUseGoogle;
+    $('#googleUnavailable').hidden=canUseGoogle;
     $('#emailForm').hidden=false;$('#verifyForm').hidden=true;
   }
   function openAuth(mode='login'){
     if(hasUser()){showView('account');return;}
     setAuthMode(mode);
     const el=$('#authDialog');if(!el.open)el.showModal();
-    if(CONFIG.googleClientId && CONFIG.appsScriptUrl)setupGoogle();
+    if(validGoogleClientId && CONFIG.appsScriptUrl)setupGoogle();
   }
   function closeAuth(){if($('#authDialog').open)$('#authDialog').close();}
   function acceptSession(result){
@@ -405,7 +410,7 @@
   }
   let googleStarted=false;
   function setupGoogle(){
-    if(googleStarted||!CONFIG.googleClientId||!CONFIG.appsScriptUrl)return;googleStarted=true;
+    if(googleStarted||!validGoogleClientId||!CONFIG.appsScriptUrl)return;googleStarted=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onload=()=>{
       if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;return;}
