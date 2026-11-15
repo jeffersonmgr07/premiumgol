@@ -491,12 +491,20 @@
       order.status==='EXPIRED'?'La orden venció a las 48 horas. Genera una nueva si deseas recargar.':
       returning?'El pago aún no aparece aprobado. Puedes volver a consultar más tarde.':
       'Tu orden está registrada. Continúa al checkout para escoger cómo pagar.';
+    const until=new Date(order.expiresAt||'');
+    const untilLabel=Number.isFinite(until.getTime())?
+      new Intl.DateTimeFormat('es-PE',{
+        timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric',
+        hour:'numeric',minute:'2-digit',hour12:true
+      }).format(until):'';
+    const expiresNote=untilLabel&&['PENDING','EXPIRED','IN_PROCESS'].includes(order.status)?
+      '<p class="recharge-order-small">Vigencia de la orden: '+esc(untilLabel)+'</p>':'';
     box.innerHTML='<div class="recharge-order-head"><span class="recharge-order-icon">'+icon('wallet')+
       '</span><div><strong>'+esc(paymentStatusLabel(order.status))+
       '</strong><span>Orden de recarga</span></div></div><div class="recharge-order-data">'+
       '<span class="recharge-order-badge">S/ '+fmt2(order.amount)+'</span>'+
       '<span class="recharge-order-badge is-pending">'+esc(String(order.status))+
-      '</span></div><p class="recharge-order-small">'+detail+'</p>'+
+      '</span></div><p class="recharge-order-small">'+detail+'</p>'+expiresNote+
       (url?'<button type="button" class="btn btn-gold btn-full" data-mp-pay="'+esc(url)+
       '">Continuar con Mercado Pago</button>':'');
   }
