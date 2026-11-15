@@ -149,6 +149,7 @@
     'FC Andorra':'Logo FC Andorra - 2021.svg',
     'Almere City':'Almere City FC logo.jpg',
     'NAC Breda':'Logo NAC Breda.svg',
+    'Universitatea Cluj':'Cfmuniversitateacluj.png',
     'Cercle Brugge':'Logo Cercle Brugge 2022.png'
   };
   const golVerifiedExternal={
