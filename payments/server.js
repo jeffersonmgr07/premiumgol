@@ -27,7 +27,9 @@ const WEBHOOK_SECRET=MODE==='live'?process.env.MP_LIVE_WEBHOOK_SECRET:process.en
 const SIGNING_SECRET=process.env.PAYMENTS_ASSERTION_SECRET||'';
 const COLLECTOR=String(process.env.MP_COLLECTOR_ID||'');
 const BASE=(process.env.PAYMENTS_API_BASE||'').replace(/\/+$/,'');
-const allowedBackHosts=new Set(['www.mercadopago.com.pe','mercadopago.com.pe','www.mercadopago.com','mercadopago.com']);
+function isMercadoPagoHost(host){
+  return ['mercadopago.com.pe','mercadopago.com'].some(d=>host===d||host.endsWith('.'+d));
+}
 
 function configured(){
   return SIGNING_SECRET.length>=32&&!!TOKEN&&!!WEBHOOK_SECRET&&!!COLLECTOR
@@ -82,7 +84,7 @@ app.post('/payments/create',async(req,res)=>{
     if(old.exists){
       const order=old.data();
       if(order.uid!==p.uid||order.amountCents!==p.amountCents)return denied(res,409,'Orden incompatible.');
-      if(order.checkoutUrl&&order.mode===MODE)return res.json({ok:true,
+      if(order.checkoutUrl&&order.mode===MODE&&order.status==='PENDING')return res.json({ok:true,
         orderId:p.orderId,amountPEN:p.amountCents/100,checkoutUrl:order.checkoutUrl});
       return denied(res,409,'Esta orden está en preparación o ya fue procesada.');
     }
@@ -111,7 +113,7 @@ app.post('/payments/create',async(req,res)=>{
     const mp=await response.json().catch(()=>({}));
     const checkout=String(mp.init_point||'');
     let valid=false;
-    try{const url=new URL(checkout);valid=url.protocol==='https:'&&allowedBackHosts.has(url.hostname);}
+    try{const url=new URL(checkout);valid=url.protocol==='https:'&&isMercadoPagoHost(url.hostname);}
     catch{}
     if(!response.ok||!mp.id||!valid){
       await doc.update({status:'ERROR'});
