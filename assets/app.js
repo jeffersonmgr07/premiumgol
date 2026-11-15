@@ -103,7 +103,7 @@
   let account = null;
   let accountBalance = 0;
   let paidBalancePEN = 0;
-  let bonusBalancePEN=0,referralPendingPEN=0,referralActivity=[];
+  let bonusBalancePEN=0,referralActivity=[];
   let recentTopupOrders = [];
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
@@ -449,7 +449,6 @@
     if(result.user)account=result.user;
     if(Number.isSafeInteger(Number(result.referralCount)))referralsJoined=Number(result.referralCount);
     if(Array.isArray(result.referrals))referralActivity=result.referrals;
-    if(Number.isFinite(Number(result.referralPendingPEN)))referralPendingPEN=Number(result.referralPendingPEN);
     if(Number.isFinite(Number(result.bonusBalancePEN)))bonusBalancePEN=Number(result.bonusBalancePEN);
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Number.isFinite(Number(result.paidBalancePEN)))paidBalancePEN=Number(result.paidBalancePEN);
@@ -638,12 +637,14 @@
         .format(created):'Fecha no disponible';
     const code=String(ticket.code||('PG-'+String(ticket.id).slice(-10).toUpperCase()));
     const byId=new Map(golGames.map((g,i)=>[g.id,{...g,idx:i+1}]));
-    const rows=(Array.isArray(ticket.picks)?ticket.picks:[]).map(p=>{
+    const rows=(Array.isArray(ticket.picks)?ticket.picks:[]).map((p,i)=>{
       const game=byId.get(p.id),resultIndex=outcomes.indexOf(p.outcome);
-      if(!game||resultIndex<0)return '';
+      if(resultIndex<0)return '';
+      const number=game?.idx||i+1;
+      const teams=game?game.home+' · '+game.away:'Partido '+String(p.id||number);
       return '<div class="play-prediction-row"><span class="play-prediction-number">'+
-        String(game.idx).padStart(2,'0')+'</span><span class="play-prediction-teams">'+
-        esc(game.home)+' · '+esc(game.away)+'</span><strong>'+
+        String(number).padStart(2,'0')+'</span><span class="play-prediction-teams">'+
+        esc(teams)+'</span><strong>'+
         esc(golLabel[resultIndex])+' · '+esc(outcomeName[resultIndex])+'</strong></div>';
     }).join('');
     $('#playDetailsTitle').textContent='Ticket '+code;
@@ -791,7 +792,7 @@
     // Google no debe reabrir automáticamente una sesión después de salir.
     // La elección de cuenta/consentimiento sigue siendo controlada por Google.
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
-    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;referralPendingPEN=0;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
+    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     renderAll();showView('home');
