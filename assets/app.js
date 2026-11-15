@@ -382,6 +382,53 @@
     $('#rechargeSelected').textContent=amount===null?'Importe no válido':'S/ '+fmt2(amount);
     $('#rechargeGenerate').disabled=amount===null||topupBusy;
   }
+  let pendingMpCheckoutUrl='';
+  const mpSafeUrl=value=>{
+    try{
+      const url=new URL(value);
+      return url.protocol==='https:'&&
+        ['mercadopago.com.pe','www.mercadopago.com.pe','mercadopago.com','www.mercadopago.com'].includes(url.hostname)?
+        url.href:'';
+    }catch{return '';}
+  };
+  async function pgPaymentApi(endpoint,params,base){
+    const url=new URL(String(base||'')+endpoint);
+    if(url.protocol!=='https:')throw new Error('La conexión de pago no es segura.');
+    const controller=new AbortController();
+    const timer=setTimeout(()=>controller.abort(),20000);
+    try{
+      const response=await fetch(url.href,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(params),mode:'cors',signal:controller.signal
+      });
+      const body=await response.json().catch(()=>({}));
+      if(!response.ok||!body.ok)throw new Error(body.message||'El proveedor no respondió.');
+      return body;
+    }finally{clearTimeout(timer);}
+  }
+  async function checkMpReturn(){
+    const query=new URLSearchParams(location.search);
+    const id=query.get('order')||'';
+    if(query.get('mp_return')!=='1'||!sessionToken||!/^[A-Za-z0-9-]{10,90}$/.test(id))return;
+    accountTab='wallet';showView('account');
+    const box=$('#rechargeOrder');box.hidden=false;
+    box.textContent='Consultando el estado del pago…';
+    try{
+      const ticket=await remote('getTopupStatusTicket',{sessionToken,orderId:id});
+      if(!ticket.paymentAvailable)throw new Error('Consulta de pagos pendiente de activación.');
+      const result=await pgPaymentApi('/payments/status',{intent:ticket.paymentIntent},ticket.paymentApiUrl);
+      const labels={APPROVED:'Pago aprobado y verificado',PENDING:'Pago pendiente de confirmación',
+        IN_PROCESS:'Pago en procesamiento',REJECTED:'Pago rechazado',CANCELLED:'Pago cancelado',
+        REFUNDED:'Pago devuelto',CHARGED_BACK:'Contracargo registrado'};
+      const label=labels[result.status]||'Orden en revisión';
+      box.innerHTML=`<div class="recharge-order-head"><span class="recharge-order-icon">${icon('wallet')}</span><div><strong>${esc(label)}</strong><span>Mercado Pago</span></div></div><div class="recharge-order-data"><span class="recharge-order-badge">S/ ${fmt2(result.amountPEN)}</span><span class="recharge-order-badge is-pending">${esc(result.status)}</span></div><p class="recharge-order-small">El pago se registra de forma independiente. No se han habilitado créditos de apuestas con dinero real.</p>`;
+    }catch(err){box.textContent=err?.message||'No se pudo verificar la orden.';}
+    finally{
+      query.delete('mp_return');query.delete('order');
+      const qs=query.toString();
+      history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+'#account');
+    }
+  }
   async function createTopupRequest(){
     if(!hasUser()){openAuth('login');return;}
     const amount=chosenTopup();
@@ -394,6 +441,16 @@
       const res=await remote('createTopupRequest',{sessionToken,amount,clientRequestId:topupRequestId});
       const box=$('#rechargeOrder');box.hidden=false;
       box.innerHTML=`<div class="recharge-order-head"><span class="recharge-order-icon">${icon('wallet')}</span><div><strong>Orden de recarga generada</strong><span>Tu solicitud quedó registrada</span></div></div><div class="recharge-order-data"><span class="recharge-order-badge">S/ ${fmt2(res.amount)}</span><span class="recharge-order-badge is-pending">Pendiente</span></div><p class="recharge-order-small">Solicitud registrada. Todavía no se ha realizado ningún cobro ni se ha modificado tu saldo.</p>`;
+      if(res.paymentAvailable&&res.paymentIntent&&res.paymentApiUrl){
+        const payment=await pgPaymentApi('/payments/create',
+          {intent:res.paymentIntent},res.paymentApiUrl);
+        pendingMpCheckoutUrl=mpSafeUrl(payment.checkoutUrl);
+        if(!pendingMpCheckoutUrl)throw new Error('Mercado Pago no devolvió un enlace válido.');
+        box.insertAdjacentHTML('beforeend',
+          '<button type="button" class="btn btn-gold btn-full" id="mpCheckoutStart">Continuar con Mercado Pago</button>');
+        box.querySelector('.recharge-order-small').textContent=
+          'Elige el botón para abrir Checkout Pro. El estado final se verificará desde el servidor.';
+      }
       toast('Orden de recarga registrada.');
       topupRequestId=null;
     }catch(e){toast(e.message||'No se pudo crear la solicitud de recarga.');}
@@ -487,6 +544,7 @@
     else if(next==='bet')placeBet();
     else if(next==='coupon')claimCouponPrompt();
     else showView('account');
+    checkMpReturn();
     if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
   }
   async function signout(){
@@ -704,6 +762,11 @@
   });
   $('#rechargeOther').addEventListener('input',e=>{topupCustom=e.target.value;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();});
   $('#rechargeGenerate').addEventListener('click',createTopupRequest);
+  document.addEventListener('click',e=>{
+    if(e.target.closest('#mpCheckoutStart')&&pendingMpCheckoutUrl){
+      window.location.assign(pendingMpCheckoutUrl);
+    }
+  });
   $('#profileForm').addEventListener('submit',async e=>{
     e.preventDefault();if(!hasUser())return;
     const btn=$('#profileSave');btn.disabled=true;
@@ -775,5 +838,7 @@
   const hash=location.hash.slice(1);
   const view=hash==='inicio'?'home':hash;
   if(['home','gol','match','live'].includes(view))showView(view,true);
-  else if(view==='account' && sessionToken)refreshAccount().then(()=>{if(hasUser())showView('account',true);});
+  else if(view==='account' && sessionToken)refreshAccount().then(()=>{
+    if(hasUser()){showView('account',true);checkMpReturn();}
+  });
 })();
