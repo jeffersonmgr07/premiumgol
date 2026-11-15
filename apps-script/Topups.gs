@@ -4,11 +4,11 @@
  * Solo se activa con propiedades privadas y backend habilitado.
  * No acredita saldo de apuestas desde esta función.
  */
-function pgCheckoutTicket_(uid,orderId,amountCents){
+function pgCheckoutTicket_(uid,orderId,amountCents,forStatus){
   const server=pgProp_('PAYMENTS_API_URL').replace(/\/+$/,'');
   const secret=pgProp_('PAYMENTS_ASSERTION_SECRET');
   const enabled=pgProp_('PAYMENTS_CHECKOUT_READY')==='true';
-  if(!enabled||secret.length<32||!/^https:\/\/[^/]+$/.test(server)){
+  if((!enabled&&!forStatus)||secret.length<32||!/^https:\/\/[^/]+$/.test(server)){
     return {paymentAvailable:false};
   }
   const now=Date.now(),payload={v:1,uid:String(uid),orderId:String(orderId),
@@ -59,5 +59,5 @@ function pgTopupStatusTicket_(x){
   if(String(data.uid)!==String(user.uid))pgErr_('Solicitud inválida.');
   const cents=Math.round(Number(data.amountPEN)*100);
   return {ok:true,orderId:reference,amount:data.amountPEN,
-    ...pgCheckoutTicket_(user.uid,reference,cents)};
+    ...pgCheckoutTicket_(user.uid,reference,cents,true)};
 }
