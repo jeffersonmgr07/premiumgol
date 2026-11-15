@@ -1,3 +1,23 @@
+## Corrección del retorno Google y assets de marca · 15/11/2026
+
+**GitHub Pages:** Se corrigieron dos errores de JavaScript que detenían `renderAll()` antes de `initBridge()`: en `renderTopup()` y `renderAccount()`, `querySelector` devolvía un solo elemento y el programa intentaba ejecutar `.forEach()` sobre él. Ambos usan ahora `document.querySelectorAll()`. Google Identity Services permanece con el botón oficial (flujo `popup`); el modal muestra «Verificando tu cuenta de Google…» durante el intercambio del ID token con Apps Script y exhibe un error visible si el servidor rechaza la sesión. Solo se cierra el modal cuando la sesión se devuelve correctamente.
+
+**Verificación del backend (sin publicar secretos):**
+1. En Google Apps Script, comprobar que la propiedad `GOOGLE_CLIENT_ID` sea el ID OAuth Web (termina `.apps.googleusercontent.com`), exactamente igual al de `assets/config.js`. Comprobar `FRONTEND_ORIGIN=https://premiumgol.website`.
+2. Ejecutar `testPremiumGolGoogleConfiguration` (definida en `Auth.gs`) para comprobar `clientIdWebFormatCorrect=true` y `originCorrect=true`. No devuelve claves.
+3. Confirmar que el despliegue `/exec` en `assets/config.js` sea la versión vigente del mismo proyecto donde se encuentran `Auth.gs`, `Main.gs` y `Bridge.html`. Si se cambió cualquiera de esos archivos, publicar **Administrar implementaciones → Editar → Nueva versión**; GitHub Pages no despliega Apps Script.
+4. Probar ingreso desde `https://premiumgol.website` sin caché. Después de escoger cuenta, el modal debe mostrar el estado brevemente y abrir el dashboard. Los usuarios Google sin teléfono serán enviados a completar perfil.
+5. Si aparece un error, revisar Apps Script → Ejecuciones (función `rpc`), la pestaña Consola y los permisos del despliegue. No enviar `idToken`, `sessionToken` ni Client Secret en capturas o chats.
+
+**Marca y presentación:**
+- Favicon del isotipo adjuntado: `assets/favicon.ico` y `assets/favicon-96.png`. Apple: `assets/apple-touch-icon.png`.
+- Imagen de compartir adjuntada: `assets/og-premiumgol.jpg` (1200×630, optimizada) con Open Graph/Twitter meta tags y URL absoluta. WhatsApp y Facebook pueden usar caché anterior de imágenes; reenviar con un parámetro en la URL o volver a comprobar la vista previa después de que GitHub Pages publique.
+- Cartilla: corregido `clip-path` que cortaba el borde inferior de los escudos y aumentada la altura interior de las tarjetas en PC y móvil. Se conserva el esquema amarillo/lima.
+
+**Sin modificaciones:** API-FOOTBALL, cuotas, fichas de partidos, precios ni lógica de juegos.
+
+---
+
 ## Ajustes de cartilla, cuotas y pagos — 15 noviembre 2026
 
 - **Apuestas deportivas / Premium Live:** un mensaje breve de carga con indicador visual. Si el catálogo no entrega encuentros, se muestra «Por el momento no hay partidos disponibles» o «Por el momento no hay partidos en vivo», y un enlace interno para visitar PremiumGol. Nunca se presentan números simulados como cuotas reales.
