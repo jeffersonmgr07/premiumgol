@@ -272,3 +272,80 @@
 @media(max-width:720px){
   .mobile-nav button.active,.mobile-nav button.active svg{color:#ffffff;stroke:#ffffff}
 }
+
+
+/* PremiumGol V13 · Google oscuro, hero móvil integrado y acentos lima */
+/* El iframe lo dibuja Google: se conserva su accesibilidad y autenticación oficial. */
+.google-signin-shell{width:100%;max-width:380px;margin:0 auto 5px;padding:5px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(255,255,255,.025);transition:border-color .25s,box-shadow .25s}
+.google-signin-shell:focus-within,.google-signin-shell:hover{border-color:#DBFF26;box-shadow:0 0 16px rgba(219,255,38,.24)}
+.google-signin-shell .google-button-mount{width:100%;min-height:44px;justify-content:center;align-items:center}
+.google-signin-shell iframe{max-width:100%}
+.auth-box #emailForm .field span,.auth-box #emailForm label,.auth-box #verifyForm .field span{color:#FFFFFF}
+.auth-box #authCountry,.auth-box #authPhone{color:#FFFFFF}
+.auth-box #signupFields .field{min-width:0}
+.auth-box #signupFields .field input{width:100%}
+.auth-dialog{max-height:calc(100dvh - 30px);overflow:hidden}
+.auth-dialog .auth-box{max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#DBFF2666 transparent}
+.auth-dialog .auth-legal{padding-bottom:8px}
+
+/* Brillo verde de manera puntual; amarillo de marca #F7C85D sin cambios */
+.site-header .header-actions .btn-login{border:1px solid #DBFF26aa;transition:border-color .25s,box-shadow .25s;animation:pgAccessPulse 3.8s ease-in-out infinite alternate}
+.site-header .header-actions .btn-login:hover,.site-header .header-actions .btn-login:focus-visible{border-color:#DBFF26;box-shadow:0 0 16px #DBFF2680,0 0 32px #DBFF262d;outline:none}
+@keyframes pgAccessPulse{from{box-shadow:0 0 0 0 #DBFF2600}to{box-shadow:0 0 13px #DBFF264c}}
+.mode-card:hover,.mode-card:focus-visible,.featured-clickable:hover,.featured-clickable:focus-visible{border-color:#DBFF26;box-shadow:0 0 17px #DBFF262b,0 15px 35px #0005}
+.hero .eyebrow-rule{background:var(--accent-auth)}
+
+/* Móvil: el futbolista es la capa gráfica de fondo; dedo apuntando al CTA. */
+@media(max-width:720px){
+  .hero{height:auto;min-height:0;overflow:hidden}
+  .hero .hero-content{
+    position:relative;display:block;min-height:650px;height:650px;
+    padding-top:35px;padding-bottom:0;isolation:isolate;
+  }
+  .hero .hero-copy{width:100%;max-width:100%;position:relative;z-index:4;padding:0}
+  .hero .hero-copy h1{
+    font-size:clamp(24px,6.7vw,30px);
+    max-width:240px;
+    line-height:1.13;
+    letter-spacing:-.45px;
+    margin:0 0 17px;
+    text-wrap:pretty;
+  }
+  .hero .hero-copy h1 em{display:inline;color:var(--gold)}
+  .hero .hero-actions{margin:0}
+  .hero .hero-actions .btn-gold{
+    width:auto;min-height:46px;height:46px;
+    padding:0 16px;border-radius:12px;font-size:13px;
+    position:relative;z-index:5;
+  }
+  .hero .hero-actions .btn-gold svg{width:18px;height:18px}
+  .hero .hero-player-visual{
+    position:absolute;inset:0;display:block;z-index:1;
+    width:100%;height:100%;min-height:0;margin:0;
+    transform:none;pointer-events:none;
+  }
+  .hero .hero-player{
+    position:absolute;top:auto;bottom:-20px;right:-28px;
+    display:block;width:auto;max-width:none;
+    height:clamp(450px,140vw,590px);
+    object-fit:contain;opacity:1;
+    filter:drop-shadow(-8px 15px 24px rgba(0,0,0,.44));
+  }
+  .hero .hero-bottom-fade{height:38px}
+  .hero .hero-secondary-action{display:none!important}
+}
+@media(max-width:420px){
+  .hero .hero-content{height:610px;min-height:610px;padding-top:32px}
+  .hero .hero-copy h1{max-width:220px;font-size:clamp(23px,6.6vw,28px);line-height:1.12}
+  .hero .hero-actions .btn-gold{height:44px;min-height:44px;padding:0 13px;font-size:12px}
+  .hero .hero-player{bottom:-18px;right:-39px;height:clamp(435px,145vw,555px)}
+}
+@media(max-width:360px){
+  .hero .hero-content{height:580px;min-height:580px}
+  .hero .hero-copy h1{max-width:198px;font-size:23px}
+  .hero .hero-player{height:465px;right:-55px}
+}
+@media(prefers-reduced-motion:reduce){
+ .site-header .header-actions .btn-login{animation:none}
+ .mode-card,.featured-clickable,.google-signin-shell{transition:none}
+}
