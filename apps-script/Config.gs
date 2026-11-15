@@ -52,6 +52,10 @@ function setupPremiumGol(){
       if(sh.getMaxColumns()<PG.SHEETS.users.length){
         sh.insertColumnsAfter(sh.getMaxColumns(),PG.SHEETS.users.length-sh.getMaxColumns());
       }
+      const currentExtras=sh.getRange(1,13,1,3).getValues()[0].map(String);
+      if(currentExtras.some((value,i)=>value&&value!==PG.SHEETS.users[12+i])){
+        throw new Error('Hay columnas adicionales en users: revisa los encabezados antes de migrar.');
+      }
       sh.getRange(1,13,1,3).setValues([PG.SHEETS.users.slice(12)]);
     }
   });
