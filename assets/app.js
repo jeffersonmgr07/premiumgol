@@ -630,6 +630,9 @@
     $('#welcomeName').textContent=account?`¡Hola, ${account.firstName||'jugador'}!`:'¡El partido te espera!';
     $('#accountBalance').textContent=fmt2(accountBalance);
     $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
+    $('#bonusBalancePEN').textContent='S/ '+fmt2(bonusBalancePEN);
+    $('#referralBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
+    $('#referralPendingPEN').textContent='S/ '+fmt2(referralPendingPEN);
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
     const when=value=>{
@@ -668,8 +671,20 @@
     $('#referralLink').value=link||'Disponible al actualizar tu cuenta';
     $('#copyReferral').disabled=!validCode;
     $('#referralCount').textContent=validCode?
-      referralsJoined+' amigo(s) registrados con tu enlace · Beneficio pendiente de activación':
-      'Tu invitación estará disponible después de actualizar la cuenta';
+      referralsJoined+' amigo(s) registrados con tu enlace':
+      'Tu invitación estará disponible después de actualizar tu cuenta';
+    $('#referralActivity').innerHTML=referralActivity.length?referralActivity.map(r=>{
+      const d=new Date(r.joinedAt);
+      const date=Number.isFinite(d.getTime())?new Intl.DateTimeFormat('es-PE',{
+        timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric'
+      }).format(d):'';
+      const verified=Boolean(r.firstTopupVerified);
+      return '<div class="referral-activity-item"><div><strong>'+esc(r.label||'Invitado')+
+        '</strong><span>'+esc(verified?'Primera recarga confirmada · Bono por recomendar pendiente':
+        'Cuenta registrada · Primera recarga pendiente')+
+        '</span><small>'+esc(date)+'</small></div><b>'+
+        (verified?'+ S/ 5.00 · Por activar':'Pendiente')+'</b></div>';
+    }).join(''):'<p class="referral-detail">Comparte tu enlace para invitar amigos.</p>';
     document.querySelectorAll('[data-account-tab]').forEach(el=>{
       const active=el.dataset.accountTab===accountTab;
       el.classList.toggle('active',active);
@@ -733,7 +748,7 @@
     // Google no debe reabrir automáticamente una sesión después de salir.
     // La elección de cuenta/consentimiento sigue siendo controlada por Google.
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
-    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
+    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;referralPendingPEN=0;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();referralsJoined=0;
     renderAll();showView('home');
