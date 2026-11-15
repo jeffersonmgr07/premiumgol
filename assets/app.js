@@ -511,7 +511,15 @@
   function renderTopupHistory(){
     const holder=$('#topupHistory');
     if(!holder)return;
-    holder.innerHTML=recentTopupOrders.length?recentTopupOrders.map((o,i)=>{
+    // Se ocultan las pendientes a las 48 h incluso si la pestaña sigue abierta.
+    // Pagos confirmados, reembolsos y errores permanecen disponibles.
+    const displayOrders=recentTopupOrders.filter(o=>{
+      if(!['PENDING','IN_PROCESS','CREATING','EXPIRED'].includes(String(o.status)))return true;
+      if(o.status==='EXPIRED')return false;
+      const date=new Date(o.createdAt).getTime();
+      return Number.isFinite(date)&&Date.now()-date<48*3600000;
+    });
+    holder.innerHTML=displayOrders.length?displayOrders.map((o,i)=>{
       const url=o.status==='APPROVED'?'':mpSafeUrl(o.checkoutUrl);
       const id=String(o.orderId||'');
       const created=new Date(o.createdAt);
@@ -1095,6 +1103,9 @@
     if(hasUser()&&document.visibilityState==='visible'&&
        Date.now()-lastSessionInteraction<SESSION_HEARTBEAT_MS&&
        Date.now()-lastSessionVerification>=SESSION_HEARTBEAT_MS)refreshAccount();
+  },60000);
+  setInterval(()=>{
+    if(activeView==='account'&&accountTab==='wallet')renderTopupHistory();
   },60000);
   if(sessionToken)refreshAccount();
   // Consultas deportivas bajo demanda, no al iniciar sesión.
