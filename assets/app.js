@@ -380,7 +380,7 @@
     try{
       const res=await remote('createTopupRequest',{sessionToken,amount,clientRequestId:topupRequestId});
       const box=$('#rechargeOrder');box.hidden=false;
-      box.innerHTML=`<div class="recharge-order-head"><span class="recharge-order-icon">${icon('wallet')}</span><div><strong>Orden de recarga generada</strong><span>Tu solicitud quedó registrada</span></div></div><div class="recharge-order-data"><span class="recharge-order-badge">S/ ${fmt2(res.amount)}</span><span class="recharge-order-badge is-pending">Pendiente</span></div><p class="recharge-order-small">La orden se conservará en tu cuenta. La opción de pago se mostrará cuando esté habilitada.</p>`;
+      box.innerHTML=`<div class="recharge-order-head"><span class="recharge-order-icon">${icon('wallet')}</span><div><strong>Orden de recarga generada</strong><span>Tu solicitud quedó registrada</span></div></div><div class="recharge-order-data"><span class="recharge-order-badge">S/ ${fmt2(res.amount)}</span><span class="recharge-order-badge is-pending">Pendiente</span></div><p class="recharge-order-small">Solicitud registrada. Todavía no se ha realizado ningún cobro ni se ha modificado tu saldo.</p>`;
       toast('Orden de recarga registrada.');
       topupRequestId=null;
     }catch(e){toast(e.message||'No se pudo crear la solicitud de recarga.');}
