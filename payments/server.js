@@ -182,6 +182,9 @@ app.post('/payments/webhook',async(req,res)=>{
       if(!previous.exists)tx.create(payRef,{orderId,mode:MODE,status:state,seenAt:FieldValue.serverTimestamp()});
       else tx.update(payRef,{status:state,lastSeenAt:FieldValue.serverTimestamp()});
       const alreadyApproved=o.status==='APPROVED';
+      // Otra tentativa de pago del mismo checkout no debe reemplazar
+      // el ID aprobado ni revertirlo con un pago distinto rechazado.
+      if(alreadyApproved&&o.confirmedPaymentId&&o.confirmedPaymentId!==id)return;
       const next=alreadyApproved&&state!=='REFUNDED'&&state!=='CHARGED_BACK'?'APPROVED':state;
       tx.update(ref,{status:next,confirmedPaymentId:id,
         verifiedAt:FieldValue.serverTimestamp(),creditedToWagerWallet:false});
