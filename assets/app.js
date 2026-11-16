@@ -352,7 +352,7 @@
     const deadline=$('#golDeadline');
     deadline.classList.toggle('expired',closed);
     deadline.setAttribute('aria-label',closed?'Jornada cerrada: miércoles 18 de noviembre a las 6:30 p. m. · Pozo anunciado S/ 10,000':
-      'Límite de participación: miércoles 18 de noviembre a las 6:30 p. m. · Pozo anunciado S/ 10,000');
+      'Juega hasta el miércoles 18 de noviembre, 6:30 p. m. · Pozo acumulado S/ 10,000');
     deadline.title=closed?'Jornada cerrada':'Cierre de jugadas el miércoles 18 de noviembre';
     $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}">
       <span class="fixture-number">${String(i+1).padStart(2,'0')}</span>
@@ -781,7 +781,7 @@
     $('#bonusStatementBalance').textContent='S/ '+fmt2(bonusBalancePEN);
     $('#bonusStatementEligibility').textContent=bonusUnlocked?
       'Bonos habilitados tras tu primera recarga aprobada.':
-      'Para usar tus bonos, primero realiza una recarga propia de al menos S/ 5.';
+      'Para usar tus bonos, primero deberás realizar una recarga.';
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
     const when=value=>{
@@ -843,9 +843,15 @@
         new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',
           day:'2-digit',month:'short',year:'numeric',
           hour:'2-digit',minute:'2-digit'}).format(raw):'Fecha no disponible';
+      const referred=event.category==='REFERIDO';
+      const title=referred?(amount<0?'Reversión de bono por referido':'Bono por referido'):
+        (event.description||event.category||'Bono');
+      const detail=referred?
+        (event.referralName?event.referralName+' · ':'')+date:
+        (event.category||'MOVIMIENTO')+' · '+date;
       return '<div class="bonus-statement-row"><div class="bonus-statement-info">'+
-        '<strong>'+esc(event.description||event.category||'Bono')+'</strong>'+
-        '<span>'+esc(event.category||'MOVIMIENTO')+' · '+esc(date)+'</span></div>'+
+        '<strong>'+esc(title)+'</strong>'+
+        '<span>'+esc(detail)+'</span></div>'+
         '<b class="'+(amount<0?'is-debit':'is-credit')+'">'+
         (amount<0?'− ':'+ ')+'S/ '+fmt2(Math.abs(amount))+'</b></div>';
     }).join(''):'<p class="profile-info">Todavía no hay movimientos de bonos.</p>';
