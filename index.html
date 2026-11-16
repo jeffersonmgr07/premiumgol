@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=34">
+  <link rel="stylesheet" href="assets/styles.css?v=35">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=37"></script>
+  <script defer src="assets/app.js?v=38"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -73,6 +73,7 @@
           <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
           <button type="button" data-account-tab="history" role="menuitem"><svg><use href="#i-ticket"></use></svg>Mis jugadas</button>
           <button type="button" data-account-tab="wallet" role="menuitem"><svg><use href="#i-wallet"></use></svg>Recargar saldo</button>
+          <button type="button" data-account-tab="bonuses" role="menuitem"><svg><use href="#i-trophy"></use></svg>Mis bonos</button>
           <button type="button" data-account-tab="profile" role="menuitem"><svg><use href="#i-shield"></use></svg>Mi perfil</button>
           <button type="button" data-account-signout="1" role="menuitem"><svg><use href="#i-arrow"></use></svg>Cerrar sesión</button>
         </div>
@@ -137,10 +138,11 @@
 
     <section id="view-account" class="view" aria-label="Mi cuenta">
       
-      <div class="container page-body account-layout"><aside class="profile-side"><div class="avatar-circle" id="avatarInitial"><span id="avatarInitialText">P</span><img id="avatarPhoto" alt="" loading="lazy" hidden></div><h3 id="profileName">Jugador</h3><span id="profileSubtitle">Tu cuenta PremiumGol</span><div class="side-divider"></div><button class="account-side-link active" data-account-tab="overview"><svg><use href="#i-user"></use></svg> Resumen</button><button class="account-side-link" data-account-tab="history"><svg><use href="#i-ticket"></use></svg> Mis jugadas</button><button class="account-side-link" data-account-tab="wallet"><svg><use href="#i-wallet"></use></svg> Recargar saldo</button><button class="account-side-link" data-account-tab="profile"><svg><use href="#i-shield"></use></svg> Mi perfil</button><button class="account-side-link" id="accountSignout"><svg><use href="#i-arrow"></use></svg> Cerrar sesión</button></aside><div class="account-quick-tabs" role="group" aria-label="Navegación de cuenta">
+      <div class="container page-body account-layout"><aside class="profile-side"><div class="avatar-circle" id="avatarInitial"><span id="avatarInitialText">P</span><img id="avatarPhoto" alt="" loading="lazy" hidden></div><h3 id="profileName">Jugador</h3><span id="profileSubtitle">Tu cuenta PremiumGol</span><div class="side-divider"></div><button class="account-side-link active" data-account-tab="overview"><svg><use href="#i-user"></use></svg> Resumen</button><button class="account-side-link" data-account-tab="history"><svg><use href="#i-ticket"></use></svg> Mis jugadas</button><button class="account-side-link" data-account-tab="wallet"><svg><use href="#i-wallet"></use></svg> Recargar saldo</button><button class="account-side-link" data-account-tab="bonuses"><svg><use href="#i-trophy"></use></svg> Mis bonos</button><button class="account-side-link" data-account-tab="profile"><svg><use href="#i-shield"></use></svg> Mi perfil</button><button class="account-side-link" id="accountSignout"><svg><use href="#i-arrow"></use></svg> Cerrar sesión</button></aside><div class="account-quick-tabs" role="group" aria-label="Navegación de cuenta">
   <button type="button" data-account-tab="overview" title="Resumen" aria-label="Resumen"><svg><use href="#i-user"></use></svg></button>
   <button type="button" data-account-tab="history" title="Mis jugadas" aria-label="Mis jugadas"><svg><use href="#i-ticket"></use></svg></button>
   <button type="button" data-account-tab="wallet" title="Recargar saldo" aria-label="Recargar saldo"><svg><use href="#i-wallet"></use></svg></button>
+  <button type="button" data-account-tab="bonuses" title="Mis bonos" aria-label="Mis bonos"><svg><use href="#i-trophy"></use></svg></button>
   <button type="button" data-account-tab="profile" title="Mi perfil" aria-label="Mi perfil"><svg><use href="#i-shield"></use></svg></button>
   <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg><use href="#i-arrow"></use></svg></button>
 </div><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus saldos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Saldo principal</span><b id="accountBalance">S/ 0.00</b><small>Recargas verificadas</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><button type="button" class="account-view-plays" data-account-tab="history">Ver mis jugadas <svg><use href="#i-arrow"></use></svg></button>
@@ -156,7 +158,7 @@
 </div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
   <div class="panel-head"><h2>Recargar saldo</h2></div>
   <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 5. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.</p>
-  <div class="paid-wallet-balance" role="status"><span>Saldo real verificado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Recargas verificadas · Independiente de tus créditos para jugar</small></div>
+  <div class="paid-wallet-balance" role="status"><span>Saldo real verificado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Recargas aprobadas que forman parte de tu saldo principal.</small></div>
   
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
@@ -178,6 +180,11 @@
     <div class="topup-history"><h3>Últimas recargas</h3><div id="topupHistory" class="topup-history-list"><p>Aún no has registrado recargas.</p></div></div>
 
   </div>
+</div><div id="accountBonuses" class="account-content"><div class="panel-head"><h2>Mis bonos</h2></div>
+  <p class="profile-info">Consulta tus bonificaciones, promociones y movimientos en un solo estado de cuenta.</p>
+  <div class="bonus-statement-head"><span>Saldo de bonos</span><strong id="bonusStatementBalance">S/ 0.00</strong><small id="bonusStatementEligibility">Realiza tu primera recarga de S/ 5 para habilitar el uso de tus bonos.</small></div>
+  <h3 class="bonus-statement-title">Movimientos de bonos</h3>
+  <div class="bonus-statement-list" id="bonusStatementList"><p class="profile-info">Aún no se han registrado movimientos.</p></div>
 </div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div>
   <p class="profile-info">Consulta el código, la fecha, el costo y los 12 pronósticos de cada ticket de PremiumGol.</p>
   <div id="fullHistory"></div></div><div id="accountProfile" class="account-content"><h2>Mi perfil</h2><p class="profile-info">Completa tus datos personales y mantén tu cuenta actualizada.</p><form id="profileForm" class="profile-form">
@@ -231,11 +238,28 @@
       <p>Las jugadas A, B, C y D son independientes. La jornada se cierra en la fecha y hora anunciadas; no se admiten cambios después del cierre.</p>
       <p>Los aciertos se calculan comparando tus selecciones con el resultado oficial de cada partido al finalizar el tiempo reglamentario, según las condiciones publicadas para la jornada.</p>
       <p>La clasificación considera la cantidad de aciertos. Las condiciones de premios, desempates y posibles bonos se anunciarán antes de habilitar su entrega. El pozo mostrado no constituye una promesa de pago en esta versión de prueba.</p>
-      <p>El costo configurado actualmente es de <b>5 créditos de prueba por jugada</b>. La compra con dinero real todavía no está habilitada.</p>
+      <p>El costo configurado es de <b>S/ 5 por jugada</b>. Podrás elegir saldo principal o saldo de bonos cuando se habiliten las jugadas con saldo. Los premios verificados se abonan al saldo principal.</p>
       <button type="button" id="acceptGolRules" class="btn btn-gold btn-full">Entendido</button>
     </div>
   </dialog>
-  <dialog id="insufficientFundsDialog" class="gol-rules-dialog" aria-labelledby="insufficientFundsTitle"><div class="gol-rules-inner"><button type="button" class="modal-x" id="closeInsufficientFunds" aria-label="Cerrar aviso"><svg><use href="#i-close"></use></svg></button><h2 id="insufficientFundsTitle">Saldo insuficiente</h2><p>No tienes saldo suficiente para colocar esta jugada.</p><button type="button" class="btn btn-gold btn-full" id="insufficientFundsRecharge">Recargar saldo</button></div></dialog>
+  <dialog id="walletPayDialog" class="gol-rules-dialog wallet-pay-dialog" aria-labelledby="walletPayTitle">
+  <div class="gol-rules-inner wallet-pay-content">
+    <button type="button" class="modal-x" id="walletPayClose" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
+    <h2 id="walletPayTitle">¿Con qué saldo deseas jugar?</h2>
+    <p class="profile-info">PremiumGol · Costo de la jugada: <strong>S/ 5.00</strong></p>
+    <div class="wallet-pay-options" role="radiogroup" aria-label="Selecciona el saldo para esta jugada">
+      <label class="wallet-pay-option"><input type="radio" name="walletPayment" value="principal" id="walletPayPrincipal">
+        <span><b>Saldo principal</b><small>Recargas y premios ganados</small></span><strong id="walletPayPrincipalAmount">S/ 0.00</strong>
+      </label>
+      <label class="wallet-pay-option"><input type="radio" name="walletPayment" value="bonos" id="walletPayBonuses">
+        <span><b>Saldo de bonos</b><small id="walletPayBonusesHint">Bienvenida, referidos y promociones</small></span><strong id="walletPayBonusesAmount">S/ 0.00</strong>
+      </label>
+    </div>
+    <p class="wallet-pay-warning" id="walletPayNotice" role="status"></p>
+    <button type="button" class="btn btn-gold btn-full" id="walletPayConfirm">Confirmar jugada de S/ 5.00</button>
+  </div>
+</dialog>
+<dialog id="insufficientFundsDialog" class="gol-rules-dialog" aria-labelledby="insufficientFundsTitle"><div class="gol-rules-inner"><button type="button" class="modal-x" id="closeInsufficientFunds" aria-label="Cerrar aviso"><svg><use href="#i-close"></use></svg></button><h2 id="insufficientFundsTitle">Saldo insuficiente</h2><p>No tienes saldo suficiente para colocar esta jugada.</p><button type="button" class="btn btn-gold btn-full" id="insufficientFundsRecharge">Recargar saldo</button></div></dialog>
   <dialog id="playDetailsDialog" class="gol-rules-dialog play-details-dialog" aria-labelledby="playDetailsTitle">
   <div class="gol-rules-inner">
     <button type="button" class="modal-x" id="closePlayDetails" aria-label="Cerrar detalles"><svg><use href="#i-close"></use></svg></button>
