@@ -133,13 +133,21 @@ function pgWelcomeBonusPEN_(uid){
 function pgBonusStatement_(uid){
   const entries=pgRows_('bonus_ledger').rows.filter(r=>
     String(r[1])===String(uid)&&String(r[4])==='AVAILABLE');
+  const referralIds=new Set(entries.filter(r=>String(r[0]).startsWith('REF-'))
+    .map(r=>String(r[2])));
+  const referralNames=new Map(pgRows_('users').rows
+    .map(r=>pgObject_('users',r))
+    .filter(p=>referralIds.has(String(p.uid))&&String(p.invitedBy||'')===String(uid))
+    .map(p=>[String(p.uid),pgClean_(p.firstName,70)+
+      (pgClean_(p.lastName,70)?' '+pgClean_(p.lastName,70).charAt(0)+'.':'')]));
   const events=entries.map(r=>{
     const amount=Number(r[3])||0,id=String(r[0]),note=String(r[6]||'');
     const category=id.startsWith('WELCOME-')?'BIENVENIDA':
       id.startsWith('REF-')?'REFERIDO':id.startsWith('PLAY-')?'JUGADA':
       id.startsWith('PROMO-')?'PROMOCIÓN':'AJUSTE';
+    const referralName=category==='REFERIDO'?referralNames.get(String(r[2]))||'':'';
     return {id,category,description:note||category,amountPEN:amount,
-      createdAt:String(r[5]||'')};
+      referralName,createdAt:String(r[5]||'')};
   });
   const fallback=pgWelcomeBonusPEN_(uid);
   if(fallback){
