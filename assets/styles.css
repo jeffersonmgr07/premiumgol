@@ -1136,3 +1136,35 @@ body.auth-request-busy{overflow:hidden}
   #loginTop .session-restore-indicator,
   .mobile-nav [data-nav="account"].is-restoring:before{animation:none}
 }
+
+/* Ajustes puntuales de la cartilla y el desglose de bonos */
+.wallet-breakdown .wallet-bonus-condition:not([hidden]){
+  display:block;width:100%;box-sizing:border-box;margin:8px 0 7px;
+  padding:8px 11px!important;border:1px solid #F7C85D80;
+  border-radius:999px;background:#F7C85D10;color:#F7C85D;
+  font-size:10px;font-weight:750;line-height:1.45;text-align:center;
+}
+.gol-price{gap:8px;flex-wrap:nowrap;min-width:0}
+.gol-price>span,.gol-price>strong{white-space:nowrap}
+.gol-price>span{min-width:0;font-size:clamp(9px,2.5vw,11px)}
+.gol-price>strong{flex:none;font-size:clamp(12px,3vw,14px)}
+/* Los tres banners permanecen en una única fila incluso en móviles. */
+.gol-info-badge{white-space:nowrap;min-width:0;box-sizing:border-box}
+@media(max-width:720px){
+  .gol-info-badges{
+    display:grid;grid-template-columns:minmax(0,1.32fr) minmax(0,.72fr) minmax(0,1fr);
+    gap:5px;width:100%;max-width:100%;min-width:0
+  }
+  .gol-info-badge{
+    width:100%;gap:4px;min-width:0;padding:7px 5px;
+    font-size:clamp(8px,2.18vw,11px);line-height:1.1
+  }
+  .gol-info-badge svg{width:12px;height:12px}
+  .gol-info-pot b{font-size:clamp(9px,2.35vw,12px)}
+}
+@media(max-width:420px){
+  .gol-info-badges{gap:3px;grid-template-columns:minmax(0,1.28fr) minmax(0,.71fr) minmax(0,1.02fr)}
+  .gol-info-badge{gap:3px;padding:7px 3px;font-size:clamp(7.5px,2.05vw,9px)}
+  .gol-info-badge svg{display:none}
+  .gol-info-pot b{font-size:clamp(8px,2.15vw,10px)}
+}
