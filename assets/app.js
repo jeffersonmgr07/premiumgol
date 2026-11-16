@@ -103,7 +103,7 @@
   let account = null;
   let accountBalance = 0;
   let paidBalancePEN = 0;
-  let bonusBalancePEN=0,bonusUnlocked=false,referralActivity=[];
+  let bonusBalancePEN=0,bonusUnlocked=false,bonusStatement=[],walletWagersEnabled=false,referralActivity=[];
   let recentTopupOrders = [];
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
@@ -175,7 +175,7 @@
     if(accountMenuOpen)menu.querySelector('button')?.focus({preventScroll:true});
   }
   function openAccountTab(tab){
-    if(!['overview','history','wallet','profile'].includes(tab))return;
+    if(!['overview','history','wallet','bonuses','profile'].includes(tab))return;
     accountTab=tab;closeAccountMenu();closeWalletBreakdown();showView('account');
     renderAccount();if(tab==='wallet')loadTopupOrders();
   }
@@ -378,7 +378,27 @@
   }
 
   let sendingPlay=false;
-  async function saveGol(){
+  function openWalletPayment(){
+    const main=$('#walletPayPrincipal'),bonus=$('#walletPayBonuses');
+    const enoughMain=Math.round(paidBalancePEN*100)>=500;
+    const enoughBonus=bonusUnlocked&&Math.round(bonusBalancePEN*100)>=500;
+    if(!enoughMain&&!enoughBonus){showInsufficientFunds();return;}
+    main.disabled=!enoughMain;
+    bonus.disabled=!enoughBonus;
+    main.checked=enoughMain;
+    bonus.checked=!enoughMain&&enoughBonus;
+    $('#walletPayPrincipalAmount').textContent='S/ '+fmt2(paidBalancePEN);
+    $('#walletPayBonusesAmount').textContent='S/ '+fmt2(bonusBalancePEN);
+    $('#walletPayBonusesHint').textContent=bonusUnlocked?
+      'Bienvenida, referidos y promociones':
+      'Se habilita al completar tu primera recarga propia de S/ 5.';
+    $('#walletPayNotice').textContent=walletWagersEnabled?
+      'Se descontará S/ 5.00 únicamente de la billetera seleccionada.':
+      'Las jugadas pagadas con saldo todavía están en preparación.';
+    $('#walletPayConfirm').disabled=!walletWagersEnabled;
+    if(!$('#walletPayDialog').open)$('#walletPayDialog').showModal();
+  }
+  async function saveGol(walletSource=''){
     if(golClosed()){toast('La cartilla está cerrada para nuevas jugadas.');renderGol();return;}
     if(golLocked[activeCard]){toast('Esta jugada ya fue registrada. Elige otra letra.');return;}
     if(completedPicks()!==12){toast(`Completa los 12 partidos. Llevas ${completedPicks()} de 12.`);return;}
@@ -387,7 +407,14 @@
       try{await refreshAccount();}finally{setAuthBusy(false);}
     }
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
-    if(accountBalance<5){showInsufficientFunds();return;}
+    if(!walletSource){openWalletPayment();return;}
+    if(!walletWagersEnabled){toast('Las jugadas con saldo todavía no están habilitadas.');return;}
+    if(walletSource==='bonos'&&!bonusUnlocked){
+      toast('Primero realiza una recarga de al menos S/ 5 para usar tus bonos.');return;
+    }
+    if((walletSource==='principal'?paidBalancePEN:bonusBalancePEN)<5){
+      showInsufficientFunds();return;
+    }
     if(sendingPlay)return;
     sendingPlay=true;$('#submitGol').disabled=true;
     setAuthBusy(true,'Guardando tu jugada…','general');
@@ -395,7 +422,8 @@
     try{
       const picks=golGames.map(g=>({id:g.id,outcome:draft.golCards[slot][g.id]}));
       draft.golRequestIds[slot]=draft.golRequestIds[slot]||randomId();saveDraft();
-      const res=await remote('savePremiumGol',{sessionToken,slot,picks,clientRequestId:draft.golRequestIds[slot]});
+      const res=await remote('savePremiumGol',{sessionToken,slot,picks,
+        walletSource,clientRequestId:draft.golRequestIds[slot]});
       updateAccount(res);
       // Cada letra es reutilizable: una jugada guardada tiene su propio
       // ticket. Limpiar solo el borrador enviado, no los otros tres.
@@ -404,7 +432,7 @@
       activeCard=slot;draft.activeCard=slot;
       saveDraft();
       renderGol();toast('¡Ticket PremiumGol registrado! Costo: S/ 5.00.');
-    }catch(e){if(/saldo virtual insuficiente|créditos insuficientes/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo guardar la jugada.');}
+    }catch(e){if(/saldo (principal|de bonos) insuficiente/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo guardar la jugada.');}
     finally{sendingPlay=false;setAuthBusy(false);renderGol();}
   }
   function filterOptions(){
@@ -476,6 +504,8 @@
     if(Array.isArray(result.referrals))referralActivity=result.referrals;
     if(Number.isFinite(Number(result.bonusBalancePEN)))bonusBalancePEN=Number(result.bonusBalancePEN);
     if(typeof result.bonusUnlocked==='boolean')bonusUnlocked=result.bonusUnlocked;
+    if(Array.isArray(result.bonusStatement))bonusStatement=result.bonusStatement;
+    if(typeof result.walletWagersEnabled==='boolean')walletWagersEnabled=result.walletWagersEnabled;
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Number.isFinite(Number(result.paidBalancePEN)))paidBalancePEN=Number(result.paidBalancePEN);
     if(Array.isArray(result.history))playHistory=result.history;
@@ -731,6 +761,10 @@
     $('#accountBalance').textContent='S/ '+fmt2(paidBalancePEN);
     $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
     $('#referralBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
+    $('#bonusStatementBalance').textContent='S/ '+fmt2(bonusBalancePEN);
+    $('#bonusStatementEligibility').textContent=bonusUnlocked?
+      'Bonos habilitados tras tu primera recarga aprobada.':
+      'Para usar tus bonos, primero realiza una recarga propia de al menos S/ 5.';
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
     const when=value=>{
@@ -785,6 +819,19 @@
         '<div class="referral-activity-amount"><small>Bono recibido</small><b>'+(awarded?'+ S/ 5.00':'S/ 0.00')+'</b></div>'+
         '</div>';
     }).join(''):'<p class="referral-detail">Aún no tienes amigos registrados con tu enlace.</p>';
+    $('#bonusStatementList').innerHTML=bonusStatement.length?bonusStatement.map(event=>{
+      const amount=Number(event.amountPEN)||0;
+      const raw=new Date(event.createdAt);
+      const date=Number.isFinite(raw.getTime())?
+        new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',
+          day:'2-digit',month:'short',year:'numeric',
+          hour:'2-digit',minute:'2-digit'}).format(raw):'Fecha no disponible';
+      return '<div class="bonus-statement-row"><div class="bonus-statement-info">'+
+        '<strong>'+esc(event.description||event.category||'Bono')+'</strong>'+
+        '<span>'+esc(event.category||'MOVIMIENTO')+' · '+esc(date)+'</span></div>'+
+        '<b class="'+(amount<0?'is-debit':'is-credit')+'">'+
+        (amount<0?'− ':'+ ')+'S/ '+fmt2(Math.abs(amount))+'</b></div>';
+    }).join(''):'<p class="profile-info">Todavía no hay movimientos de bonos.</p>';
     document.querySelectorAll('[data-account-tab]').forEach(el=>{
       const active=el.dataset.accountTab===accountTab;
       el.classList.toggle('active',active);
@@ -871,6 +918,7 @@
     const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;bonusUnlocked=false;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
+    bonusStatement=[];walletWagersEnabled=false;
     renderAll();showView('home');
     toast(reason==='idle'?'Tu sesión terminó tras una hora de inactividad.':'Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
@@ -1096,7 +1144,16 @@
     finally{btn.disabled=false;setAuthBusy(false);}
   });
   $('#backToEmail').addEventListener('click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
-  $('#submitGol').addEventListener('click',saveGol);
+  $('#submitGol').addEventListener('click',()=>saveGol());
+  $('#walletPayClose').addEventListener('click',()=>$('#walletPayDialog').close());
+  $('#walletPayConfirm').addEventListener('click',()=>{
+    const wallet=document.querySelector('input[name="walletPayment"]:checked')?.value;
+    if(!wallet||!walletWagersEnabled)return;
+    $('#walletPayDialog').close();saveGol(wallet);
+  });
+  $('#walletPayDialog').addEventListener('click',e=>{
+    if(e.target===$('#walletPayDialog'))e.target.close();
+  });
   $('#closeInsufficientFunds').addEventListener('click',()=>$('#insufficientFundsDialog').close());
   $('#insufficientFundsRecharge').addEventListener('click',()=>{$('#insufficientFundsDialog').close();openAccountTab('wallet');});
   $('#insufficientFundsDialog').addEventListener('click',e=>{if(e.target===$('#insufficientFundsDialog'))e.target.close();});
