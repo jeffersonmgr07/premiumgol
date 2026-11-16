@@ -1113,3 +1113,26 @@ body.auth-request-busy{overflow:hidden}
 .wallet-pay-option>strong{font-size:13px;color:#F7C85D;white-space:nowrap}
 .wallet-pay-warning{font-size:12px;color:#f1d9a4;line-height:1.6}
 .wallet-pay-dialog .btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* La sesión persistente se restaura sin volver a pedir Google. */
+#loginTop .session-restore-indicator{display:none}
+#loginTop.is-restoring{cursor:progress;opacity:1!important}
+#loginTop.is-restoring>svg{display:none}
+#loginTop.is-restoring .session-restore-indicator{
+  display:block;width:19px;height:19px;flex:0 0 19px;
+  border:2px solid #F7C85D55;border-top-color:#F7C85D;border-radius:50%;
+  animation:pgSessionRestoreSpin .9s linear infinite
+}
+#loginTop.is-reconnect{border-color:#F7C85D!important}
+.mobile-nav [data-nav="account"].is-restoring{pointer-events:none;cursor:progress}
+.mobile-nav [data-nav="account"].is-restoring svg{display:none}
+.mobile-nav [data-nav="account"].is-restoring:before{
+  content:"";width:20px;height:20px;border:2px solid #F7C85D55;
+  border-top-color:#F7C85D;border-radius:50%;
+  animation:pgSessionRestoreSpin .9s linear infinite
+}
+@keyframes pgSessionRestoreSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+  #loginTop .session-restore-indicator,
+  .mobile-nav [data-nav="account"].is-restoring:before{animation:none}
+}
