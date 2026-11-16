@@ -117,6 +117,22 @@ function pgPublicUser_(u){
     phone:String(u.phone||''),docType:String(u.docType||''),docNumber:String(u.docNumber||''),
     avatarUrl:String(u.avatarUrl||''),inviteCode:String(u.inviteCode||'')};
 }
+/** La bienvenida promocional equivale a S/ 10 una sola vez por cuenta.
+ * Se deriva del BONO_INICIAL del historial original, sin convertir en dinero
+ * los créditos virtuales registrados en users.balance.
+ */
+function pgWelcomeBonusPEN_(uid){
+  return pgRows_('ledger').rows.some(r=>
+    String(r[1])===String(uid)&&String(r[3])==='BONO_INICIAL')?10:0;
+}
+/** El bono se habilita tras una recarga propia no reembolsada de S/ 5 o más. */
+function pgBonusUnlocked_(uid){
+  const payments=pgRows_('payments_ledger').rows.filter(r=>String(r[1])===String(uid));
+  const reversed=new Set(payments.filter(r=>Number(r[4])<0&&
+    ['REFUNDED','CHARGED_BACK'].includes(String(r[5]))).map(r=>String(r[2])));
+  return payments.some(r=>String(r[5])==='TOPUP_APPROVED'&&
+    Math.round(Number(r[4]||0)*100)>=500&&!reversed.has(String(r[2])));
+}
 /** Resumen de invitados y bono acreditado, sin exponer cuentas de terceros. */
 function pgReferralSummary_(user){
   const invited=pgRows_('users').rows.map(r=>pgObject_('users',r))
@@ -146,7 +162,7 @@ function pgReferralSummary_(user){
     .filter(r=>String(r[1])===String(user.uid)&&String(r[4])==='AVAILABLE')
     .reduce((n,r)=>n+Math.round(Number(r[3]||0)*100),0)/100;
   return {referralCount:referrals.length,referrals:referrals.slice(0,30),
-    bonusBalancePEN:Math.round(bonus*100)/100};
+    bonusBalancePEN:Math.round((pgWelcomeBonusPEN_(String(user.uid))+bonus)*100)/100};
 }
 function pgSnapshot_(row){
   const user=pgObject_('users',row.values);
@@ -181,7 +197,8 @@ function pgSnapshot_(row){
   const couponClaimed=pgRows_('ledger').rows.some(r=>String(r[1])===String(user.uid)&&String(r[3])==='BONO_PREMIUM_50');
   const reward=pgReferralSummary_(user);
   return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,
-    history,golSlots,couponClaimed,paidBalancePEN,...reward};
+    history,golSlots,couponClaimed,paidBalancePEN,
+    bonusUnlocked:pgBonusUnlocked_(String(user.uid)),...reward};
 }
 
 /** Verificación sin datos personales ni claves: ejecutar desde el editor. */
