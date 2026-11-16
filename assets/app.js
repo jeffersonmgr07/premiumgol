@@ -65,6 +65,9 @@
   let sessionCreatedAt=restoredSession?.createdAt||0;
   let lastSessionVerification=0;
   let accountRefreshPromise=null;
+  // La sesión guardada no es un cierre de sesión: se valida antes de mostrar Ingresar.
+  let sessionRestoring=Boolean(sessionToken);
+  let sessionRestoreFailed=false;
   function sessionExpired(){
     const now=Date.now();
     // Otra pestaña activa mantiene vigente la misma sesión compartida.
@@ -260,12 +263,12 @@
     if(!['home','gol','match','live','account'].includes(name))name='home';
     if(name==='account'&&!hasUser()){
       if(sessionToken){
-        setAuthBusy(true,'Restaurando tu sesión…','general');
+        // No mostrar un segundo modal ni ofrecer Google durante la restauración.
         refreshAccount().then(()=>{
           if(hasUser())showView('account');
-          else if(sessionToken)toast('No se pudo recuperar la sesión. Comprueba tu conexión e inténtalo de nuevo.');
-          else openAuth('login');
-        }).finally(()=>setAuthBusy(false));
+          else if(!sessionToken)openAuth('login');
+          else toast('No se pudo restaurar tu sesión. Pulsa Reconectar en la cabecera.');
+        });
       }else{pendingAfterAuth='account';openAuth('login');}
       return;
     }
@@ -514,18 +517,32 @@
     renderAll();
   }
   function renderHeader(){
+    const restoring=Boolean(sessionToken)&&sessionRestoring&&!hasUser();
+    const reconnect=Boolean(sessionToken)&&sessionRestoreFailed&&!hasUser();
+    const login=$('#loginTop');
+    login.classList.toggle('is-restoring',restoring);
+    login.classList.toggle('is-reconnect',reconnect);
+    login.disabled=restoring;
+    login.setAttribute('aria-busy',String(restoring));
+    login.setAttribute('aria-label',restoring?'Restaurando tu sesión':
+      reconnect?'Reintentar conexión a tu cuenta':
+      hasUser()?'Abrir menú de Mi cuenta':'Ingresar o registrarse');
+    login.title=restoring?'Restaurando tu sesión…':
+      reconnect?'Reconectar con tu cuenta':'Ingresar o registrarse';
+    $('[data-nav="account"]')?.classList.toggle('is-restoring',restoring);
+    $('[data-nav="account"]')?.setAttribute('aria-busy',String(restoring));
     $('#walletTop').hidden=!hasUser();
     $('#topBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
     $('#walletMainBalance').textContent='S/ '+fmt2(paidBalancePEN);
     $('#walletBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
     $('#walletBonusCondition').hidden=bonusUnlocked||bonusBalancePEN<=0;
     $('#walletTotalBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
-    $('#loginTopLabel').textContent=hasUser()?'Mi cuenta':'Ingresar';
-    $('#loginTop').setAttribute('aria-label',hasUser()?'Abrir menú de Mi cuenta':'Ingresar o registrarse');
+    $('#loginTopLabel').textContent=restoring?'Cargando…':
+      reconnect?'Reconectar':hasUser()?'Mi cuenta':'Ingresar';
     $('#loginTop').setAttribute('aria-haspopup',hasUser()?'menu':'false');
     $('[data-nav="account"]')?.setAttribute('aria-haspopup',hasUser()?'menu':'false');
     $('#loginTop').setAttribute('aria-expanded',String(hasUser()&&accountMenuOpen));
-    $('#registerTop').hidden=hasUser();
+    $('#registerTop').hidden=hasUser()||restoring||reconnect;
   }
   function chosenTopup(){
     const n=topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
@@ -865,6 +882,10 @@
   }
   function openAuth(mode='login'){
     if(hasUser()){showView('account');return;}
+    if(sessionToken){
+      if(!sessionRestoring)refreshAccount();
+      return;
+    }
     setAuthMode(mode);
     const el=$('#authDialog');if(!el.open)el.showModal();
     showGoogleLoginStatus('',false);
@@ -878,6 +899,8 @@
   function acceptSession(result){
     if(!result.sessionToken||!result.user)throw new Error('El servidor no devolvió una sesión válida.');
     sessionToken=result.sessionToken;
+    sessionRestoring=false;
+    sessionRestoreFailed=false;
     sessionCreatedAt=Date.now();
     lastSessionInteraction=sessionCreatedAt;
     lastSessionVerification=Date.now();
@@ -915,7 +938,8 @@
     // Google no debe reabrir automáticamente una sesión después de salir.
     // La elección de cuenta/consentimiento sigue siendo controlada por Google.
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
-    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;bonusUnlocked=false;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
+    const old=sessionToken;sessionToken='';sessionRestoring=false;sessionRestoreFailed=false;
+    account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;bonusUnlocked=false;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     bonusStatement=[];walletWagersEnabled=false;
@@ -1023,24 +1047,44 @@
   async function refreshAccount(){
     if(!sessionToken)return;
     if(sessionExpired()){await signout('idle');return;}
+    // Una misma petición de recuperación, aunque varias rutas la soliciten.
     if(accountRefreshPromise)return accountRefreshPromise;
+    const checkedToken=sessionToken;
+    const restoring=!account;
+    if(restoring){
+      sessionRestoring=true;
+      sessionRestoreFailed=false;
+      renderHeader();
+    }
     accountRefreshPromise=(async()=>{
       try{
-        const response=await remote('me',{sessionToken});
-        if(!sessionToken)return;
+        const response=await remote('me',{sessionToken:checkedToken});
+        // Evita que una respuesta antigua reabra la cuenta tras cerrar sesión.
+        if(sessionToken!==checkedToken)return;
         lastSessionVerification=Date.now();
         updateAccount(response);
       }catch(err){
-        // No cerrar sesión ante fallos temporales de red, del iframe o por timeout.
-        // Solo el mensaje explícito del servidor invalida el token existente.
+        if(sessionToken!==checkedToken)return;
+        // Solo el servidor puede invalidar una sesión guardada.
         if(/Sesión vencida\. Vuelve a ingresar\./.test(String(err?.message||''))){
           sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
+          bonusBalancePEN=0;bonusUnlocked=false;bonusStatement=[];
           clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;
-          renderAll();toast('Tu sesión venció. Vuelve a ingresar.');
+          renderAll();
+          toast('Tu sesión venció. Vuelve a ingresar.');
         }else{
           console.warn('La sesión se conserva tras un error temporal de conexión.');
-          if(!account)toast('No se pudo recuperar tu sesión. Revisa la conexión y vuelve a intentarlo.');
+          if(restoring)toast('No se pudo restaurar tu sesión. Pulsa Reconectar para intentarlo de nuevo.');
         }
+      }finally{
+        if(sessionToken===checkedToken){
+          sessionRestoring=false;
+          sessionRestoreFailed=!account;
+        }else if(!sessionToken){
+          sessionRestoring=false;
+          sessionRestoreFailed=false;
+        }
+        renderHeader();
       }
     })();
     try{await accountRefreshPromise;}finally{accountRefreshPromise=null;}
@@ -1088,8 +1132,16 @@
   $('#comingSoonDialog').addEventListener('click',e=>{
     if(e.target===$('#comingSoonDialog'))backFromComingSoon();
   });
-  $('#loginTop').addEventListener('click',e=>hasUser()?toggleAccountMenu(e.currentTarget):openAuth('login'));
-  $('#registerTop').addEventListener('click',()=>openAuth('register'));
+  $('#loginTop').addEventListener('click',e=>{
+    if(sessionRestoring)return;
+    if(sessionToken&&!hasUser()){refreshAccount();return;}
+    if(hasUser())toggleAccountMenu(e.currentTarget);
+    else openAuth('login');
+  });
+  $('#registerTop').addEventListener('click',()=>{
+    if(sessionToken){if(!sessionRestoring)refreshAccount();return;}
+    openAuth('register');
+  });
   $('#walletTop').addEventListener('click',toggleWalletBreakdown);
   $('#copyReferral').addEventListener('click',async()=>{
     const value=$('#referralLink').value;
@@ -1230,6 +1282,8 @@
     if(nav){
       e.preventDefault();
       if(nav.dataset.nav==='account'){
+        if(sessionRestoring)return;
+        if(sessionToken&&!hasUser()){refreshAccount();return;}
         if(hasUser())toggleAccountMenu(nav);else openAuth('login');
       }else showView(nav.dataset.nav);
       return;
@@ -1278,7 +1332,8 @@
     }
     // El cierre o cambio de cuenta en otra pestaña invalida la vista local,
     // sin revocar el token de la nueva sesión de la otra pestaña.
-    sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
+    sessionToken='';sessionRestoring=false;sessionRestoreFailed=false;
+    account=null;accountBalance=0;paidBalancePEN=0;
     recentTopupOrders=[];playHistory=[];golLocked={};
     lastSessionInteraction=0;sessionCreatedAt=0;
     try{sessionStorage.removeItem(LEGACY_SESSION_KEY);}catch{}
@@ -1296,7 +1351,6 @@
   setInterval(()=>{
     if(activeView==='account'&&accountTab==='wallet')renderTopupHistory();
   },60000);
-  if(sessionToken)refreshAccount();
   // Consultas deportivas bajo demanda, no al iniciar sesión.
   // Esto evita bloquear el login mientras se consulta la API en el plan Free.
   document.addEventListener('error',e=>{
@@ -1318,15 +1372,17 @@
   const view=hash==='inicio'?'home':hash;
   const returnFromCheckout=new URLSearchParams(location.search).get('mp_return')==='1'||
     Boolean(storedMpCheckout());
-  if(returnFromCheckout){
-    accountTab='wallet';
-    if(sessionToken)refreshAccount().then(()=>{
-      if(hasUser())checkMpReturn();
-      else if(!sessionToken)openAuth('login');
+  if(returnFromCheckout)accountTab='wallet';
+  if(!returnFromCheckout&&['home','gol','match','live'].includes(view))
+    showView(view,true);
+  // Revalidar UNA sola vez sin mostrar login: la sesión guardada sigue vigente.
+  if(sessionToken){
+    refreshAccount().then(()=>{
+      if(!hasUser())return;
+      if(returnFromCheckout)checkMpReturn();
+      else if(view==='account')showView('account',true);
     });
-    else openAuth('login');
-  }else if(['home','gol','match','live'].includes(view))showView(view,true);
-  else if(view==='account' && sessionToken)refreshAccount().then(()=>{
-    if(hasUser()){showView('account',true);checkMpReturn();}
-  });
+  }else if(returnFromCheckout){
+    openAuth('login');
+  }
 })();
