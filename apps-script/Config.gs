@@ -122,8 +122,39 @@ function pgPublicUser_(u){
  * los créditos virtuales registrados en users.balance.
  */
 function pgWelcomeBonusPEN_(uid){
+  // Las cuentas nuevas tienen un único movimiento BIENVENIDA en bonus_ledger.
+  const entries=pgRows_('bonus_ledger').rows;
+  if(entries.some(r=>String(r[1])===String(uid)&&String(r[0])==='WELCOME-'+String(uid)))return 0;
+  // Compatibilidad: cuentas creadas antes de incorporar el libro de bonos.
   return pgRows_('ledger').rows.some(r=>
     String(r[1])===String(uid)&&String(r[3])==='BONO_INICIAL')?10:0;
+}
+/** Movimientos de la ÚNICA cuenta de bonos, incluidos registros históricos. */
+function pgBonusStatement_(uid){
+  const entries=pgRows_('bonus_ledger').rows.filter(r=>
+    String(r[1])===String(uid)&&String(r[4])==='AVAILABLE');
+  const events=entries.map(r=>{
+    const amount=Number(r[3])||0,id=String(r[0]),note=String(r[6]||'');
+    const category=id.startsWith('WELCOME-')?'BIENVENIDA':
+      id.startsWith('REF-')?'REFERIDO':id.startsWith('PLAY-')?'JUGADA':
+      id.startsWith('PROMO-')?'PROMOCIÓN':'AJUSTE';
+    return {id,category,description:note||category,amountPEN:amount,
+      createdAt:String(r[5]||'')};
+  });
+  const fallback=pgWelcomeBonusPEN_(uid);
+  if(fallback){
+    const old=pgRows_('ledger').rows.find(r=>
+      String(r[1])===String(uid)&&String(r[3])==='BONO_INICIAL');
+    events.push({id:'WELCOME-LEGACY-'+String(uid),category:'BIENVENIDA',
+      description:'Bono de bienvenida',amountPEN:fallback,
+      createdAt:old?String(old[6]||''):''});
+  }
+  events.sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime());
+  return events;
+}
+function pgBonusBalancePEN_(uid){
+  const events=pgBonusStatement_(uid);
+  return Math.round(events.reduce((sum,e)=>sum+Math.round(e.amountPEN*100),0))/100;
 }
 /** El bono se habilita tras una recarga propia no reembolsada de S/ 5 o más. */
 function pgBonusUnlocked_(uid){
@@ -158,11 +189,8 @@ function pgReferralSummary_(user){
       bonusAwarded:verified&&(referralBonusByUid.get(String(p.uid))||0)>=5,
       status:verified?'RECARGA_CONFIRMADA':'REGISTRADO'};
   }).sort((a,b)=>new Date(b.joinedAt).getTime()-new Date(a.joinedAt).getTime());
-  const bonus=bonusRows
-    .filter(r=>String(r[1])===String(user.uid)&&String(r[4])==='AVAILABLE')
-    .reduce((n,r)=>n+Math.round(Number(r[3]||0)*100),0)/100;
   return {referralCount:referrals.length,referrals:referrals.slice(0,30),
-    bonusBalancePEN:Math.round((pgWelcomeBonusPEN_(String(user.uid))+bonus)*100)/100};
+    bonusBalancePEN:pgBonusBalancePEN_(String(user.uid))};
 }
 function pgSnapshot_(row){
   const user=pgObject_('users',row.values);
@@ -198,7 +226,10 @@ function pgSnapshot_(row){
   const reward=pgReferralSummary_(user);
   return {ok:true,user:pgPublicUser_(user),balance:Number(user.balance)||0,
     history,golSlots,couponClaimed,paidBalancePEN,
-    bonusUnlocked:pgBonusUnlocked_(String(user.uid)),...reward};
+    bonusUnlocked:pgBonusUnlocked_(String(user.uid)),
+    bonusStatement:pgBonusStatement_(String(user.uid)).slice(0,100),
+    walletWagersEnabled:pgProp_('PG_WALLET_WAGERS_ENABLED')==='true',
+    ...reward};
 }
 
 /** Verificación sin datos personales ni claves: ejecutar desde el editor. */
