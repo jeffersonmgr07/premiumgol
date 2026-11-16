@@ -30,7 +30,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/styles.css?v=32">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=33"></script>
+  <script defer src="assets/app.js?v=34"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -155,12 +155,15 @@
   <div id="referralActivity" class="referral-activity-list"><p>Aún no hay invitaciones registradas.</p></div>
 </div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
   <div class="panel-head"><h2>Recargar saldo</h2></div>
-  <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 30. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.</p>
+  <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 5. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.</p>
   <div class="paid-wallet-balance" role="status"><span>Saldo real verificado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Recargas verificadas · Independiente de tus créditos para jugar</small></div>
   
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
-      <button type="button" data-topup-amount="30" class="recharge-amount active" aria-pressed="true">S/ 30</button>
+      <button type="button" data-topup-amount="5" class="recharge-amount active" aria-pressed="true">S/ 5</button>
+      <button type="button" data-topup-amount="10" class="recharge-amount" aria-pressed="false">S/ 10</button>
+      <button type="button" data-topup-amount="20" class="recharge-amount" aria-pressed="false">S/ 20</button>
+      <button type="button" data-topup-amount="30" class="recharge-amount" aria-pressed="false">S/ 30</button>
       <button type="button" data-topup-amount="50" class="recharge-amount" aria-pressed="false">S/ 50</button>
       <button type="button" data-topup-amount="100" class="recharge-amount" aria-pressed="false">S/ 100</button>
       <button type="button" data-topup-amount="200" class="recharge-amount" aria-pressed="false">S/ 200</button>
@@ -168,8 +171,8 @@
       <button type="button" data-topup-amount="1000" class="recharge-amount" aria-pressed="false">S/ 1,000</button>
       <button type="button" data-topup-amount="custom" class="recharge-amount recharge-custom" aria-pressed="false">Otro monto</button>
     </div>
-    <label class="field recharge-other-field" id="rechargeOtherWrap" hidden><span>Ingresa el importe (mínimo S/ 30)</span><input id="rechargeOther" type="number" min="30" max="10000" step="0.01" inputmode="decimal" placeholder="Ej.: 75.50"></label>
-    <div class="recharge-total"><span>Importe solicitado</span><b id="rechargeSelected">S/ 30.00</b></div>
+    <label class="field recharge-other-field" id="rechargeOtherWrap" hidden><span>Ingresa el importe (mínimo S/ 5)</span><input id="rechargeOther" type="number" min="5" max="10000" step="0.01" inputmode="decimal" placeholder="Ej.: 75.50"></label>
+    <div class="recharge-total"><span>Importe solicitado</span><b id="rechargeSelected">S/ 5.00</b></div>
     <button type="button" class="btn btn-gold btn-full" id="rechargeGenerate">Generar orden de recarga <svg><use href="#i-arrow"></use></svg></button>
     <div class="recharge-order" id="rechargeOrder" role="status" aria-live="polite" hidden></div>
     <div class="topup-history"><h3>Últimas recargas</h3><div id="topupHistory" class="topup-history-list"><p>Aún no has registrado recargas.</p></div></div>
