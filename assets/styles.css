@@ -1047,3 +1047,23 @@ body.auth-request-busy{overflow:hidden}
   .coming-soon-inner p{font-size:13px}
 }
 @media(prefers-reduced-motion:reduce){.coming-soon-logo{animation:none}}
+
+/* Referidos compactos con nombre, estado, fecha y bono, sin grandes vacíos. */
+.wallet-bonus-condition{margin:4px 0 6px;padding:9px 2px!important;color:#e6d5ab;font-size:10px;line-height:1.5}
+.wallet-breakdown>.wallet-bonus-condition{border-top:1px solid #34465e}
+.referral-activity-list{gap:9px}
+.referral-activity-item{
+  display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1.2fr) minmax(0,1fr) auto;
+  align-items:center;column-gap:15px;row-gap:8px;min-height:72px;padding:12px 14px
+}
+.referral-activity-item>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.referral-activity-item small{display:block;font-size:10px;color:#8fa7bc;line-height:1.35}
+.referral-activity-item strong{font-size:13px;color:#fff;font-weight:800;overflow-wrap:anywhere}
+.referral-activity-item .referral-activity-state span,
+.referral-activity-item .referral-activity-date time{font-size:11px;color:#f1f4f9;line-height:1.4}
+.referral-activity-item .referral-activity-amount{text-align:right}
+.referral-activity-item .referral-activity-amount b{font-size:13px;color:#F7C85D;white-space:nowrap}
+@media(max-width:650px){
+  .referral-activity-item{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:12px 10px}
+  .referral-activity-item .referral-activity-amount{text-align:left}
+}
