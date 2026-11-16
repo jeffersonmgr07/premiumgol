@@ -134,6 +134,8 @@
     }
     // Publicidad: nunca registra rutas de cuentas, recargas, premios ni perfil.
     if(consent.marketing && adsPermitted && eligiblePublicRoute(route)){
+      // Si comenzó en cuenta, cargar publicidad solo al visitar rutas públicas.
+      startMeta();startTikTok();
       if(started.meta)window.fbq('track','PageView');
       if(started.tiktok)window.ttq.page();
     }
