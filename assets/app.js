@@ -853,7 +853,8 @@
       // La sesión se conserva: ante un fallo de interfaz, recuperar el
       // dashboard automáticamente, sin pedir al usuario cerrar la pestaña.
       console.error('PremiumGol: recuperación del panel de usuario.',err);
-      location.replace(location.pathname+location.search+'#account');
+      history.replaceState(null,'',location.pathname+location.search+'#account');
+      location.reload();
     }
   }
   async function signout(reason){
@@ -931,9 +932,9 @@
             return;
           }
           googleLoggingIn=true;
-          showGoogleLoginStatus('Verificando tu cuenta de Google…',false);
-          setAuthBusy(true,'Verificando tu cuenta de Google…');
           try{
+            showGoogleLoginStatus('Verificando tu cuenta de Google…',false);
+            setAuthBusy(true,'Verificando tu cuenta de Google…');
             const result=await remote('googleLogin',{idToken:response.credential,referralCode:referralFromUrl});
             acceptSession(result);
             showGoogleLoginStatus('',false);
