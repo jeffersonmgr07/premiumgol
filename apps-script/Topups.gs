@@ -47,9 +47,9 @@ function pgMpUrl_(value){
 }
 function pgTopupAmount_(value){
   const n=Number(value),c=Math.round(n*100);
-  if(!Number.isFinite(n)||n<30||n>10000||
+  if(!Number.isFinite(n)||n<5||n>10000||
     !Number.isSafeInteger(c)||Math.abs(n*100-c)>0.00001)
-    pgErr_('Ingresa un monto válido entre S/ 30 y S/ 10,000.');
+    pgErr_('Ingresa un monto válido entre S/ 5 y S/ 10,000.');
   return c;
 }
 /** No presentar enlaces sandbox guardados cuando el servidor está en producción. */
