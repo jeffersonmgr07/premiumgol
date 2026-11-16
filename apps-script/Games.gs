@@ -68,7 +68,11 @@ function pgDebitPlayWallet_(uid,requestId,walletSource,amountPEN,when){
     pgErr_('Importe de jugada no válido.');
   const entryId='PLAY-'+requestId;
   if(walletSource==='principal'){
-    if(pgFind_('payments_ledger','entryId',entryId))return;
+    const priorMain=pgFind_('payments_ledger','entryId',entryId);
+    if(priorMain){
+      if(String(priorMain.values[1])!==String(uid))pgErr_('Solicitud inválida.');
+      return;
+    }
     if(pgFind_('bonus_ledger','entryId',entryId))
       pgErr_('La jugada ya tiene otro origen de pago.');
     if(Math.round(pgMoneyBalance_(uid)*100)<cents)
@@ -76,7 +80,11 @@ function pgDebitPlayWallet_(uid,requestId,walletSource,amountPEN,when){
     pgWrite_('payments_ledger',{entryId,uid,orderId:requestId,paymentId:'',
       deltaPEN:-cents/100,type:'JUGADA_PREMIUMGOL',createdAt:when});
   }else{
-    if(pgFind_('bonus_ledger','entryId',entryId))return;
+    const priorBonus=pgFind_('bonus_ledger','entryId',entryId);
+    if(priorBonus){
+      if(String(priorBonus.values[1])!==String(uid))pgErr_('Solicitud inválida.');
+      return;
+    }
     if(pgFind_('payments_ledger','entryId',entryId))
       pgErr_('La jugada ya tiene otro origen de pago.');
     if(!pgBonusUnlocked_(uid))
@@ -132,7 +140,8 @@ function adminCreditPremiumGolPrize(playId,amountPEN){
     const paidEntry='PLAY-'+playId;
     const charged=pgFind_('payments_ledger','entryId',paidEntry)||
       pgFind_('bonus_ledger','entryId',paidEntry);
-    if(!charged)pgErr_('La jugada no tiene un pago registrado en las billeteras.');
+    if(!charged||String(charged.values[1])!==uid)
+      pgErr_('La jugada no tiene un pago registrado en las billeteras.');
     if(!pgFind_('payments_ledger','entryId',entryId)){
       pgWrite_('payments_ledger',{entryId,uid,orderId:playId,paymentId:'',
         deltaPEN:cents/100,type:'PREMIO_LIQUIDADO',createdAt:pgNow_()});
