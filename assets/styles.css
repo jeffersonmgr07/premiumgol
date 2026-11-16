@@ -1168,3 +1168,60 @@ body.auth-request-busy{overflow:hidden}
   .gol-info-badge svg{display:none}
   .gol-info-pot b{font-size:clamp(8px,2.15vw,10px)}
 }
+
+/* PremiumGol · preferencias de medición (sin alterar otras ventanas) */
+.measurement-banner[hidden],#measurementDialog:not([open]),
+.measurement-footer-link[hidden]{display:none!important}
+.measurement-banner{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:16px;z-index:1100;width:min(960px,calc(100% - 28px));
+  box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+  gap:18px;padding:16px 18px;border:1px solid #F7C85D80;
+  border-radius:15px;background:#101f32;color:#fff;box-shadow:0 12px 45px #000a
+}
+.measurement-banner-copy{flex:1;min-width:0}
+.measurement-banner-copy strong{font:850 15px var(--display);color:#F7C85D}
+.measurement-banner-copy p{font-size:12px;line-height:1.5;color:#ebf1f9;margin:6px 0 0}
+.measurement-banner-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.measurement-primary,.measurement-secondary{
+  border-radius:10px;padding:11px 14px;font:800 12px var(--body);
+  white-space:nowrap;cursor:pointer;min-height:40px
+}
+.measurement-primary{border:1px solid #F7C85D;background:#F7C85D;color:#10131b}
+.measurement-secondary{border:1px solid #65788c;background:#14253a;color:#fff}
+.measurement-primary:focus-visible,.measurement-secondary:focus-visible,
+.measurement-footer-link:focus-visible,.measurement-close:focus-visible{
+  outline:2px solid #F7C85D;outline-offset:2px
+}
+.measurement-footer-link{
+  background:transparent;border:0;text-decoration:underline;text-underline-offset:3px;
+  color:#fff;font-size:11px;cursor:pointer;padding:5px
+}
+.measurement-dialog{
+  border:1px solid #F7C85D75;border-radius:18px;background:#101f32;
+  padding:0;color:#fff;width:min(460px,calc(100vw - 30px));max-height:90dvh
+}
+.measurement-dialog::backdrop{background:#020a16bb;backdrop-filter:blur(5px)}
+.measurement-preferences{position:relative;padding:25px 23px;display:flex;flex-direction:column;gap:14px}
+.measurement-preferences h2{font:850 21px var(--display);margin:0 28px 0 0}
+.measurement-preferences>p{font-size:12px;line-height:1.6;color:#c9d9e9;margin:0}
+.measurement-close{position:absolute;top:12px;right:15px;border:0;
+  background:transparent;color:#fff;font-size:28px;cursor:pointer}
+.measurement-choice{display:flex;gap:12px;align-items:flex-start;padding:13px;
+  border:1px solid #41556d;border-radius:12px;cursor:pointer}
+.measurement-choice input{accent-color:#F7C85D;margin-top:2px;flex:none}
+.measurement-choice input:disabled{cursor:not-allowed;opacity:.6}
+.measurement-choice>span{display:flex;flex-direction:column;gap:6px;min-width:0}
+.measurement-choice strong{font-size:13px;color:#fff}
+.measurement-choice small{font-size:11px;line-height:1.55;color:#c4d2e4}
+.measurement-save{width:100%}
+@media(max-width:900px){
+  .measurement-banner{
+    bottom:calc(79px + env(safe-area-inset-bottom));
+    gap:10px;padding:12px;flex-direction:column;align-items:stretch
+  }
+  .measurement-banner-copy strong{font-size:13px}
+  .measurement-banner-copy p{font-size:11px;margin:4px 0 0}
+  .measurement-banner-actions{justify-content:stretch}
+  .measurement-banner-actions button{flex:1;padding:9px 7px;font-size:11px}
+}
