@@ -172,7 +172,7 @@
   }
   let catalogWarning='',catalogLoading=false,catalogRequested=false,golProgramRequested=false;
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
-  let topupSelection='30',topupCustom='',topupBusy=false,topupRequestId=null;
+  let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
   function couponTime(){
     const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
@@ -472,7 +472,7 @@
   }
   function chosenTopup(){
     const n=topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
-    return Number.isFinite(n)&&n>=30&&n<=10000&&Math.round(n*100)===n*100?n:null;
+    return Number.isFinite(n)&&n>=5&&n<=10000&&Math.round(n*100)===n*100?n:null;
   }
   function renderTopup(){
     document.querySelectorAll('[data-topup-amount]').forEach(el=>{
@@ -603,7 +603,7 @@
   async function createTopupRequest(){
     if(!hasUser()){openAuth('login');return;}
     const amount=chosenTopup();
-    if(amount===null){toast('Ingresa un importe válido entre S/ 30 y S/ 10,000.');return;}
+    if(amount===null){toast('Ingresa un importe válido entre S/ 5 y S/ 10,000.');return;}
     if(topupBusy)return;
     topupBusy=true;renderTopup();
     setAuthBusy(true,'Preparando tu orden…','general');
