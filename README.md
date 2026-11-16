@@ -1,3 +1,17 @@
+## Medición de PremiumGol — preparada (16/11/2026)
+
+Se añadieron integraciones opcionales de **Google Analytics 4, Microsoft Clarity, Meta Pixel y TikTok Pixel**, cada una con un identificador propio de PremiumGol.
+
+- **Configurar IDs públicos:** [assets/measurement-config.js](assets/measurement-config.js).
+- **Consentimiento:** Google Analytics y Clarity solo cargan tras la aceptación del visitante.
+- **Meta/TikTok:** preparados pero desactivados por defecto mediante `enableAdPixels: false`, hasta cumplir los requisitos comerciales y regulatorios.
+- **Privacidad:** enmascarar perfil, formularios, recargas y jugadas para Clarity, excluir query strings de eventos GA4 y no enviar importes ni datos personales con eventos personalizados.
+- **Vistas de pantalla:** Inicio, PremiumGol, Apuestas, Live y Mi cuenta, sin eventos de compras/apuestas.
+- **Guía de activación, revisión legal y pruebas:** [docs/medicion-premiumgol.md](docs/medicion-premiumgol.md).
+- **No es necesario actualizar Apps Script** para estas etiquetas. No hay medición externa activa sin IDs válidos y consentimiento.
+
+---
+
 ## V31 · Tickets, recargas e invitaciones (15/11/2026)
 
 - Las órdenes nuevas de Mercado Pago tienen vigencia de **48 horas**. Las pendientes vencidas desaparecen de Últimas recargas; las órdenes y pagos confirmados permanecen en la base para auditoría.
