@@ -276,6 +276,7 @@
     $$('.view').forEach(e=>e.classList.toggle('is-active',e.id===`view-${name}`));
     $$('[data-nav]').forEach(e=>e.classList.toggle('active',e.dataset.nav===name));
     if(!skipHash)history.replaceState(null,'',name==='home'?'#inicio':`#${name}`);
+    window.PremiumGolMeasurement?.pageView(name);
     if(name==='account')renderAccount();
     if(name==='match'||name==='live'){
       if(!catalogRequested){catalogRequested=true;catalogLoading=true;loadCatalog();}
