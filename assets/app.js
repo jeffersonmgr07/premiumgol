@@ -103,7 +103,7 @@
   let account = null;
   let accountBalance = 0;
   let paidBalancePEN = 0;
-  let bonusBalancePEN=0,referralActivity=[];
+  let bonusBalancePEN=0,bonusUnlocked=false,referralActivity=[];
   let recentTopupOrders = [];
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
@@ -475,6 +475,7 @@
     if(Number.isSafeInteger(Number(result.referralCount)))referralsJoined=Number(result.referralCount);
     if(Array.isArray(result.referrals))referralActivity=result.referrals;
     if(Number.isFinite(Number(result.bonusBalancePEN)))bonusBalancePEN=Number(result.bonusBalancePEN);
+    if(typeof result.bonusUnlocked==='boolean')bonusUnlocked=result.bonusUnlocked;
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Number.isFinite(Number(result.paidBalancePEN)))paidBalancePEN=Number(result.paidBalancePEN);
     if(Array.isArray(result.history))playHistory=result.history;
@@ -484,10 +485,11 @@
   }
   function renderHeader(){
     $('#walletTop').hidden=!hasUser();
-    $('#topBalance').textContent='S/ '+fmt2(accountBalance);
-    $('#walletMainBalance').textContent='S/ '+fmt2(accountBalance);
+    $('#topBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
+    $('#walletMainBalance').textContent='S/ '+fmt2(paidBalancePEN);
     $('#walletBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
-    $('#walletTotalBalance').textContent='S/ '+fmt2(accountBalance+bonusBalancePEN);
+    $('#walletBonusCondition').hidden=bonusUnlocked||bonusBalancePEN<=0;
+    $('#walletTotalBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
     $('#loginTopLabel').textContent=hasUser()?'Mi cuenta':'Ingresar';
     $('#loginTop').setAttribute('aria-label',hasUser()?'Abrir menú de Mi cuenta':'Ingresar o registrarse');
     $('#loginTop').setAttribute('aria-haspopup',hasUser()?'menu':'false');
@@ -596,6 +598,8 @@
       if(Array.isArray(data.orders))recentTopupOrders=data.orders;
       if(Number.isFinite(Number(data.paidBalancePEN)))paidBalancePEN=Number(data.paidBalancePEN);
       $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
+      renderHeader();
+      $('#accountBalance').textContent='S/ '+fmt2(paidBalancePEN);
       renderTopupHistory();
     }catch(err){console.warn('No se pudo actualizar el historial de recargas.');}
   }
@@ -608,6 +612,8 @@
       const result=await remote('getTopupStatus',{sessionToken,orderId:id});
       paidBalancePEN=Number(result.paidBalancePEN||0);
       $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
+      renderHeader();
+      $('#accountBalance').textContent='S/ '+fmt2(paidBalancePEN);
       renderTopupOrder(result,returning);
       await loadTopupOrders();
     }catch(err){box.textContent=err?.message||'No se pudo verificar tu recarga.';}
@@ -722,7 +728,7 @@
     if(!photoValid)img.removeAttribute('src');
     $('#profileSubtitle').textContent=account?.email||'Mi cuenta';
     $('#welcomeName').textContent=account?`¡Hola, ${account.firstName||'jugador'}!`:'¡El partido te espera!';
-    $('#accountBalance').textContent='S/ '+fmt2(accountBalance);
+    $('#accountBalance').textContent='S/ '+fmt2(paidBalancePEN);
     $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
     $('#referralBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
     $('#totalPlays').textContent=playHistory.length;
@@ -769,14 +775,15 @@
       const d=new Date(r.joinedAt);
       const date=Number.isFinite(d.getTime())?new Intl.DateTimeFormat('es-PE',{
         timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric'
-      }).format(d):'';
-      const verified=Boolean(r.firstTopupVerified);
-      const awarded=Boolean(r.bonusAwarded);
-      return '<div class="referral-activity-item"><div><strong>'+esc(r.label||'Invitado')+
-        '</strong><span>'+esc(awarded?'Bono acreditado':verified?'Primera recarga confirmada · bono en verificación':
-        'Cuenta registrada · Primera recarga pendiente')+
-        '</span><small>'+esc(date)+'</small></div><b>'+
-        (awarded?'+ S/ 5.00':verified?'En verificación':'Registrado')+'</b></div>';
+      }).format(d):'Fecha no disponible';
+      const verified=Boolean(r.firstTopupVerified),awarded=Boolean(r.bonusAwarded);
+      const status=awarded?'Bono acreditado':verified?'Bono en verificación':'Registro confirmado';
+      return '<div class="referral-activity-item">'+
+        '<div class="referral-activity-user"><small>Amigo invitado</small><strong>'+esc(r.label||'Invitado')+'</strong></div>'+
+        '<div class="referral-activity-state"><small>Estado</small><span>'+esc(status)+'</span></div>'+
+        '<div class="referral-activity-date"><small>Registro</small><time>'+esc(date)+'</time></div>'+
+        '<div class="referral-activity-amount"><small>Bono recibido</small><b>'+(awarded?'+ S/ 5.00':'S/ 0.00')+'</b></div>'+
+        '</div>';
     }).join(''):'<p class="referral-detail">Aún no tienes amigos registrados con tu enlace.</p>';
     document.querySelectorAll('[data-account-tab]').forEach(el=>{
       const active=el.dataset.accountTab===accountTab;
@@ -861,7 +868,7 @@
     // Google no debe reabrir automáticamente una sesión después de salir.
     // La elección de cuenta/consentimiento sigue siendo controlada por Google.
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
-    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
+    const old=sessionToken;sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;bonusUnlocked=false;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     renderAll();showView('home');
