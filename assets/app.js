@@ -526,7 +526,7 @@
       '<span class="recharge-order-badge is-pending">'+esc(String(order.status))+
       '</span></div><p class="recharge-order-small">'+detail+'</p>'+expiresNote+
       (url?'<button type="button" class="btn btn-gold btn-full" data-mp-pay="'+esc(url)+
-      '">Continuar con Mercado Pago</button>':'');
+      '" data-mp-order="'+esc(String(order.orderId||''))+'">Pagar</button>':'');
   }
   function renderTopupHistory(){
     const holder=$('#topupHistory');
@@ -560,7 +560,7 @@
         '<button type="button" data-topup-check="'+esc(id)+
         '" class="btn btn-outline btn-mini">Verificar</button>'+
         (url?'<button type="button" data-mp-pay="'+esc(url)+
-        '" class="btn btn-outline btn-mini">Pagar</button>':'')+
+        '" data-mp-order="'+esc(id)+'" class="btn btn-outline btn-mini">Pagar</button>':'')+
         '</div></div>';
     }).join(''):'<p class="recharge-order-small">Aún no tienes recargas registradas.</p>';
   }
@@ -588,13 +588,41 @@
     }catch(err){box.textContent=err?.message||'No se pudo verificar tu recarga.';}
     finally{setAuthBusy(false);}
   }
+  // Preserva el destino del usuario incluso si Mercado Pago vuelve a la raíz.
+  const MP_RETURN_KEY='premiumgol_checkout_return_v1';
+  function rememberMpCheckout(orderId){
+    if(!/^[A-Z0-9-]{10,90}$/i.test(String(orderId||'')))return;
+    try{sessionStorage.setItem(MP_RETURN_KEY,JSON.stringify({orderId,at:Date.now()}));}catch{}
+  }
+  function storedMpCheckout(){
+    try{
+      const data=JSON.parse(sessionStorage.getItem(MP_RETURN_KEY)||'null');
+      if(data&&/^[A-Z0-9-]{10,90}$/i.test(String(data.orderId||''))&&
+        Date.now()-Number(data.at)>=0&&Date.now()-Number(data.at)<2*60*60*1000)
+        return String(data.orderId);
+      sessionStorage.removeItem(MP_RETURN_KEY);
+    }catch{}
+    return '';
+  }
+  let mpReturnChecking=false;
   async function checkMpReturn(){
+    if(mpReturnChecking)return;
     const query=new URLSearchParams(location.search);
-    const id=query.get('order')||'';
-    if(query.get('mp_return')!=='1'||!sessionToken||!/^[A-Z0-9-]{10,90}$/.test(id))return;
-    accountTab='wallet';showView('account');
-    try{await checkTopupOrder(id,true);}
-    finally{
+    const fromMp=query.get('mp_return')==='1';
+    const requestedId=fromMp?query.get('order')||'':'';
+    const savedId=storedMpCheckout();
+    const id=/^[A-Z0-9-]{10,90}$/i.test(requestedId)?requestedId:savedId;
+    if(!fromMp&&!savedId)return;
+    accountTab='wallet';
+    if(!hasUser()){showView('account');return;}
+    showView('account');
+    mpReturnChecking=true;
+    try{
+      if(id)await checkTopupOrder(id,true);
+      else await loadTopupOrders();
+    }finally{
+      mpReturnChecking=false;
+      try{sessionStorage.removeItem(MP_RETURN_KEY);}catch{}
       query.delete('mp_return');query.delete('order');
       const qs=query.toString();
       history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+'#account');
@@ -755,7 +783,6 @@
     $('#emailAccessPanel').hidden=canUseGoogle;
     $('#emailAccessToggle').hidden=!canUseGoogle;
     $('#emailAccessToggle').setAttribute('aria-expanded',String(!canUseGoogle));
-    $('#googleAccountHint').hidden=!canUseGoogle;
   }
   function openAuth(mode='login'){
     if(hasUser()){showView('account');return;}
@@ -852,7 +879,7 @@
     if(googleStarted||!validGoogleClientId||!CONFIG.appsScriptUrl)return;googleStarted=true;
     const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;
     script.onload=()=>{
-      if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;$('#emailAccessPanel').hidden=false;$('#emailAccessToggle').hidden=true;$('#googleAccountHint').hidden=true;return;}
+      if(!window.google?.accounts?.id){$('#googleUnavailable').hidden=false;$('#emailAccessPanel').hidden=false;$('#emailAccessToggle').hidden=true;return;}
       window.google.accounts.id.initialize({
         client_id:CONFIG.googleClientId,
         ux_mode:'popup',auto_select:false,
@@ -884,7 +911,7 @@
         shape:'pill',width:buttonWidth,locale:'es',logo_alignment:'left'
       });
     };
-    script.onerror=()=>{googleStarted=false;$('#googleUnavailable').hidden=false;$('#emailAccessPanel').hidden=false;$('#emailAccessToggle').hidden=true;$('#googleAccountHint').hidden=true;toast('No se pudo cargar el acceso Google.');};
+    script.onerror=()=>{googleStarted=false;$('#googleUnavailable').hidden=false;$('#emailAccessPanel').hidden=false;$('#emailAccessToggle').hidden=true;toast('No se pudo cargar el acceso Google.');};
     document.head.appendChild(script);
   }
   async function refreshAccount(){
@@ -1038,7 +1065,11 @@
     const pay=e.target.closest('[data-mp-pay]');
     if(pay){
       const url=mpSafeUrl(pay.dataset.mpPay);
-      if(url)window.location.assign(url);return;
+      if(url){
+        rememberMpCheckout(pay.dataset.mpOrder);
+        window.location.assign(url);
+      }
+      return;
     }
     const check=e.target.closest('[data-topup-check]');
     if(check){checkTopupOrder(check.dataset.topupCheck);return;}
@@ -1165,7 +1196,16 @@
   },300000);
   const hash=location.hash.slice(1);
   const view=hash==='inicio'?'home':hash;
-  if(['home','gol','match','live'].includes(view))showView(view,true);
+  const returnFromCheckout=new URLSearchParams(location.search).get('mp_return')==='1'||
+    Boolean(storedMpCheckout());
+  if(returnFromCheckout){
+    accountTab='wallet';
+    if(sessionToken)refreshAccount().then(()=>{
+      if(hasUser())checkMpReturn();
+      else if(!sessionToken)openAuth('login');
+    });
+    else openAuth('login');
+  }else if(['home','gol','match','live'].includes(view))showView(view,true);
   else if(view==='account' && sessionToken)refreshAccount().then(()=>{
     if(hasUser()){showView('account',true);checkMpReturn();}
   });
