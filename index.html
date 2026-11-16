@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=36">
+  <link rel="stylesheet" href="assets/styles.css?v=37">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=39"></script>
+  <script defer src="assets/app.js?v=40"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -51,7 +51,7 @@
   </svg>
 
   <div class="top-line"><div class="container top-line-inner">
-    <div class="promo-ticker" aria-label="Promoción Premium"><div class="promo-ticker-track"><span>¡ESTATE ATENTO! OBTÉN UN CUPÓN PREMIUM CON S/ 50 DE BONO. APARECERÁ AQUÍ EN MOMENTOS ESPECIALES.</span><span aria-hidden="true">¡ESTATE ATENTO! OBTÉN UN CUPÓN PREMIUM CON S/ 50 DE BONO. APARECERÁ AQUÍ EN MOMENTOS ESPECIALES.</span></div></div>
+    <div class="promo-ticker" aria-label="Promoción Premium"><div class="promo-ticker-track"><span>¡ATENTO! EN CUALQUIER MOMENTO PUEDE APARECER AQUÍ UN CUPÓN PREMIUM DE S/ 50 EN BONOS. ¡NO TE LO PIERDAS!</span><span aria-hidden="true">¡ATENTO! EN CUALQUIER MOMENTO PUEDE APARECER AQUÍ UN CUPÓN PREMIUM DE S/ 50 EN BONOS. ¡NO TE LO PIERDAS!</span></div></div>
     <button id="premiumCoupon" class="premium-coupon" hidden type="button" aria-label="Cupón Premium de 50 bonos">✦ 50 BW PREMIUM ✦</button>
     <span class="top-line-right">Una experiencia de <b>PremiumLott</b></span>
   </div></div>
@@ -67,7 +67,7 @@
         <button class="nav-link" data-nav="live">Premium Live <span class="live-mini"></span></button>
       </nav>
       <div class="header-actions">
-        <button class="wallet-chip" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Para usar tus bonos, primero realiza una recarga de al menos S/ 5.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
+        <button class="wallet-chip" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Realiza una recarga para activar el uso de tu saldo de bonos.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
         <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span class="session-restore-indicator" aria-hidden="true"></span><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
         <div class="account-menu" id="accountMenu" role="menu" aria-label="Mi cuenta" hidden>
           <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
@@ -113,17 +113,17 @@
 
     <section id="view-gol" class="view" aria-label="PremiumGol">
       
-      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p><div id="golDeadline" class="gol-info-badges" role="status" aria-label="Fecha límite y pozo acumulado"><span class="gol-info-badge gol-info-date"><svg aria-hidden="true"><use href="#i-ticket"></use></svg><span class="badge-long">Miércoles 18 de noviembre</span><span class="badge-short">Mié 18 Nov</span></span><span class="gol-info-badge gol-info-time"><svg aria-hidden="true"><use href="#i-clock"></use></svg> 6:30 p. m.</span><span class="gol-info-badge gol-info-pot"><svg aria-hidden="true"><use href="#i-trophy"></use></svg><span class="badge-long">Pozo acumulado</span><span class="badge-short">Pozo</span><b>S/ 10,000</b></span></div></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag"><svg><use href="#i-clock"></use></svg> Jornada 18–20 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
+      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p><div id="golDeadline" class="gol-info-badges" role="status" aria-label="Fecha límite y pozo acumulado"><span class="gol-info-badge gol-info-date"><svg aria-hidden="true"><use href="#i-ticket"></use></svg><span class="badge-long">Juega hasta miércoles 18 de noviembre</span><span class="badge-short">Juega hasta mié 18 nov</span></span><span class="gol-info-badge gol-info-time"><svg aria-hidden="true"><use href="#i-clock"></use></svg><span class="badge-long">Hasta las 6:30 p. m.</span><span class="badge-short">6:30 p. m.</span></span><span class="gol-info-badge gol-info-pot"><svg aria-hidden="true"><use href="#i-trophy"></use></svg><span class="badge-long">Pozo acumulado</span><span class="badge-short">Pozo</span><b>S/ 10,000</b></span></div></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag"><svg><use href="#i-clock"></use></svg> Jornada 18–20 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
   <span class="overline">TUS JUGADAS</span><h3>Resumen de tu jugada</h3>
   <div id="golTabs" class="gol-card-tabs" role="group" aria-label="Seleccionar jugada"><button type="button" data-gol-slot="A" class="active">A</button><button type="button" data-gol-slot="B">B</button><button type="button" data-gol-slot="C">C</button><button type="button" data-gol-slot="D">D</button></div>
   <p class="slot-help" id="golSlotHint">Jugada A · marca local, empate o visita.</p>
   <div id="golSummary" class="gol-summary" aria-live="polite"></div>
   <div class="gol-stat"><span>Pronósticos completados</span><b id="golCountSide">0 de 12</b></div>
-  <div class="gol-price"><span>Valor de cada jugada</span><strong>S/ 5 · 5 créditos de prueba</strong></div>
+  <div class="gol-price"><span>Valor de cada jugada</span><strong>S/ 5.00</strong></div>
   <button class="btn btn-gold btn-full" id="submitGol">Colocar jugada <svg><use href="#i-arrow"></use></svg></button>
   <button class="text-link centered" id="resetGol">Borrar selección</button>
   <button class="gol-rules-link" type="button" id="openGolRules"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Ver reglas y condiciones</button>
-</div><div class="help-card"><svg><use href="#i-shield"></use></svg><p>Esta versión utiliza encuentros y créditos de demostración. No hay apuestas ni premios de dinero real.</p></div></aside></div></div>
+</div></aside></div></div>
     </section>
 
     <section id="view-match" class="view" aria-label="Apuestas deportivas">
@@ -182,8 +182,8 @@
   </div>
 </div><div id="accountBonuses" class="account-content"><div class="panel-head"><h2>Mis bonos</h2></div>
   <p class="profile-info">Consulta tus bonificaciones, promociones y movimientos en un solo estado de cuenta.</p>
-  <div class="bonus-statement-head"><span>Saldo de bonos</span><strong id="bonusStatementBalance">S/ 0.00</strong><small id="bonusStatementEligibility">Realiza tu primera recarga de S/ 5 para habilitar el uso de tus bonos.</small></div>
-  <h3 class="bonus-statement-title">Movimientos de bonos</h3>
+  <div class="bonus-statement-head"><span>Saldo de bonos</span><strong id="bonusStatementBalance">S/ 0.00</strong><small id="bonusStatementEligibility">Para usar tus bonos, primero deberás realizar una recarga.</small></div>
+  <h3 class="bonus-statement-title">Registro de bonos</h3>
   <div class="bonus-statement-list" id="bonusStatementList"><p class="profile-info">Aún no se han registrado movimientos.</p></div>
 </div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div>
   <p class="profile-info">Consulta el código, la fecha, el costo y los 12 pronósticos de cada ticket de PremiumGol.</p>
