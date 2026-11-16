@@ -73,6 +73,9 @@ function pgCreateUser_(email,details,provider){
     avatarUrl:pgGoogleAvatar_(details.avatarUrl),inviteCode,invitedBy:invitedBy===uid?'':invitedBy});
   pgWrite_('ledger',{txId:pgUuid_(),uid,playId:'',action:'BONO_INICIAL',
     delta:PG.INITIAL_CREDITS,balanceAfter:PG.INITIAL_CREDITS,createdAt:date});
+  // Una sola bienvenida monetaria promocional por cuenta; nunca en saldo principal.
+  pgWrite_('bonus_ledger',{entryId:'WELCOME-'+uid,uid,sourceUid:'',
+    amountPEN:10,status:'AVAILABLE',createdAt:date,note:'Bono de bienvenida'});
   return pgIdentityByEmail_(email);
 }
 function pgSession_(userRow){
