@@ -156,8 +156,17 @@
       const width=Math.min(225,window.innerWidth-24);
       const left=Math.max(12,Math.min(window.innerWidth-width-12,rect.right-width));
       menu.style.left=left+'px';
-      menu.style.bottom=Math.max(10,window.innerHeight-rect.top+8)+'px';
-      menu.style.right='auto';menu.style.top='auto';
+      menu.style.right='auto';
+      if(anchor.id==='loginTop'){
+        // El menú de la cabecera se despliega hacia abajo.
+        const maxTop=Math.max(12,window.innerHeight-menu.offsetHeight-12);
+        menu.style.top=Math.min(rect.bottom+8,maxTop)+'px';
+        menu.style.bottom='auto';
+      }else{
+        // El menú de la barra inferior conserva su despliegue hacia arriba.
+        menu.style.bottom=Math.max(10,window.innerHeight-rect.top+8)+'px';
+        menu.style.top='auto';
+      }
     }else{
       menu.style.left='';menu.style.bottom='';menu.style.right='';menu.style.top='';
     }
@@ -231,6 +240,21 @@
   const visibleDate = g => g.dateLabel || `${fixtureDays(g.day||0)} · ${g.time||''}`;
   function initials(s){return String(s).split(' ').map(t=>t[0]).slice(0,2).join('').toUpperCase();}
   function badge(s,color){return `<span class="badge-crest" style="--crest:${/^#[0-9a-f]{6}$/i.test(color||'')?color:'#4c769d'}">${esc(initials(s))}</span>`;}
+  function openComingSoon(section){
+    const dlg=$('#comingSoonDialog');
+    if(!dlg)return;
+    const isLive=section==='live';
+    $('#comingSoonTitle').textContent=isLive?
+      'Premium Live está en preparación':'Apuestas deportivas en preparación';
+    $('#comingSoonMessage').textContent=
+      'Estamos preparando una nueva experiencia para ti. ¡Muy pronto estará disponible!';
+    if(!dlg.open)dlg.showModal();
+  }
+  function backFromComingSoon(){
+    const dlg=$('#comingSoonDialog');
+    if(dlg?.open)dlg.close();
+    showView('gol');
+  }
   function showView(name,skipHash=false){
     closeAccountMenu();
     if(!['home','gol','match','live','account'].includes(name))name='home';
@@ -254,6 +278,7 @@
       if(!catalogRequested){catalogRequested=true;catalogLoading=true;loadCatalog();}
       if(name==='match')renderMatch();
       else renderLive();
+      openComingSoon(name);
     }
     if(name==='gol'&&!golProgramRequested){golProgramRequested=true;loadGolProgram();}
     window.scrollTo({top:0,behavior:'smooth'});
@@ -803,17 +828,33 @@
     lastSessionInteraction=sessionCreatedAt;
     lastSessionVerification=Date.now();
     saveSessionActivity(true);
-    updateAccount(result);
-    setAuthBusy(false);
-    closeAuth();toast('¡Bienvenido a PremiumGol!');
+    // El usuario ya está autenticado. Cerrar siempre los dos diálogos
+    // antes de cambiar de vista, independientemente de Ingresar o Registrarse.
+    try{
+      updateAccount(result);
+    }catch(err){
+      console.error('PremiumGol: error al presentar la cuenta tras el acceso.',err);
+    }finally{
+      setAuthBusy(false);
+      if($('#authDialog').open)$('#authDialog').close();
+      showGoogleLoginStatus('',false);
+    }
     const next=pendingAfterAuth;pendingAfterAuth=null;
     accountTab='overview';
-    if(next==='gol')saveGol();
-    else if(next==='bet')placeBet();
-    else if(next==='coupon')claimCouponPrompt();
-    else showView('account');
-    checkMpReturn();
-    if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
+    try{
+      if(next==='gol')saveGol();
+      else if(next==='bet')placeBet();
+      else if(next==='coupon')claimCouponPrompt();
+      else showView('account');
+      checkMpReturn();
+      toast('¡Bienvenido a PremiumGol!');
+      if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
+    }catch(err){
+      // La sesión se conserva: ante un fallo de interfaz, recuperar el
+      // dashboard automáticamente, sin pedir al usuario cerrar la pestaña.
+      console.error('PremiumGol: recuperación del panel de usuario.',err);
+      location.replace(location.pathname+location.search+'#account');
+    }
   }
   async function signout(reason){
     // Google no debe reabrir automáticamente una sesión después de salir.
@@ -897,9 +938,18 @@
             acceptSession(result);
             showGoogleLoginStatus('',false);
           }catch(err){
-            showGoogleLoginStatus(err?.message||'No se pudo iniciar sesión con Google.',true);
-            console.warn('PremiumGol OAuth: no hubo sesión; comprueba la implementación de Apps Script y los registros rpc.');
-          }finally{googleLoggingIn=false;setAuthBusy(false);}
+            if(hasUser()){
+              console.warn('PremiumGol: acceso validado; recuperando la vista de cuenta.');
+              if($('#authDialog').open)$('#authDialog').close();
+              showView('account');
+            }else{
+              showGoogleLoginStatus(err?.message||'No se pudo iniciar sesión con Google.',true);
+              console.warn('PremiumGol OAuth: no hubo sesión; comprueba la implementación de Apps Script y los registros rpc.');
+            }
+          }finally{
+            googleLoggingIn=false;
+            setAuthBusy(false);
+          }
         }
       });
       $('#googleButtonMount').style.display='flex';$('#googleUnavailable').hidden=true;
@@ -977,6 +1027,11 @@
       console.warn('Catálogo deportivo sin respuesta:',e.message);
     }
   }
+  $('#comingSoonBack').addEventListener('click',backFromComingSoon);
+  $('#comingSoonDialog').addEventListener('cancel',e=>{e.preventDefault();backFromComingSoon();});
+  $('#comingSoonDialog').addEventListener('click',e=>{
+    if(e.target===$('#comingSoonDialog'))backFromComingSoon();
+  });
   $('#loginTop').addEventListener('click',e=>hasUser()?toggleAccountMenu(e.currentTarget):openAuth('login'));
   $('#registerTop').addEventListener('click',()=>openAuth('register'));
   $('#walletTop').addEventListener('click',toggleWalletBreakdown);
