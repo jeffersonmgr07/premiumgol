@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=35">
+  <link rel="stylesheet" href="assets/styles.css?v=36">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=38"></script>
+  <script defer src="assets/app.js?v=39"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -68,7 +68,7 @@
       </nav>
       <div class="header-actions">
         <button class="wallet-chip" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Para usar tus bonos, primero realiza una recarga de al menos S/ 5.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
-        <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
+        <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span class="session-restore-indicator" aria-hidden="true"></span><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
         <div class="account-menu" id="accountMenu" role="menu" aria-label="Mi cuenta" hidden>
           <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
           <button type="button" data-account-tab="history" role="menuitem"><svg><use href="#i-ticket"></use></svg>Mis jugadas</button>
