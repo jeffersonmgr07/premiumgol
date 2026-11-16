@@ -28,9 +28,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=32">
+  <link rel="stylesheet" href="assets/styles.css?v=33">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=35"></script>
+  <script defer src="assets/app.js?v=36"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -242,6 +242,15 @@
     <h2 id="playDetailsTitle">Detalles de tu jugada</h2>
     <div id="playDetailsBody"></div>
     <button type="button" class="btn btn-gold btn-full" id="donePlayDetails">Cerrar</button>
+  </div>
+</dialog>
+<dialog id="comingSoonDialog" class="coming-soon-dialog" aria-labelledby="comingSoonTitle" aria-describedby="comingSoonMessage">
+  <div class="coming-soon-inner">
+    <img src="assets/favicon-96.png" class="coming-soon-logo" width="96" height="96" alt="" aria-hidden="true">
+    <span class="coming-soon-label">PREMIUMGOL</span>
+    <h2 id="comingSoonTitle">Estamos trabajando en esta sección</h2>
+    <p id="comingSoonMessage">Estamos preparando una nueva experiencia para ti. ¡Muy pronto podrás disfrutarla!</p>
+    <button type="button" class="btn btn-gold btn-full" id="comingSoonBack">Volver a PremiumGol <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
   </div>
 </dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
