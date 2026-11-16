@@ -53,6 +53,88 @@ function pgIdempotent_(uid,playId){
   if(String(row.values[1])!==String(uid))pgErr_('Solicitud inválida.');
   return true; // el mismo usuario puede reintentar la operación sin repetirla
 }
+
+/** Débito atómico a nivel de LockService. El identificador PLAY- es único por ticket.
+ * Se habilita solo si el operador obtuvo las autorizaciones necesarias.
+ * Ambos saldos son reales: nunca usar users.balance ni el libro demo ledger.
+ */
+function pgDebitPlayWallet_(uid,requestId,walletSource,amountPEN,when){
+  if(pgProp_('PG_WALLET_WAGERS_ENABLED')!=='true')
+    pgErr_('Las jugadas con saldo todavía no están habilitadas.');
+  if(!['principal','bonos'].includes(walletSource))
+    pgErr_('Selecciona saldo principal o saldo de bonos.');
+  const cents=Math.round(Number(amountPEN)*100);
+  if(!Number.isSafeInteger(cents)||cents<=0)
+    pgErr_('Importe de jugada no válido.');
+  const entryId='PLAY-'+requestId;
+  if(walletSource==='principal'){
+    if(pgFind_('payments_ledger','entryId',entryId))return;
+    if(pgFind_('bonus_ledger','entryId',entryId))
+      pgErr_('La jugada ya tiene otro origen de pago.');
+    if(Math.round(pgMoneyBalance_(uid)*100)<cents)
+      pgErr_('Saldo principal insuficiente.');
+    pgWrite_('payments_ledger',{entryId,uid,orderId:requestId,paymentId:'',
+      deltaPEN:-cents/100,type:'JUGADA_PREMIUMGOL',createdAt:when});
+  }else{
+    if(pgFind_('bonus_ledger','entryId',entryId))return;
+    if(pgFind_('payments_ledger','entryId',entryId))
+      pgErr_('La jugada ya tiene otro origen de pago.');
+    if(!pgBonusUnlocked_(uid))
+      pgErr_('Primero realiza una recarga propia de al menos S/ 5 para usar tus bonos.');
+    if(Math.round(pgBonusBalancePEN_(uid)*100)<cents)
+      pgErr_('Saldo de bonos insuficiente.');
+    pgWrite_('bonus_ledger',{entryId,uid,sourceUid:requestId,amountPEN:-cents/100,
+      status:'AVAILABLE',createdAt:when,note:'Jugada PremiumGol · uso de bonos'});
+  }
+}
+/** Futuras promociones: solo el administrador puede generar un crédito, idempotente. */
+function adminCreditPremiumGolBonus(uid,campaignCode,amountPEN){
+  const admin=pgProp_('ADMIN_EMAIL').toLowerCase();
+  if(!admin||String(Session.getActiveUser().getEmail()||'').toLowerCase()!==admin)
+    pgErr_('No autorizado.');
+  uid=pgClean_(uid,90);campaignCode=pgClean_(campaignCode,64).toUpperCase();
+  const cents=Math.round(Number(amountPEN)*100);
+  if(!/^[A-Z0-9_-]{3,64}$/.test(campaignCode)||cents<=0||
+    !Number.isSafeInteger(cents)||cents>100000)pgErr_('Solicitud inválida.');
+  return pgLock_(()=>{
+    if(!pgFind_('users','uid',uid))pgErr_('Cuenta no encontrada.');
+    const entryId='PROMO-'+campaignCode+'-'+uid;
+    if(!pgFind_('bonus_ledger','entryId',entryId))
+      pgWrite_('bonus_ledger',{entryId,uid,sourceUid:campaignCode,
+        amountPEN:cents/100,status:'AVAILABLE',createdAt:pgNow_(),
+        note:'Promoción '+campaignCode});
+    return {ok:true,bonusBalancePEN:pgBonusBalancePEN_(uid)};
+  });
+}
+/** Premio verificado: siempre en saldo PRINCIPAL, jamás vuelve a bonos.
+ * Pago manual administrado tras resultados oficiales y reglas de premio aprobadas.
+ */
+function adminCreditPremiumGolPrize(playId,amountPEN){
+  const admin=pgProp_('ADMIN_EMAIL').toLowerCase();
+  if(!admin||String(Session.getActiveUser().getEmail()||'').toLowerCase()!==admin)
+    pgErr_('No autorizado.');
+  playId=pgClean_(playId,90);
+  const cents=Math.round(Number(amountPEN)*100);
+  if(!/^[A-Z0-9-]{10,90}$/i.test(playId)||!Number.isSafeInteger(cents)||
+     cents<=0||cents>100000000)pgErr_('Solicitud inválida.');
+  return pgLock_(()=>{
+    const row=pgFind_('plays','playId',playId);
+    if(!row)pgErr_('Jugada no encontrada.');
+    const play=pgObject_('plays',row.values);
+    if(String(play.type)!=='gol'||String(play.roundId)!==PG.ROUND_ID)
+      pgErr_('Esta jugada no puede liquidarse aquí.');
+    let picks=[];
+    try{picks=JSON.parse(String(play.picksJson)).picks||[];}catch(e){}
+    if(pgGolTicketStatus_(play.roundId,picks)!=='GANADOR')
+      pgErr_('La jugada no tiene un resultado ganador verificado.');
+    const uid=String(play.uid),entryId='PRIZE-'+playId;
+    if(!pgFind_('payments_ledger','entryId',entryId)){
+      pgWrite_('payments_ledger',{entryId,uid,orderId:playId,paymentId:'',
+        deltaPEN:cents/100,type:'PREMIO_LIQUIDADO',createdAt:pgNow_()});
+    }
+    return {ok:true,paidBalancePEN:pgMoneyBalance_(uid)};
+  });
+}
 function pgSavePremiumGol_(x){
   return pgLock_(()=>{
     if(Date.now()>=new Date(PG.GOL_CUTOFF_ISO).getTime())pgErr_('La cartilla está cerrada para nuevas jugadas.');
@@ -68,11 +150,12 @@ function pgSavePremiumGol_(x){
     // A/B/C/D identifica borradores simultáneos, NO limita el número
     // de tickets válidos que un usuario puede enviar en la jornada.
     // pgIdempotent_ sigue impidiendo cobrar dos veces la misma solicitud.
-    if(Number(u.balance)<PG.GOL_STAKE)pgErr_('Saldo virtual insuficiente.');
-    const balanceAfter=Number(u.balance)-PG.GOL_STAKE,when=pgNow_();
-    pgWrite_('plays',{playId:requestId,uid:u.uid,type:'gol',roundId:PG.ROUND_ID,picksJson:JSON.stringify({slot,picks}),stake:PG.GOL_STAKE,combinedOdds:0,potentialReturn:0,createdAt:when,note:'12 pronósticos · '+PG.GOL_STAKE+' créditos virtuales'});
-    pgUpdate_('users',player.index,{balance:balanceAfter,updatedAt:when});
-    pgWrite_('ledger',{txId:pgUuid_(),uid:u.uid,playId:requestId,action:'PREMIUMGOL_VIRTUAL',delta:-PG.GOL_STAKE,balanceAfter,createdAt:when});
+    const when=pgNow_(),source=pgClean_(x.walletSource,12);
+    pgDebitPlayWallet_(u.uid,requestId,source,PG.GOL_STAKE,when);
+    pgWrite_('plays',{playId:requestId,uid:u.uid,type:'gol',roundId:PG.ROUND_ID,
+      picksJson:JSON.stringify({slot,picks}),stake:PG.GOL_STAKE,combinedOdds:0,
+      potentialReturn:0,createdAt:when,
+      note:'12 pronósticos · S/ '+PG.GOL_STAKE+' · '+source});
     return pgSnapshot_(pgFind_('users','uid',u.uid));
   });
 }
