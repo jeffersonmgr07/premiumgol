@@ -973,3 +973,77 @@ body.auth-request-busy{overflow:hidden}
 .email-access-toggle{display:block;margin:15px auto 9px;cursor:pointer;border:0;background:transparent;color:#F7C85D;font-weight:800;font-size:13px;text-decoration:underline;text-underline-offset:4px}
 .email-access-toggle:focus-visible{outline:2px solid #F7C85D;border-radius:4px}
 @media(max-width:900px){.wallet-breakdown{top:calc(100% + 7px);right:0}}
+
+/* PremiumGol · saldo superior responsive (mantiene el monto en una sola línea) */
+.site-header .wallet-chip{min-width:0;max-width:100%;box-sizing:border-box}
+.site-header .wallet-chip svg{flex:0 0 auto}
+.site-header .wallet-chip span{min-width:0;flex:0 1 auto}
+.site-header .wallet-chip b{
+  display:block;white-space:nowrap;overflow:visible;
+  font-variant-numeric:tabular-nums;line-height:1.12;
+}
+@media(max-width:720px){
+  .site-header .header-inner{gap:clamp(4px,1.5vw,9px)}
+  .site-header .brand-official{
+    flex:1 1 auto;width:auto;min-width:95px;
+    max-width:clamp(135px,43vw,194px)
+  }
+  .site-header .header-actions{flex:0 0 auto;gap:5px;min-width:0}
+  .site-header .wallet-chip{padding:7px 8px;gap:5px;height:42px;flex-shrink:1}
+  .site-header .wallet-chip svg{width:16px;height:16px}
+  .site-header .wallet-chip small{display:block;font-size:9px;line-height:1;letter-spacing:.4px}
+  .site-header .wallet-chip b{font-size:clamp(11px,3.3vw,15px);letter-spacing:-.035em}
+}
+@media(max-width:370px){
+  .site-header .brand-official{max-width:clamp(110px,38vw,140px)}
+  .site-header .wallet-chip{padding:6px;gap:4px}
+  .site-header .wallet-chip svg{width:14px;height:14px}
+  .site-header .wallet-chip b{font-size:clamp(10.5px,3.25vw,12.5px)}
+}
+
+/* Menú superior: abajo. Menú inferior: conserva el comportamiento original. */
+@media(max-width:900px){
+  #accountMenu{max-height:calc(100dvh - 100px);overflow-y:auto}
+}
+
+/* PremiumGol · aviso de secciones todavía en preparación */
+.coming-soon-dialog{
+  width:min(440px,calc(100vw - 32px));
+  max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);
+  padding:0;margin:auto;border:1px solid #F7C85D80;
+  border-radius:22px;color:#fff;background:#101e30;
+  box-shadow:0 24px 90px #000b,0 0 30px #F7C85D22;
+}
+.coming-soon-dialog:not([open]){display:none!important}
+.coming-soon-dialog::backdrop{
+  background:rgba(3,10,22,.80);
+  backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px)
+}
+.coming-soon-inner{
+  display:flex;flex-direction:column;align-items:center;
+  gap:13px;padding:33px 28px 29px;text-align:center
+}
+.coming-soon-logo{
+  display:block;width:83px;height:83px;object-fit:contain;
+  filter:drop-shadow(0 0 14px #F7C85D55);
+  animation:pgComingPulse 1.6s ease-in-out infinite
+}
+.coming-soon-label{
+  border:1px solid #F7C85D80;border-radius:99px;
+  padding:6px 15px;font:800 11px var(--display);
+  letter-spacing:.11em;color:#F7C85D
+}
+.coming-soon-inner h2{font:900 clamp(22px,5vw,27px)/1.2 var(--display);margin:0}
+.coming-soon-inner p{margin:0 0 4px;font-size:14px;line-height:1.65;color:#e2eaf3}
+.coming-soon-inner .btn{max-width:320px}
+.coming-soon-inner .btn svg{width:17px;height:17px}
+@keyframes pgComingPulse{
+  0%,100%{transform:scale(.96);opacity:.9}
+  50%{transform:scale(1.10);opacity:1}
+}
+@media(max-width:480px){
+  .coming-soon-inner{padding:28px 19px 24px}
+  .coming-soon-logo{width:70px;height:70px}
+  .coming-soon-inner p{font-size:13px}
+}
+@media(prefers-reduced-motion:reduce){.coming-soon-logo{animation:none}}
