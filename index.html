@@ -28,9 +28,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=37">
+  <link rel="stylesheet" href="assets/styles.css?v=38">
   <script defer src="assets/config.js?v=22"></script>
-  <script defer src="assets/app.js?v=40"></script>
+  <script defer src="assets/measurement-config.js?v=1"></script>
+  <script defer src="assets/measurement.js?v=1"></script>
+  <script defer src="assets/app.js?v=41"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -67,7 +69,7 @@
         <button class="nav-link" data-nav="live">Premium Live <span class="live-mini"></span></button>
       </nav>
       <div class="header-actions">
-        <button class="wallet-chip" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Realiza una recarga para activar el uso de tu saldo de bonos.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
+        <button class="wallet-chip" data-clarity-mask="true" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" data-clarity-mask="true" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Realiza una recarga para activar el uso de tu saldo de bonos.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
         <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span class="session-restore-indicator" aria-hidden="true"></span><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
         <div class="account-menu" id="accountMenu" role="menu" aria-label="Mi cuenta" hidden>
           <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
@@ -136,7 +138,7 @@
       <div class="container page-body"><div class="game-toolbar"><div><h2>Partidos en vivo</h2><p>Live minuto a minuto. Selecciona las cuotas y sigue el encuentro desde esta plataforma.</p></div><span class="demo-label" id="liveSourceLabel"><svg><use href="#i-shield"></use></svg> Cargando encuentros…</span></div><div class="game-layout"><div><div class="live-banner" id="liveBanner" hidden><span class="live-ping"></span><b>EN JUEGO</b><span>Vista previa de la experiencia en vivo</span><svg><use href="#i-pulse"></use></svg></div><div id="liveFixtures" class="market-list"></div></div><aside id="liveBetslip"></aside></div></div>
     </section>
 
-    <section id="view-account" class="view" aria-label="Mi cuenta">
+    <section id="view-account" class="view" aria-label="Mi cuenta" data-clarity-mask="true">
       
       <div class="container page-body account-layout"><aside class="profile-side"><div class="avatar-circle" id="avatarInitial"><span id="avatarInitialText">P</span><img id="avatarPhoto" alt="" loading="lazy" hidden></div><h3 id="profileName">Jugador</h3><span id="profileSubtitle">Tu cuenta PremiumGol</span><div class="side-divider"></div><button class="account-side-link active" data-account-tab="overview"><svg><use href="#i-user"></use></svg> Resumen</button><button class="account-side-link" data-account-tab="history"><svg><use href="#i-ticket"></use></svg> Mis jugadas</button><button class="account-side-link" data-account-tab="wallet"><svg><use href="#i-wallet"></use></svg> Recargar saldo</button><button class="account-side-link" data-account-tab="bonuses"><svg><use href="#i-trophy"></use></svg> Mis bonos</button><button class="account-side-link" data-account-tab="profile"><svg><use href="#i-shield"></use></svg> Mi perfil</button><button class="account-side-link" id="accountSignout"><svg><use href="#i-arrow"></use></svg> Cerrar sesión</button></aside><div class="account-quick-tabs" role="group" aria-label="Navegación de cuenta">
   <button type="button" data-account-tab="overview" title="Resumen" aria-label="Resumen"><svg><use href="#i-user"></use></svg></button>
@@ -197,11 +199,11 @@
     </section>
   </main>
 
-  <footer class="footer"><div class="container footer-main"><div><div class="footer-brand"><img class="footer-official-logo" src="assets/premiumgol-logo-oficial.png" alt="PremiumGol" width="1224" height="228" loading="lazy"><small>Una experiencia PremiumLott</small></div><p>La pasión por el fútbol vive aquí.</p></div><div class="footer-links"><button data-nav="gol">PremiumGol</button><button data-nav="match">Apuestas deportivas</button><button data-nav="live">Premium Live</button></div></div><div class="container footer-bottom"><span>© <span id="footerYear"></span> PremiumLott. Todos los derechos reservados.</span><span>+18 · Consulta las reglas y condiciones del juego</span></div></footer>
+  <footer class="footer"><div class="container footer-main"><div><div class="footer-brand"><img class="footer-official-logo" src="assets/premiumgol-logo-oficial.png" alt="PremiumGol" width="1224" height="228" loading="lazy"><small>Una experiencia PremiumLott</small></div><p>La pasión por el fútbol vive aquí.</p></div><div class="footer-links"><button data-nav="gol">PremiumGol</button><button data-nav="match">Apuestas deportivas</button><button data-nav="live">Premium Live</button></div></div><div class="container footer-bottom"><span>© <span id="footerYear"></span> PremiumLott. Todos los derechos reservados.</span><span>+18 · Consulta las reglas y condiciones del juego</span><button type="button" class="measurement-footer-link" id="measurementPreferencesLink" hidden>Preferencias de privacidad</button></div></footer>
 
   <nav class="mobile-nav" aria-label="Menú inferior"><button data-nav="home" class="active"><svg><use href="#i-ball"></use></svg><span>Inicio</span></button><button data-nav="gol"><svg><use href="#i-trophy"></use></svg><span>PremiumGol</span></button><button data-nav="match"><svg><use href="#i-ticket"></use></svg><span>Apuestas</span></button><button data-nav="live"><svg><use href="#i-pulse"></use></svg><span>Live</span></button><button data-nav="account"><svg><use href="#i-user"></use></svg><span>Cuenta</span></button></nav>
 
-  <dialog class="auth-dialog" id="authDialog" aria-labelledby="authTitle"><div class="auth-box">
+  <dialog class="auth-dialog" id="authDialog" data-clarity-mask="true" aria-labelledby="authTitle"><div class="auth-box">
     <button class="modal-x" id="closeAuth" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
     <img class="auth-brand-logo" src="assets/premiumgol-modal-logo.png" alt="PremiumGol" width="1224" height="228">
     <h2 id="authTitle" class="visually-hidden">Ingresar</h2><p id="authDescription">Tus jugadas y pronósticos.</p>
@@ -227,7 +229,7 @@
     <button type="button" class="btn btn-gold btn-full" id="claimCoupon">Activar mi bono</button>
     <small>Promoción limitada a un bono por cuenta. Saldo virtual de demostración; no canjeable por dinero.</small>
   </div></dialog>
-  <dialog id="authBusyOverlay" class="auth-busy-overlay" aria-labelledby="authBusyTitle" aria-describedby="authBusyDesc">
+  <dialog data-clarity-mask="true" id="authBusyOverlay" class="auth-busy-overlay" aria-labelledby="authBusyTitle" aria-describedby="authBusyDesc">
     <div class="auth-busy-box"><span class="auth-busy-google" aria-hidden="true">G</span><img class="auth-busy-icon" src="assets/favicon-96.png" alt="" aria-hidden="true" width="96" height="96"><span class="auth-busy-spinner" aria-hidden="true"></span><strong id="authBusyTitle">Verificando tu cuenta…</strong><p id="authBusyDesc">Estamos confirmando tu acceso a PremiumGol.</p></div>
   </dialog>
   <dialog id="golRulesDialog" class="gol-rules-dialog" aria-labelledby="golRulesTitle">
@@ -242,7 +244,7 @@
       <button type="button" id="acceptGolRules" class="btn btn-gold btn-full">Entendido</button>
     </div>
   </dialog>
-  <dialog id="walletPayDialog" class="gol-rules-dialog wallet-pay-dialog" aria-labelledby="walletPayTitle">
+  <dialog data-clarity-mask="true" id="walletPayDialog" class="gol-rules-dialog wallet-pay-dialog" aria-labelledby="walletPayTitle">
   <div class="gol-rules-inner wallet-pay-content">
     <button type="button" class="modal-x" id="walletPayClose" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
     <h2 id="walletPayTitle">¿Con qué saldo deseas jugar?</h2>
@@ -260,7 +262,7 @@
   </div>
 </dialog>
 <dialog id="insufficientFundsDialog" class="gol-rules-dialog" aria-labelledby="insufficientFundsTitle"><div class="gol-rules-inner"><button type="button" class="modal-x" id="closeInsufficientFunds" aria-label="Cerrar aviso"><svg><use href="#i-close"></use></svg></button><h2 id="insufficientFundsTitle">Saldo insuficiente</h2><p>No tienes saldo suficiente para colocar esta jugada.</p><button type="button" class="btn btn-gold btn-full" id="insufficientFundsRecharge">Recargar saldo</button></div></dialog>
-  <dialog id="playDetailsDialog" class="gol-rules-dialog play-details-dialog" aria-labelledby="playDetailsTitle">
+  <dialog data-clarity-mask="true" id="playDetailsDialog" class="gol-rules-dialog play-details-dialog" aria-labelledby="playDetailsTitle">
   <div class="gol-rules-inner">
     <button type="button" class="modal-x" id="closePlayDetails" aria-label="Cerrar detalles"><svg><use href="#i-close"></use></svg></button>
     <h2 id="playDetailsTitle">Detalles de tu jugada</h2>
@@ -275,6 +277,35 @@
     <h2 id="comingSoonTitle">Estamos trabajando en esta sección</h2>
     <p id="comingSoonMessage">Estamos preparando una nueva experiencia para ti. ¡Muy pronto podrás disfrutarla!</p>
     <button type="button" class="btn btn-gold btn-full" id="comingSoonBack">Volver a PremiumGol <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+  </div>
+</dialog>
+<!-- Medición opcional: sin identificadores ni consentimiento no se cargan etiquetas. -->
+<section id="measurementBanner" class="measurement-banner" role="region" aria-label="Preferencias de medición" hidden>
+  <div class="measurement-banner-copy"><strong>Tu privacidad importa</strong>
+    <p>Utilizamos herramientas opcionales para entender cómo se usa PremiumGol y mejorar la experiencia. Tú decides si aceptarlas.</p>
+  </div>
+  <div class="measurement-banner-actions">
+    <button type="button" id="measurementReject" class="measurement-secondary">Rechazar</button>
+    <button type="button" id="measurementConfigure" class="measurement-secondary">Configurar</button>
+    <button type="button" id="measurementAccept" class="measurement-primary">Aceptar</button>
+  </div>
+</section>
+<dialog id="measurementDialog" class="measurement-dialog" aria-labelledby="measurementTitle">
+  <div class="measurement-preferences">
+    <button id="measurementClose" type="button" class="measurement-close" aria-label="Cerrar preferencias">×</button>
+    <h2 id="measurementTitle">Preferencias de privacidad</h2>
+    <p>Estas herramientas son opcionales. No enviamos eventos personalizados con datos de identidad, documentos, información de pagos ni saldos.</p>
+    <label class="measurement-choice">
+      <input type="checkbox" id="measurementAnalytics">
+      <span><strong>Analítica y experiencia</strong>
+      <small>Google Analytics 4 y Microsoft Clarity: visitas, navegación y análisis de usabilidad. Clarity oculta contenido de cuenta y formularios.</small></span>
+    </label>
+    <label class="measurement-choice">
+      <input type="checkbox" id="measurementMarketing">
+      <span><strong>Medición publicitaria</strong>
+      <small>Meta Pixel y TikTok Pixel: vistas de secciones públicas únicamente. Se habilitarán tras la revisión de las condiciones aplicables a esta actividad.</small></span>
+    </label>
+    <button class="measurement-primary measurement-save" id="measurementSave" type="button">Guardar preferencias</button>
   </div>
 </dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
