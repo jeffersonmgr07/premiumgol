@@ -128,6 +128,11 @@ function adminCreditPremiumGolPrize(playId,amountPEN){
     if(pgGolTicketStatus_(play.roundId,picks)!=='GANADOR')
       pgErr_('La jugada no tiene un resultado ganador verificado.');
     const uid=String(play.uid),entryId='PRIZE-'+playId;
+    // Nunca convertir en dinero una jugada histórica de créditos de demostración.
+    const paidEntry='PLAY-'+playId;
+    const charged=pgFind_('payments_ledger','entryId',paidEntry)||
+      pgFind_('bonus_ledger','entryId',paidEntry);
+    if(!charged)pgErr_('La jugada no tiene un pago registrado en las billeteras.');
     if(!pgFind_('payments_ledger','entryId',entryId)){
       pgWrite_('payments_ledger',{entryId,uid,orderId:playId,paymentId:'',
         deltaPEN:cents/100,type:'PREMIO_LIQUIDADO',createdAt:pgNow_()});
