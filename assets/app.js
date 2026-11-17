@@ -1314,6 +1314,17 @@
   $('#pgAgeNotice').addEventListener('click',e=>{
     if(e.target===$('#pgAgeNotice'))e.target.close();
   });
+  // Footer: columnas siempre visibles en PC, desplegables en móvil.
+  const footerSections=[...document.querySelectorAll('[data-pg-footer-accordion]')];
+  const footerMQ=window.matchMedia('(min-width: 768px)');
+  function syncFooterAccordions(){
+    if(footerMQ.matches)footerSections.forEach(section=>section.open=true);
+    else footerSections.forEach(section=>section.open=false);
+  }
+  syncFooterAccordions();
+  if(typeof footerMQ.addEventListener==='function')
+    footerMQ.addEventListener('change',syncFooterAccordions);
+  else footerMQ.addListener(syncFooterAccordions);
   $('#footerYear').textContent=new Date().getFullYear();
   renderAll();
   refreshCoupon();setInterval(refreshCoupon,15000);
