@@ -14,7 +14,14 @@ const PG = Object.freeze({
     ledger:['txId','uid','playId','action','delta','balanceAfter','createdAt'],
     topup_requests:['orderId','uid','amountPEN','status','createdAt','updatedAt','preferenceId','checkoutUrl','paymentId','paidAt','lastCheckAt'],
     payments_ledger:['entryId','uid','orderId','paymentId','deltaPEN','type','createdAt'],
-    bonus_ledger:['entryId','uid','sourceUid','amountPEN','status','createdAt','note']
+    bonus_ledger:['entryId','uid','sourceUid','amountPEN','status','createdAt','note'],
+    reclamaciones:['claimNumber','clientRequestId','createdAt','siteCode','providerName',
+      'providerRUC','providerAddress','claimKind','firstName','lastName','documentType',
+      'documentNumber','homeAddress','city','region','phone','email','isMinor',
+      'guardianName','guardianDocument','guardianPhone','guardianEmail','itemKind',
+      'itemDescription','amountPEN','detail','request','signatureName','acceptanceAt',
+      'status','providerObservations','providerActions','responseDate','responseSentAt',
+      'receiptEmailStatus']
   },
   INITIAL_CREDITS:10,
   MAX_STAKE:1000,
