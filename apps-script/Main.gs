@@ -19,6 +19,8 @@ function rpc(requestJson){
     switch(req.action){
       case 'catalog':return pgPublicSportsCatalog_();
       case 'golProgram':return pgPublicGolProgram_();
+      case 'claimsConfig':return pgClaimsPublicConfig_();
+      case 'submitClaim':return pgClaimsSave_(x);
       case 'health':return {ok:true,server:'premiumgol',version:'2026-11-15',sportsConfigured:Boolean(pgProp_('API_SPORTS_KEY')),catalogMode:pgProp_('API_SPORTS_CATALOG_MODE')==='preview'?'preview':'disabled'};
       case 'sendCode':return pgSendCode_(x);
       case 'verifyCode':return pgVerifyCode_(x);
@@ -67,7 +69,17 @@ function rpc(requestJson){
       'Mercado Pago no devolvió un enlace válido.',
       'Esta orden fue creada en pruebas. Genera una recarga nueva.',
       'Esta orden venció. Genera una recarga nueva.',
-      'Este cupón no está disponible en este momento.','Este cupón ya fue activado en tu cuenta.'
+      'Este cupón no está disponible en este momento.','Este cupón ya fue activado en tu cuenta.',
+      'El Libro de Reclamaciones todavía no está configurado.',
+      'Revisa los datos del formulario.',
+      'Selecciona Reclamo o Queja.','Selecciona Producto o Servicio.',
+      'Completa nombres y apellidos.','Documento de identidad no válido.',
+      'Completa tu domicilio.','Teléfono no válido.','Correo electrónico no válido.',
+      'Completa la información del representante.','Monto del bien o servicio no válido.',
+      'Completa la descripción, el detalle y tu pedido.',
+      'Confirma tu solicitud y escribe tu nombre completo.',
+      'Espera un momento antes de enviar otra reclamación.',
+      'No se pudo generar el número.'
     ];
     const message=err&&publicMessages.includes(err.message)?err.message:'No se pudo completar la solicitud. Intenta nuevamente.';
     return {ok:false,message};
