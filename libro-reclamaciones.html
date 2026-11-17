@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <title>Libro de Reclamaciones | PremiumGol</title>
+  <meta name="description" content="Libro de Reclamaciones Virtual de PremiumGol. Registra tu reclamo o queja y recibe una constancia con número correlativo.">
+  <link rel="icon" href="assets/favicon-96.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/reclamaciones.css?v=1">
+  <script defer src="assets/config.js?v=22"></script>
+  <script defer src="assets/reclamaciones.js?v=1"></script>
+</head>
+<body>
+  <header class="claims-header">
+    <div class="claims-container claims-header-inner">
+      <a href="./#inicio" aria-label="Volver a PremiumGol"><img src="assets/premiumgol-logo-oficial.png" alt="PremiumGol" width="1224" height="228"></a>
+      <a href="./#inicio" class="claims-back">Volver a PremiumGol</a>
+    </div>
+  </header>
+  <main class="claims-container claims-main">
+    <div class="claims-intro">
+      <span class="claims-overline">ATENCIÓN AL CONSUMIDOR</span>
+      <h1>Libro de Reclamaciones</h1>
+      <p>Registra tu reclamo o queja mediante una Hoja de Reclamación Virtual. Al registrarla recibirás un número correlativo y una constancia que puedes imprimir.</p>
+    </div>
+    <div class="claims-status" id="claimsStatus" role="status" aria-live="polite">Verificando la disponibilidad del Libro de Reclamaciones…</div>
+    <section class="claims-paper" aria-labelledby="claimsFormTitle">
+      <div class="claims-paper-head">
+        <div><span class="claims-overline">LIBRO DE RECLAMACIONES</span><h2 id="claimsFormTitle">Hoja de Reclamación</h2></div>
+        <span class="claims-number" id="claimsNumber">N.º: se asignará al registrar</span>
+      </div>
+      <div class="claims-provider">
+        <h3>Identificación del proveedor</h3>
+        <dl>
+          <div><dt>Razón social</dt><dd id="claimsProviderName">Pendiente de configurar</dd></div>
+          <div><dt>RUC</dt><dd id="claimsProviderRUC">Pendiente</dd></div>
+          <div><dt>Domicilio del establecimiento</dt><dd id="claimsProviderAddress">Pendiente de configurar</dd></div>
+          <div><dt>Código de establecimiento</dt><dd>WEB-PREMIUMGOL</dd></div>
+          <div><dt>Fecha</dt><dd id="claimsDate">Se registra automáticamente al enviar</dd></div>
+        </dl>
+      </div>
+      <form id="claimsForm" novalidate>
+        <div class="claims-block">
+          <h3><span>1</span> Identificación del consumidor reclamante</h3>
+          <div class="claims-fields">
+            <label>Nombres <em>*</em><input id="claimFirstName" name="firstName" autocomplete="given-name" required maxlength="100"></label>
+            <label>Apellidos <em>*</em><input id="claimLastName" name="lastName" autocomplete="family-name" required maxlength="100"></label>
+            <label>Tipo de documento <em>*</em><select id="claimDocumentType" name="documentType" required><option value="">Seleccionar</option><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PASAPORTE">Pasaporte</option><option value="OTRO">Otro documento</option></select></label>
+            <label>Número de documento <em>*</em><input id="claimDocumentNumber" name="documentNumber" maxlength="30" required autocomplete="off"></label>
+            <label class="claims-wide">Domicilio <em>*</em><input id="claimHomeAddress" name="homeAddress" autocomplete="street-address" maxlength="240" required placeholder="Calle, número, referencia"></label>
+            <label>Distrito / ciudad <em>*</em><input id="claimCity" name="city" maxlength="100" required autocomplete="address-level2"></label>
+            <label>Departamento / región <em>*</em><input id="claimRegion" name="region" maxlength="100" required autocomplete="address-level1"></label>
+            <label>Teléfono <em>*</em><input id="claimPhone" name="phone" inputmode="tel" type="tel" maxlength="25" required autocomplete="tel"></label>
+            <label>Correo electrónico <em>*</em><input id="claimEmail" name="email" type="email" maxlength="180" required autocomplete="email"></label>
+          </div>
+          <fieldset class="claims-choice">
+            <legend>¿El consumidor es menor de edad?</legend>
+            <label><input type="radio" name="isMinor" value="false" checked> No</label>
+            <label><input type="radio" name="isMinor" value="true"> Sí</label>
+          </fieldset>
+          <div class="claims-guardian" id="claimsGuardian" hidden>
+            <p>Si el consumidor es menor, completa los datos de su padre, madre o representante.</p>
+            <div class="claims-fields">
+              <label class="claims-wide">Nombre completo del representante <em>*</em><input id="claimGuardianName" name="guardianName" maxlength="160"></label>
+              <label>Documento del representante <em>*</em><input id="claimGuardianDocument" name="guardianDocument" maxlength="30"></label>
+              <label>Teléfono del representante <em>*</em><input id="claimGuardianPhone" name="guardianPhone" maxlength="25" type="tel"></label>
+              <label class="claims-wide">Correo del representante <em>*</em><input id="claimGuardianEmail" name="guardianEmail" type="email" maxlength="180"></label>
+            </div>
+          </div>
+        </div>
+        <div class="claims-block">
+          <h3><span>2</span> Identificación del bien contratado</h3>
+          <fieldset class="claims-choice">
+            <legend>Tipo de bien <em>*</em></legend>
+            <label><input type="radio" name="itemKind" value="SERVICIO" checked> Servicio</label>
+            <label><input type="radio" name="itemKind" value="PRODUCTO"> Producto</label>
+          </fieldset>
+          <div class="claims-fields">
+            <label class="claims-wide">Descripción del producto o servicio <em>*</em><textarea id="claimItemDescription" name="itemDescription" required maxlength="500" rows="3" placeholder="Indica el servicio, pedido u operación relacionada con tu reclamación"></textarea></label>
+            <label>Monto del bien o servicio (S/) <em>*</em><input id="claimAmount" name="amountPEN" type="number" min="0" max="10000000" step=".01" value="0.00" required></label>
+          </div>
+        </div>
+        <div class="claims-block">
+          <h3><span>3</span> Detalle de la reclamación y pedido del consumidor</h3>
+          <fieldset class="claims-choice">
+            <legend>Tipo de presentación <em>*</em></legend>
+            <label><input type="radio" name="claimKind" value="RECLAMO" checked> Reclamo</label>
+            <label><input type="radio" name="claimKind" value="QUEJA"> Queja</label>
+          </fieldset>
+          <p class="claims-hint"><strong>Reclamo:</strong> disconformidad relacionada con un producto o servicio. <strong>Queja:</strong> disconformidad con la atención u otros aspectos no relacionados con el producto o servicio.</p>
+          <label>Detalle de lo ocurrido <em>*</em><textarea id="claimDetail" name="detail" rows="6" maxlength="2400" minlength="15" required placeholder="Describe los hechos con claridad e indica fechas o números de operación si corresponde"></textarea></label>
+          <label>Pedido concreto <em>*</em><textarea id="claimRequest" name="request" rows="4" maxlength="1800" required placeholder="¿Qué solución solicitas?"></textarea></label>
+          <div class="claims-signature">
+            <h4>Conformidad del consumidor</h4>
+            <p>En reemplazo de la firma física, escribe tu nombre completo y confirma que la información registrada corresponde a tu declaración.</p>
+            <label>Nombre completo como firma electrónica simple <em>*</em><input id="claimSignatureName" name="signatureName" maxlength="210" required placeholder="Nombres y apellidos"></label>
+            <label class="claims-consent"><input id="claimAcceptance" name="acceptance" type="checkbox" required> <span>Confirmo que he revisado los datos, que mi declaración es correcta y que deseo presentar esta hoja de reclamación.</span></label>
+          </div>
+          <div class="claims-honeypot" aria-hidden="true"><label>No completar <input name="website" tabindex="-1" autocomplete="off"></label></div>
+        </div>
+        <div class="claims-block claims-actions-provider">
+          <h3><span>4</span> Observaciones y acciones adoptadas por el proveedor</h3>
+          <p>Este apartado es reservado para la atención del proveedor. Se registrarán las observaciones, acciones adoptadas y la fecha de comunicación de la respuesta.</p>
+        </div>
+        <div class="claims-legal">
+          <p>La presentación de la reclamación no impide acudir a otras vías de solución de controversias ni es requisito previo para presentar una denuncia ante Indecopi. El proveedor debe responder dentro de 15 días hábiles improrrogables.</p>
+          <p>Los datos serán usados para registrar y atender tu reclamo o queja. La política de protección de datos completa del proveedor deberá estar publicada antes de habilitar el servicio.</p>
+        </div>
+        <div class="claims-submit-wrap">
+          <p id="claimsSubmitMessage" class="claims-submit-message" role="alert" aria-live="polite"></p>
+          <button id="claimsSubmit" type="submit" disabled>Registrar hoja de reclamación</button>
+        </div>
+      </form>
+    </section>
+    <section id="claimsReceipt" class="claims-receipt" aria-label="Constancia de reclamación" hidden>
+      <h2>Hoja de reclamación registrada</h2>
+      <p>Conserva esta constancia. El registro se ha almacenado con el siguiente número correlativo.</p>
+      <strong id="claimsReceiptNumber"></strong>
+      <p id="claimsReceiptDate"></p>
+      <p id="claimsReceiptEmail"></p>
+      <div id="claimsReceiptDetails" class="claims-receipt-details"></div>
+      <button type="button" id="claimsPrint">Imprimir o guardar copia</button>
+    </section>
+  </main>
+  <footer class="claims-footer">PremiumGol · Libro de Reclamaciones Virtual · <a href="./#inicio">Regresar al sitio web</a></footer>
+</body>
+</html>
