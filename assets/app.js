@@ -1304,6 +1304,16 @@
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-featured-match]')){e.preventDefault();openFeaturedGame(e.target.dataset.featuredMatch);}});
+  // Aviso informativo de edad mínima desde el footer.
+  $('#pgAgeNoticeButton').addEventListener('click',()=>{
+    const dialog=$('#pgAgeNotice');
+    if(!dialog.open)dialog.showModal();
+  });
+  $('#pgAgeClose').addEventListener('click',()=>$('#pgAgeNotice').close());
+  $('#pgAgeConfirm').addEventListener('click',()=>$('#pgAgeNotice').close());
+  $('#pgAgeNotice').addEventListener('click',e=>{
+    if(e.target===$('#pgAgeNotice'))e.target.close();
+  });
   $('#footerYear').textContent=new Date().getFullYear();
   renderAll();
   refreshCoupon();setInterval(refreshCoupon,15000);
