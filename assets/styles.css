@@ -1423,3 +1423,125 @@ body.auth-request-busy{overflow:hidden}
   .pg-rich-footer .pg-payment-card{height:35px}
   .pg-rich-footer .pg-footer-utility-links a{font-size:12.5px;padding:9px 7px!important}
 }
+
+/* PremiumGol · footer refinado: logos monocromos sobre fondo oscuro. */
+.pg-rich-footer .pg-footer-payment-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px 14px;
+  max-width:320px;
+}
+.pg-rich-footer .pg-payment-card{
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  min-width:0;
+  height:34px;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.pg-rich-footer .pg-payment-card img{
+  display:block;
+  width:auto;
+  height:auto;
+  max-width:100%;
+  max-height:25px;
+  object-fit:contain;
+  object-position:left center;
+  filter:brightness(0) invert(1);
+  opacity:.94;
+}
+.pg-rich-footer .pg-payment-wordmark{
+  background:transparent;
+  color:#fff;
+  padding:0;
+  border:0;
+  border-radius:0;
+  letter-spacing:0;
+  font-size:15px;
+  font-weight:800;
+}
+.pg-rich-footer .pg-footer-payment-note{
+  margin-top:12px;
+  color:#91a4b9;
+  font-size:10.5px;
+  text-align:left;
+}
+@media(max-width:767px){
+  /* Orden actual conservado; identidad y medios de pago hacia la izquierda. */
+  .pg-rich-footer .pg-footer-identity{
+    text-align:left;
+    margin-bottom:24px;
+  }
+  .pg-rich-footer .pg-footer-identity .pg-footer-brand-image{
+    margin:0 0 16px;
+  }
+  .pg-rich-footer .pg-footer-identity h2,
+  .pg-rich-footer .pg-footer-byline{
+    text-align:left;
+  }
+  .pg-rich-footer .pg-footer-identity .pg-footer-socials{
+    justify-content:flex-start;
+    margin-bottom:12px;
+  }
+  .pg-rich-footer .pg-footer-payments-col{
+    text-align:left;
+    margin-bottom:24px;
+  }
+  .pg-rich-footer .pg-footer-payments-col h2,
+  .pg-rich-footer .pg-footer-payment-note{
+    text-align:left;
+  }
+  .pg-rich-footer .pg-footer-payment-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px 14px;
+    max-width:100%;
+    margin:0;
+  }
+  .pg-rich-footer .pg-payment-card{
+    height:30px;
+    justify-content:flex-start;
+  }
+  .pg-rich-footer .pg-payment-card img{
+    max-height:22px;
+  }
+  .pg-rich-footer .pg-footer-utility-links{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    align-items:stretch;
+    justify-content:stretch;
+    width:100%;
+  }
+  .pg-rich-footer .pg-footer-utility-links a{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-width:0;
+    padding:11px 8px!important;
+    border:1px solid #4d5f76;
+    border-radius:999px;
+    background:#122238;
+    color:#eef4fb;
+    text-align:center;
+    font-size:13px;
+    font-weight:700;
+    line-height:1.25;
+    text-decoration:none;
+  }
+  .pg-rich-footer .pg-footer-utility-links a:hover{
+    border-color:#F7C85D;
+    color:#F7C85D;
+  }
+}
+@media(max-width:370px){
+  .pg-rich-footer .pg-footer-utility-links a{
+    padding:10px 6px!important;
+    font-size:12px;
+  }
+  .pg-rich-footer .pg-footer-payment-grid{
+    gap:8px 10px;
+  }
+}
