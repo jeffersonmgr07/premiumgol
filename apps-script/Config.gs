@@ -7,8 +7,15 @@
  *   THE_ODDS_API_KEY = clave privada, solo en Propiedades de Apps Script
  *   THE_ODDS_SPORT_KEYS = ligas de fútbol separadas por coma (opcional)
  *   THE_ODDS_REGION = eu (opcional)
- *   THE_ODDS_REFRESH_MINUTES = 360 (opcional)
+ *   THE_ODDS_REFRESH_MINUTES = 720 (opcional)
  *   THE_ODDS_DAILY_LIMIT = 12 (opcional; protege cuota gratuita)
+ * PRUEBAS DEPORTIVAS:
+ *   PG_SPORTS_SANDBOX_ENABLED = true  (opcional: prueba en Sheets con créditos virtuales)
+ * APUESTAS MONETARIAS FUTURAS (reservado, NO operativo):
+ *   PG_SPORTS_REAL_WAGERS_ENABLED = false
+ *   El cambio a true NO permite apuestas con dinero real por sí solo.
+ *   Se requiere autorización MINCETUR y motor homologado de cuotas y liquidación.
+ *   Las pruebas NO modifican payments_ledger ni bonus_ledger.
  * Nunca publicar secretos en GitHub ni en assets/config.js.
  */
 const PG = Object.freeze({
