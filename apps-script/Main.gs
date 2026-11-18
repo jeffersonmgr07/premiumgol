@@ -37,6 +37,8 @@ function rpc(requestJson){
       case 'listTopupOrders':return pgListTopupOrders_(x);
       case 'claimCoupon':return pgClaimCoupon_(x);
       case 'saveBet':return pgSaveBet_(x);
+      case 'sportsWagerPolicy':return pgSportsWagerPolicy_();
+      case 'submitSportsDemoBet':return pgSportsDemoSubmit_(x);
       case 'signout':return pgSignout_(x);
       default:pgErr_('Operación no disponible.');
     }
@@ -82,7 +84,16 @@ function rpc(requestJson){
       'Completa la descripción, el detalle y tu pedido.',
       'Confirma tu solicitud y escribe tu nombre completo.',
       'Espera un momento antes de enviar otra reclamación.',
-      'No se pudo generar el número.'
+      'No se pudo generar el número.',
+      'Las apuestas deportivas con dinero real no están habilitadas.',
+      'Las pruebas deportivas todavía no están habilitadas.',
+      'Ingresa entre 1 y 1,000 créditos virtuales.',
+      'Créditos virtuales insuficientes.',
+      'La consulta de cuotas no está disponible.',
+      'El partido ya no está disponible.',
+      'La selección ya no está disponible.',
+      'Una sola selección por partido.',
+      'La cuota combinada excede el límite de prueba.'
     ];
     const message=err&&publicMessages.includes(err.message)?err.message:'No se pudo completar la solicitud. Intenta nuevamente.';
     return {ok:false,message};
