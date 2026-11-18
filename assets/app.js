@@ -478,7 +478,7 @@
     $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):
       `<div class="empty-state premium-empty-sports">${liveCatalogLoading?
       '<span class="sports-loader" aria-hidden="true"></span><h3>Buscando partidos en vivo…</h3><p>Consultando las ligas disponibles.</p>':
-      '<h3>No hay partidos en vivo disponibles</h3><p>Prueba nuevamente más tarde.</p><button type="button" class="btn btn-gold btn-mini" data-nav="match">Ver próximos partidos</button>'}</div>`;
+      '<h3>No hay partidos en vivo disponibles</h3><p>Prueba nuevamente más tarde.</p><button type="button" class="btn btn-gold btn-mini" data-retry-live>Actualizar partidos</button>'}</div>`;
     renderSlips();
   }
 
@@ -1500,6 +1500,10 @@
     const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
     const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
     const highlighted=e.target.closest('[data-featured-match]');if(highlighted){e.preventDefault();openFeaturedGame(highlighted.dataset.featuredMatch);return;}
+    if(e.target.closest('[data-retry-live]')){
+      if(!liveCatalogLoading)loadLiveCatalog();
+      return;
+    }
     if(e.target.closest('[data-retry-sports]')){
       if(!catalogLoading){catalogLoading=true;catalogWarning='';renderAll();loadCatalog();}
       return;
