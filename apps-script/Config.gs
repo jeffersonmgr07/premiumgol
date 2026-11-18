@@ -3,8 +3,13 @@
  *   FRONTEND_ORIGIN = https://tu-dominio.com  (sin barra final)
  *   GOOGLE_CLIENT_ID = ID de cliente OAuth Web
  *   SPREADSHEET_ID = se crea automáticamente con setupPremiumGol()
- * OPCIONAL PARA DESPUÉS:
- *   API_SPORTS_KEY = secreto del proveedor, nunca en GitHub
+ * CUOTAS (The Odds API v4):
+ *   THE_ODDS_API_KEY = clave privada, solo en Propiedades de Apps Script
+ *   THE_ODDS_SPORT_KEYS = ligas de fútbol separadas por coma (opcional)
+ *   THE_ODDS_REGION = eu (opcional)
+ *   THE_ODDS_REFRESH_MINUTES = 360 (opcional)
+ *   THE_ODDS_DAILY_LIMIT = 12 (opcional; protege cuota gratuita)
+ * Nunca publicar secretos en GitHub ni en assets/config.js.
  */
 const PG = Object.freeze({
   SHEETS: {
