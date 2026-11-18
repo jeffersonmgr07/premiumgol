@@ -2052,3 +2052,12 @@ body.auth-request-busy{overflow:hidden}
 }
 .sports-wallet-select:focus-visible{outline:2px solid #f7c85d;outline-offset:2px}
 .sports-wallet-select option{background:#12243a;color:#fff}
+
+/* PremiumGol · logo propio en overlay de verificación (misma animación) */
+.auth-busy-google.auth-busy-logo-img{
+  width:72px;height:72px;object-fit:contain;
+  background:transparent;-webkit-background-clip:unset;background-clip:unset;
+  color:inherit;font-size:0;line-height:0;
+  filter:drop-shadow(0 0 14px #DBFF2666);
+  animation:pgGooglePulse 1.25s ease-in-out infinite;
+}
