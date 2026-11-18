@@ -1585,7 +1585,7 @@ body.auth-request-busy{overflow:hidden}
 .pg-rich-footer .pg-payment-mastercard{--pg-logo-width:52px;--pg-logo-height:31px}
 .pg-rich-footer .pg-payment-bcp{--pg-logo-width:77px;--pg-logo-height:28px}
 .pg-rich-footer .pg-payment-interbank{--pg-logo-width:88px;--pg-logo-height:25px}
-.pg-rich-footer .pg-payment-bbva{--pg-logo-width:77px;--pg-logo-height:27px}
+.pg-rich-footer .pg-payment-bbva{--pg-logo-width:62px;--pg-logo-height:22px}
 .pg-rich-footer .pg-payment-pagoefectivo{--pg-logo-width:91px;--pg-logo-height:29px}
 .pg-rich-footer .pg-payment-paypal{--pg-logo-width:77px;--pg-logo-height:29px}
 @media(max-width:767px){
@@ -1596,3 +1596,8 @@ body.auth-request-busy{overflow:hidden}
   }
   .pg-rich-footer .pg-footer-payment-grid .pg-payment-card{height:42px}
 }
+
+/* Ajustes ópticos solicitados: únicamente Yape, Visa, BBVA y PagoEfectivo. */
+.pg-rich-footer .pg-payment-yape img{transform:translateY(4px)}
+.pg-rich-footer .pg-payment-visa img{transform:scale(2);transform-origin:center}
+.pg-rich-footer .pg-payment-pagoefectivo img{transform:scale(1.1);transform-origin:center}
