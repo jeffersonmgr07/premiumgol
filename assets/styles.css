@@ -1601,3 +1601,15 @@ body.auth-request-busy{overflow:hidden}
 .pg-rich-footer .pg-payment-yape img{transform:translateY(4px)}
 .pg-rich-footer .pg-payment-visa img{transform:scale(2);transform-origin:center}
 .pg-rich-footer .pg-payment-pagoefectivo img{transform:scale(1.1);transform-origin:center}
+
+/* The Odds API: fuente y hora de las cuotas de referencia, sin selección de apuesta. */
+.market-provider{
+  margin:2px 14px 14px;color:#aabdd0;font-size:11px;
+  line-height:1.4;text-align:right
+}
+.market-choices .choice:disabled{
+  cursor:default;opacity:.94
+}
+@media(max-width:720px){
+  .market-provider{font-size:10px;margin:3px 10px 12px;text-align:left}
+}
