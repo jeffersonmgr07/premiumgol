@@ -189,6 +189,7 @@
   let liveCatalogLoading=false,liveCatalogRequestedAt=0;
   const sportsArtwork=new Map(),artworkPending=new Set();
   let sportSimReceipt='';
+  let sportsSandboxEnabled=false,sportsPolicyRequested=false;
   const oddsGroups=[
     ['goles','Goles +/-'],['ambos','Ambos anotan'],['oportunidades','Doble oportunidad'],
     ['handicap','Hándicap'],['resultados','Resultados'],['corners','Córners'],
@@ -292,6 +293,9 @@
     window.PremiumGolMeasurement?.pageView(name);
     if(name==='account')renderAccount();
     if(name==='match'||name==='live'||name==='home'){
+      if((name==='match'||name==='live')&&!sportsPolicyRequested){
+        sportsPolicyRequested=true;loadSportsWagerPolicy();
+      }
       if(name!=='live'&&!catalogRequested){
         catalogRequested=true;catalogLoading=true;loadCatalog();
       }
@@ -541,6 +545,13 @@
     }
   }
 
+  async function loadSportsWagerPolicy(){
+    try{
+      const data=await remote('sportsWagerPolicy',{});
+      sportsSandboxEnabled=Boolean(data?.ok&&data?.sandboxEnabled&&data?.realMoneyEnabled===false);
+    }catch(e){sportsSandboxEnabled=false;}
+    renderSlips();
+  }
   function oddsDetailMarkup(g){
     if(oddsExpandedId!==g.id)return '';
     const key=g.id+'|'+oddsSelectedGroup;
@@ -643,9 +654,11 @@
       draft.slips.push({gameId:g.id,selectionId:selection.selectionId,
         outcome:selection.outcome,odd:selection.odd,
         marketLabel:selection.marketLabel,selectionLabel:selection.selectionLabel,
+        sportKey:g.sportKey,group:selection.group||'',
         home:g.home,away:g.away,isLive:liveGames.some(x=>x.id===g.id)});
     }
     sportSimReceipt='';
+    delete draft.sportsDemoRequestId;
     saveDraft();renderMatch();renderLive();
   }
   function changeSelection(id,outcome){
@@ -666,7 +679,7 @@
       (choice.description?' · '+choice.description:'');
     addSportsSelection(g,{selectionId:market.key+'|'+label,
       outcome:market.key,odd:Number(choice.price),
-      marketLabel:market.label,selectionLabel:label});
+      marketLabel:market.label,selectionLabel:label,group});
   }
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
   function renderSlips(){
@@ -681,14 +694,14 @@
         <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
           aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
     const footer=count?`<div class="betslip-footer">
-      <label for="betStake">Importe de prueba (S/)</label>
+      <label for="betStake">Importe de prueba (créditos virtuales)</label>
       <div class="stake-entry"><input id="betStake" type="number" min="1" max="1000"
-        step="1" value="${esc(stake)}" inputmode="decimal"><span>S/</span></div>
+        step="1" value="${esc(stake)}" inputmode="numeric"><span>CR</span></div>
       <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
-      <div class="slip-total"><span>Retorno simulado</span><b id="slipReturn">S/ ${fmt2(total)}</b></div>
+      <div class="slip-total"><span>Retorno simulado</span><b id="slipReturn">${fmt2(total)} CR</b></div>
       <button id="placeBet" type="button" class="btn btn-gold btn-full"
-        ${!validStake?'disabled':''}>Simular jugada ${icon('arrow')}</button>
-      <p class="slip-note">Prueba sin cargos ni premios reales. Tu saldo principal no se modifica.</p>
+        ${!validStake?'disabled':''}>${sportsSandboxEnabled?'Registrar prueba':'Simular jugada'} ${icon('arrow')}</button>
+      <p class="slip-note">Solo créditos virtuales. Sin cargos ni premios reales.</p>
     </div>`:`<div class="betslip-empty">${icon('ticket')}
       <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
     const receipt=sportSimReceipt?'<div class="sports-sim-receipt">'+
@@ -1500,7 +1513,7 @@
     if(e.target.matches('[id^="betStake"]')){
       const v=Number(e.target.value);stake=Number.isFinite(v)?Math.floor(v):0;delete draft.betRequestId;
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
-      $('[id^="slipReturn"]').forEach(el=>el.textContent='S/ '+fmt2(stake*combinedOdds()));
+      $('[id^="slipReturn"]').forEach(el=>el.textContent=fmt2(stake*combinedOdds())+' CR');
     }
   });
   document.addEventListener('click',e=>{
