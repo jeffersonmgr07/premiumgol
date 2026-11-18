@@ -1,5 +1,37 @@
 # PremiumGol · The Odds API v4 (cuotas de fútbol)
 
+## Premium Live, escudos y cupón interactivo (17/11/2026)
+
+### Premium Live
+Se corrigió el problema de consultar partidos iniciados desde el catálogo general, que se actualiza por intervalos largos. La sección Premium Live ahora utiliza la acción `liveCatalog` de `LiveOdds.gs`, independiente del catálogo principal. Consulta partidos iniciados con cuotas del mercado `h2h` realmente publicadas y actualizadas recientemente por el proveedor, sin inventar marcador ni minuto. Una lista vacía significa que **no hay cuotas en vivo recientes en las ligas consultadas y dentro del presupuesto disponible**, no que la API carezca de soporte para cuotas en vivo.
+
+Se utiliza caché de servidor para compartir resultados entre visitantes. Para proteger la cuota gratuita de 500 créditos mensuales, la comprobación Live tiene por defecto **máximo 3 consultas externas al día** en total, compartidas con el límite general de 12 créditos diarios. Por eso no garantiza cobertura continua en todos los horarios.
+
+Propiedades opcionales en Apps Script:
+- `THE_ODDS_LIVE_MAX_DAILY`: por defecto `3` llamadas/día.
+- `THE_ODDS_LIVE_REFRESH_MINUTES`: por defecto `20` minutos; mínimo `15`.
+- `THE_ODDS_DAILY_LIMIT`: presupuesto total compartido entre catálogo, Live y mercados adicionales.
+
+### Logos de ligas y equipos
+The Odds API no devuelve escudos de equipos o ligas. Se creó `SportsArtwork.gs`, que obtiene datos públicos de **TheSportsDB** con caché durante 6 horas. Verifica las coincidencias de los nombres y utiliza iniciales o un icono de fútbol cuando no encuentra una imagen adecuada. Si el proveedor de imágenes falla, la vista principal sigue funcionando. Las imágenes no se almacenan en Google Sheets.
+
+**Revisión de derechos:** los escudos de clubes y competiciones son marcas de terceros; la disponibilidad técnica a través de TheSportsDB no implica licencia comercial o patrocinio. Verifica los derechos de uso antes de publicitar apuestas monetarias.
+
+### Mi cupón — prueba de interfaz
+Ahora las cuotas 1X2 y los mercados adicionales pueden seleccionarse y agregarse a «Mi cupón». Solo se permite una selección por partido en esta etapa para evitar multiplicar cuotas correlacionadas. El usuario puede editar un importe de **simulación**, visualizar la cuota combinada y el retorno calculado. «Simular jugada» guarda un comprobante en `localStorage` del navegador, sin llamar a un endpoint de apuestas ni modificar `payments_ledger`, `bonus_ledger` o saldo principal.
+
+**Aún no admite apuestas reales ni dirige a recargas por falta de fondos.** Para habilitar apuestas deportivas con dinero se requieren las autorizaciones correspondientes de MINCETUR, homologación de la plataforma y modalidad de apuestas, verificaciones de usuario y reglas de liquidación de premios; esta integración de cuotas no sustituye esos requisitos.
+
+### Archivos que debes actualizar en Apps Script
+Actualiza **`TheOddsApi.gs`** y **`Main.gs`** e incorpora dos archivos nuevos: **`LiveOdds.gs`** y **`SportsArtwork.gs`**. Luego ve a **Implementar → Gestionar implementaciones → Editar → Nueva versión → Implementar**, manteniendo el despliegue existente.
+
+No se requieren hojas nuevas ni ejecutar `setupPremiumGol()`. No es necesario actualizar `Config.gs` para esta mejora.
+
+Para probar: abre `https://premiumgol.website/#match`, selecciona una cuota y revisa «Mi cupón». En `#live`, pulsa «Actualizar partidos» si aparece vacío. El resultado dependerá de los encuentros actuales, los mercados disponibles y los límites de tu clave. La consulta de logos puede demorar ligeramente en su primera carga.
+
+---
+
+
 ## Ampliación: mercados adicionales (noviembre de 2026)
 
 Además de las cuotas **1X2** del catálogo, PremiumGol tiene un botón **«Ver más mercados y cuotas»** en cada encuentro. Al pulsarlo, puede consultar las categorías siguientes:
