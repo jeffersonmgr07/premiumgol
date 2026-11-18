@@ -9,8 +9,8 @@
  * Propiedades opcionales:
  * THE_ODDS_SPORT_KEYS (3 ligas por defecto, máx. 6 soccer_* válidas)
  * THE_ODDS_REGION     (eu, uk, us o au; defecto eu)
- * THE_ODDS_REFRESH_MINUTES (por defecto 360; mínimo 30)
- * THE_ODDS_DAILY_LIMIT (por defecto 12; mínimo 1, máximo 200)
+ * THE_ODDS_REFRESH_MINUTES (por defecto 720; mínimo 30)
+ * THE_ODDS_DAILY_LIMIT (por defecto 12 créditos/día; mínimo 1, máximo 200)
  */
 const PG_ODDS_DEFAULT_SPORTS=[
   'soccer_epl','soccer_spain_la_liga','soccer_italy_serie_a'
@@ -41,7 +41,7 @@ function pgOddsConfig_(){
     key:pgProp_('THE_ODDS_API_KEY'),
     leagues:selected,
     region:['eu','uk','us','au'].includes(region)?region:'eu',
-    refreshMs:(Number.isFinite(mins)&&mins>=30?Math.min(mins,1440):360)*60000,
+    refreshMs:(Number.isFinite(mins)&&mins>=30?Math.min(mins,1440):720)*60000,
     maxDaily:Number.isInteger(daily)&&daily>=1?Math.min(daily,200):12
   };
 }
@@ -133,6 +133,131 @@ function pgOddsFetchLeague_(cfg,sport){
     return null;
   }
 }
+
+/** Categorías del detalle. El proveedor puede no publicar algunos mercados en fútbol. */
+const PG_ODDS_MARKET_GROUPS={
+  goles:{label:'Más / Menos goles',keys:['totals','alternate_totals']},
+  ambos:{label:'Ambos anotan y goles por equipo',keys:['btts','team_totals']},
+  oportunidades:{label:'Doble oportunidad / Empate no apuesta',keys:['double_chance','draw_no_bet']},
+  handicap:{label:'Hándicap',keys:['spreads']},
+  resultados:{label:'Marcador exacto / Descanso-Final',keys:['correct_score','halftime_fulltime']},
+  corners:{label:'Córners',keys:['alternate_totals_corners']},
+  goleadores:{label:'Goleador',keys:['player_goal_scorer_anytime']}
+};
+const PG_ODDS_MARKET_LABELS={
+  totals:'Más / Menos goles',alternate_totals:'Líneas alternativas de goles',
+  btts:'Ambos equipos anotan',team_totals:'Goles por equipo',
+  double_chance:'Doble oportunidad',draw_no_bet:'Empate no apuesta',
+  spreads:'Hándicap',correct_score:'Marcador exacto',
+  halftime_fulltime:'Descanso / Final',
+  alternate_totals_corners:'Córners: Más / Menos',
+  player_goal_scorer_anytime:'Goleador en cualquier momento'
+};
+/** Cada mercado usa UNA casa de apuestas y conserva su línea, jugador y cuota. */
+function pgOddsNormalizeEventMarkets_(raw,requested){
+  const all=(raw&&Array.isArray(raw.bookmakers))?raw.bookmakers:[];
+  const markets=[];
+  for(const key of requested){
+    const candidates=[];
+    for(const bookmaker of all){
+      const item=(Array.isArray(bookmaker.markets)?bookmaker.markets:[])
+        .find(m=>String(m.key)===key&&Array.isArray(m.outcomes)&&m.outcomes.length);
+      if(!item)continue;
+      const outcomes=item.outcomes.slice(0,45).map(outcome=>{
+        const price=Number(outcome.price);
+        if(!Number.isFinite(price)||price<=1||price>=10000)return null;
+        const point=(outcome.point===undefined||outcome.point===null)?null:Number(outcome.point);
+        return {name:String(outcome.name||'').slice(0,90),
+          description:String(outcome.description||'').slice(0,120),
+          point:Number.isFinite(point)?point:null,price:Math.round(price*100)/100};
+      }).filter(Boolean);
+      if(!outcomes.length)continue;
+      const updatedAt=String(item.last_update||bookmaker.last_update||'');
+      candidates.push({key,label:PG_ODDS_MARKET_LABELS[key]||key,
+        bookmaker:String(bookmaker.title||bookmaker.key||'').slice(0,65),
+        updatedAt,outcomes,priority:Number(new Date(updatedAt))||0});
+    }
+    // Preferir una casa con cuotas actuales, sin mezclar cuotas de casas diferentes.
+    candidates.sort((a,b)=>b.priority-a.priority);
+    if(candidates.length){
+      const selected=candidates[0];
+      delete selected.priority;
+      markets.push(selected);
+    }
+  }
+  return markets;
+}
+/** Control compartido de créditos: presupuesto prudente por día. */
+function pgOddsDailyCredit_(props,requested){
+  const today=Utilities.formatDate(new Date(),'America/Lima','yyyy-MM-dd');
+  let q={day:today,count:0};
+  try{
+    const old=JSON.parse(String(props.getProperty('THE_ODDS_DAILY_USAGE')||'null'));
+    if(old&&old.day===today&&Number.isInteger(old.count)&&old.count>=0)q=old;
+  }catch(e){}
+  const limit=pgOddsConfig_().maxDaily;
+  if(q.count+requested>limit)return false;
+  q.count+=requested; // Se reserva antes de UrlFetchApp para evitar carreras.
+  props.setProperty('THE_ODDS_DAILY_USAGE',JSON.stringify(q));
+  return true;
+}
+/** La consulta avanzada solo se permite para partidos presentes en nuestra caché. */
+function pgOddsEventMarkets_(x){
+  const cfg=pgOddsConfig_();
+  const groupKey=String(x&&x.group||'').trim();
+  const sport=String(x&&x.sportKey||'').trim();
+  const eventId=String(x&&x.eventId||'').trim();
+  const group=PG_ODDS_MARKET_GROUPS[groupKey];
+  const empty=(message,cache)=>({ok:true,mode:'API_PREVIEW',source:'The Odds API',
+    eventId,group:groupKey,markets:[],message,fromCache:Boolean(cache)});
+  if(!group||!cfg.leagues.includes(sport)||!/^[A-Za-z0-9_-]{8,90}$/.test(eventId))
+    return empty('Mercado o encuentro no válido.',false);
+  if(!cfg.key)return empty('Configura la clave en Apps Script.',false);
+  return pgLock_(()=>{
+    const props=PropertiesService.getScriptProperties();
+    const fixture=pgOddsSnapshot_(props,sport).games.find(g=>g.id===eventId);
+    if(!fixture||Date.parse(fixture.kickoff)<Date.now()-3*3600000)
+      return empty('El partido ya no está disponible en el catálogo.',false);
+    const cache=CacheService.getScriptCache();
+    const cacheKey='PG_ODDS_EV_'+sport+'_'+eventId+'_'+groupKey+'_'+cfg.region;
+    const old=cache.get(cacheKey);
+    if(old){
+      try{const data=JSON.parse(old);if(data&&Array.isArray(data.markets))
+        return Object.assign({},data,{fromCache:true});}catch(e){}
+    }
+    if(!pgOddsDailyCredit_(props,group.keys.length))
+      return empty('Se alcanzó el límite diario de consultas. Inténtalo más tarde.',false);
+    // URL sin clave: secreto en encabezado, solo se envía desde Apps Script.
+    const url='https://api.the-odds-api.com/v4/sports/'+encodeURIComponent(sport)+
+      '/events/'+encodeURIComponent(eventId)+'/odds?regions='+encodeURIComponent(cfg.region)+
+      '&markets='+encodeURIComponent(group.keys.join(','))+
+      '&oddsFormat=decimal&dateFormat=iso';
+    let data=null;
+    try{
+      const response=UrlFetchApp.fetch(url,{
+        method:'get',muteHttpExceptions:true,followRedirects:false,
+        headers:{'x-api-key':cfg.key,Accept:'application/json'}
+      });
+      if(response.getResponseCode()===200)data=JSON.parse(response.getContentText());
+    }catch(e){ /* No enviar detalles del proveedor ni credenciales al navegador. */ }
+    if(!data||String(data.id)!==eventId){
+      const no=empty('El proveedor no entregó cuotas para esta categoría.',false);
+      cache.put(cacheKey,JSON.stringify(no),600);
+      return no;
+    }
+    const markets=pgOddsNormalizeEventMarkets_(data,group.keys);
+    const result={ok:true,mode:'API_PREVIEW',source:'The Odds API',
+      eventId,group:groupKey,updatedAt:new Date().toISOString(),
+      markets,message:markets.length?'Cuotas referenciales, sujetas a cambios.':
+        'No hay cuotas disponibles de esta categoría en las casas consultadas.',
+      fromCache:false};
+    // Caché para todos los visitantes: controles compartidos.
+    const json=JSON.stringify(result);
+    if(json.length<85000)cache.put(cacheKey,json,1800);
+    return result;
+  });
+}
+
 /** Comprobación manual desde el editor de Apps Script.
  * Utiliza la misma caché y límite diario del sitio; nunca expone la clave.
  * Si la cuota gratuita ya no permite consultar, conserva las últimas cuotas.
