@@ -660,7 +660,7 @@
         home:g.home,away:g.away,isLive:liveGames.some(x=>x.id===g.id)});
     }
     sportSimReceipt='';
-    delete draft.sportsDemoRequestId;
+    delete draft.sportsDemoRequestId;delete draft.sportsPrivateRequestId;
     saveDraft();renderMatch();renderLive();
   }
   function changeSelection(id,outcome){
@@ -739,13 +739,52 @@
   }
   async function placeBet(){
     if(!draft.slips.length){toast('Selecciona una cuota.');return;}
-    if(!Number.isInteger(stake)||stake<1||stake>1000){
-      toast('Ingresa entre 1 y 1,000 créditos virtuales.');return;
+    const cap=sportsPrivateEnabled?500:1000;
+    if(!Number.isInteger(stake)||stake<1||stake>cap){
+      toast('Ingresa un importe válido entre 1 y '+cap+'.');return;
+    }
+    if(sportsPrivateEnabled){
+      if(!hasUser()){
+        pendingAfterAuth='bet';openAuth('login');return;
+      }
+      const available=sportsWalletSource==='principal'?paidBalancePEN:bonusBalancePEN;
+      if(sportsWalletSource==='bonos'&&!bonusUnlocked){
+        toast('Primero activa tus bonos con una recarga aprobada.');return;
+      }
+      if(available<stake){
+        toast('Saldo insuficiente. Puedes hacer una recarga en Mi cuenta.');
+        accountTab='wallet';showView('account');return;
+      }
+      if(sendingPlay)return;
+      sendingPlay=true;
+      draft.sportsPrivateRequestId=draft.sportsPrivateRequestId||randomId();saveDraft();
+      try{
+        const res=await remote('submitSportsPrivateBet',{
+          sessionToken,stake,walletSource:sportsWalletSource,
+          clientRequestId:draft.sportsPrivateRequestId,
+          selections:draft.slips.map(leg=>({
+            gameId:leg.gameId,sportKey:leg.sportKey,selectionId:leg.selectionId,
+            group:leg.group,expectedOdd:Number(leg.odd)
+          }))
+        });
+        if(!res?.ok||!res?.privateAccepted)
+          throw new Error('No se confirmó el cupón.');
+        const ticket=String(res.privateTicketId||draft.sportsPrivateRequestId);
+        const amount=Number(res.privateStakePEN??stake);
+        draft.slips=[];delete draft.sportsPrivateRequestId;saveDraft();
+        updateAccount(res);
+        sportSimReceipt='Cupón registrado · '+ticket+
+          ' · Importe S/ '+fmt2(amount);
+        renderSlips();
+        toast('Cupón registrado. Se descontó el importe de tu billetera.');
+      }catch(err){
+        toast(err?.message||'No se pudo registrar el cupón.');
+      }finally{sendingPlay=false;}
+      return;
     }
     if(sportsSandboxEnabled){
       if(!hasUser()){
-        pendingAfterAuth='bet';openAuth('login');
-        toast('Ingresa para registrar tu prueba con créditos virtuales.');return;
+        pendingAfterAuth='bet';openAuth('login');return;
       }
       if(sendingPlay)return;
       sendingPlay=true;
@@ -765,12 +804,11 @@
         updateAccount(response);
         sportSimReceipt='Prueba registrada: '+number+
           ' · Retorno simulado '+fmt2(returnValue)+' créditos';
-        renderSlips();toast('Prueba registrada con créditos virtuales, sin dinero real.');
+        renderSlips();toast('Prueba registrada con créditos virtuales.');
       }catch(err){toast(err?.message||'No se pudo registrar la prueba.');}
       finally{sendingPlay=false;}
       return;
     }
-    // Prueba local si no se activó el sandbox; jamás conecta con billeteras monetarias.
     const receipt={id:'PG-DEMO-'+Date.now(),createdAt:new Date().toISOString(),
       stake,combinedOdds:Math.round(combinedOdds()*100)/100,
       possibleReturn:Math.round(stake*combinedOdds()*100)/100,
@@ -785,7 +823,7 @@
     sportSimReceipt='Simulación registrada: '+receipt.id+
       ' · Retorno ilustrativo '+fmt2(receipt.possibleReturn)+' créditos';
     draft.slips=[];delete draft.sportsDemoRequestId;saveDraft();renderSlips();
-    toast('Simulación registrada. No se descontó saldo principal.');
+    toast('Simulación registrada.');
   }
   function updateAccount(result){
     if(result.user)account=result.user;
@@ -1208,11 +1246,12 @@
       if($('#authDialog').open)$('#authDialog').close();
       showGoogleLoginStatus('',false);
     }
+    if(activeView==='match'||activeView==='live')loadSportsWagerPolicy();
     const next=pendingAfterAuth;pendingAfterAuth=null;
     accountTab='overview';
     try{
       if(next==='gol')saveGol();
-      else if(next==='bet')placeBet();
+      else if(next==='bet')loadSportsWagerPolicy().then(()=>placeBet());
       else if(next==='coupon')claimCouponPrompt();
       else showView('account');
       checkMpReturn();
@@ -1235,6 +1274,7 @@
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     bonusStatement=[];walletWagersEnabled=false;
+    sportsPrivateEnabled=false;sportsSandboxEnabled=false;sportsPolicyRequested=false;
     renderAll();showView('home');
     toast(reason==='idle'?'Tu sesión terminó tras una hora de inactividad.':'Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
@@ -1553,6 +1593,13 @@
     try{const res=await remote('updateProfile',{sessionToken,firstName:$('#profileFirst').value.trim(),lastName:$('#profileLast').value.trim(),countryCode:$('#profileCountry').value,phone:$('#profilePhone').value.trim(),docType:$('#profileDocType').value,docNumber:$('#profileDocNumber').value.trim()});updateAccount(res);toast('Tus datos fueron actualizados.');}
     catch(err){toast(err.message||'No se pudieron guardar tus datos.');}finally{btn.disabled=false;setAuthBusy(false);}
   });
+  document.addEventListener('change',e=>{
+    if(e.target.matches('[id^="sportsWalletSource"]')){
+      sportsWalletSource=e.target.value==='bonos'?'bonos':'principal';
+      delete draft.sportsPrivateRequestId;
+      renderSlips();
+    }
+  });
   $('#matchSearch').addEventListener('input',e=>{searchFilter=e.target.value.trim();renderMatch();});
   $('#matchLeague').addEventListener('change',e=>{leagueFilter=e.target.value;renderMatch();});
   $('#matchDate').addEventListener('change',e=>{dateFilter=e.target.value;renderMatch();});
@@ -1561,8 +1608,10 @@
     if(e.target.matches('[id^="betStake"]')){
       const v=Number(e.target.value);stake=Number.isFinite(v)?Math.floor(v):0;
       delete draft.betRequestId;delete draft.sportsDemoRequestId;
+      delete draft.sportsPrivateRequestId;
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
-      $('[id^="slipReturn"]').forEach(el=>el.textContent=fmt2(stake*combinedOdds())+' CR');
+      $('[id^="slipReturn"]').forEach(el=>el.textContent=sportsPrivateEnabled?
+        'S/ '+fmt2(stake*combinedOdds()):fmt2(stake*combinedOdds())+' CR');
     }
   });
   document.addEventListener('click',e=>{
@@ -1605,10 +1654,11 @@
     const pick=e.target.closest('[data-pick]');if(pick){changeSelection(pick.dataset.pick,pick.dataset.outcome);return;}
     const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>
       s.gameId!==rem.dataset.removeGame||s.selectionId!==rem.dataset.remove);
-      sportSimReceipt='';delete draft.sportsDemoRequestId;saveDraft();renderMatch();renderLive();return;}
+      sportSimReceipt='';delete draft.sportsDemoRequestId;delete draft.sportsPrivateRequestId;
+      saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];
       delete draft.betRequestId;delete draft.sportsDemoRequestId;
-      sportSimReceipt='';saveDraft();renderMatch();renderLive();return;}
+      delete draft.sportsPrivateRequestId; sportSimReceipt='';saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-featured-match]')){e.preventDefault();openFeaturedGame(e.target.dataset.featuredMatch);}});
