@@ -720,23 +720,51 @@
   async function placeBet(){
     if(!draft.slips.length){toast('Selecciona una cuota.');return;}
     if(!Number.isInteger(stake)||stake<1||stake>1000){
-      toast('Ingresa un importe de prueba entre S/ 1 y S/ 1,000.');return;
+      toast('Ingresa entre 1 y 1,000 créditos virtuales.');return;
     }
-    // Esta prueba se almacena SOLO en el dispositivo; jamás modifica wallets.
+    if(sportsSandboxEnabled){
+      if(!hasUser()){
+        pendingAfterAuth='bet';openAuth('login');
+        toast('Ingresa para registrar tu prueba con créditos virtuales.');return;
+      }
+      if(sendingPlay)return;
+      sendingPlay=true;
+      draft.sportsDemoRequestId=draft.sportsDemoRequestId||randomId();saveDraft();
+      try{
+        const response=await remote('submitSportsDemoBet',{
+          sessionToken,stake,clientRequestId:draft.sportsDemoRequestId,
+          selections:draft.slips.map(leg=>({
+            gameId:leg.gameId,sportKey:leg.sportKey,
+            selectionId:leg.selectionId,group:leg.group
+          }))
+        });
+        if(!response?.ok)throw new Error('No se registró la prueba.');
+        const number=String(response.simulationId||draft.sportsDemoRequestId);
+        const returnValue=Number(response.simulatedReturn||stake*combinedOdds());
+        draft.slips=[];delete draft.sportsDemoRequestId;saveDraft();
+        updateAccount(response);
+        sportSimReceipt='Prueba registrada: '+number+
+          ' · Retorno simulado '+fmt2(returnValue)+' créditos';
+        renderSlips();toast('Prueba registrada con créditos virtuales, sin dinero real.');
+      }catch(err){toast(err?.message||'No se pudo registrar la prueba.');}
+      finally{sendingPlay=false;}
+      return;
+    }
+    // Prueba local si no se activó el sandbox; jamás conecta con billeteras monetarias.
     const receipt={id:'PG-DEMO-'+Date.now(),createdAt:new Date().toISOString(),
       stake,combinedOdds:Math.round(combinedOdds()*100)/100,
       possibleReturn:Math.round(stake*combinedOdds()*100)/100,
-      selections:draft.slips.map(s=>({...s}))};
+      selections:draft.slips.map(leg=>({...leg}))};
     try{
       const key='premiumgol_sports_simulations_v1';
       const history=JSON.parse(localStorage.getItem(key)||'[]');
       const data=Array.isArray(history)?history.slice(-19):[];
       data.push(receipt);
       localStorage.setItem(key,JSON.stringify(data));
-    }catch(e){ /* El comprobante se muestra aunque se rechace el almacenamiento. */ }
+    }catch(e){}
     sportSimReceipt='Simulación registrada: '+receipt.id+
-      ' · Retorno ilustrativo S/ '+fmt2(receipt.possibleReturn);
-    draft.slips=[];saveDraft();renderSlips();
+      ' · Retorno ilustrativo '+fmt2(receipt.possibleReturn)+' créditos';
+    draft.slips=[];delete draft.sportsDemoRequestId;saveDraft();renderSlips();
     toast('Simulación registrada. No se descontó saldo principal.');
   }
   function updateAccount(result){
@@ -1511,7 +1539,8 @@
   $('#matchSort').addEventListener('change',e=>{sortFilter=e.target.value;renderMatch();});
   document.addEventListener('input',e=>{
     if(e.target.matches('[id^="betStake"]')){
-      const v=Number(e.target.value);stake=Number.isFinite(v)?Math.floor(v):0;delete draft.betRequestId;
+      const v=Number(e.target.value);stake=Number.isFinite(v)?Math.floor(v):0;
+      delete draft.betRequestId;delete draft.sportsDemoRequestId;
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
       $('[id^="slipReturn"]').forEach(el=>el.textContent=fmt2(stake*combinedOdds())+' CR');
     }
@@ -1556,8 +1585,10 @@
     const pick=e.target.closest('[data-pick]');if(pick){changeSelection(pick.dataset.pick,pick.dataset.outcome);return;}
     const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>
       s.gameId!==rem.dataset.removeGame||s.selectionId!==rem.dataset.remove);
+      sportSimReceipt='';delete draft.sportsDemoRequestId;saveDraft();renderMatch();renderLive();return;}
+    if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];
+      delete draft.betRequestId;delete draft.sportsDemoRequestId;
       sportSimReceipt='';saveDraft();renderMatch();renderLive();return;}
-    if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-featured-match]')){e.preventDefault();openFeaturedGame(e.target.dataset.featuredMatch);}});
