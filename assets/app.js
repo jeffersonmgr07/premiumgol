@@ -505,9 +505,10 @@
   function sportLeagueBadge(game){
     const art=sportsArtwork.get(game.sportKey);
     const img=safeSportLogo(art?.leagueLogo);
-    return (img?'<img class="sport-league-logo" src="'+esc(img)+
-      '" alt="" loading="lazy" decoding="async">':
-      '<span class="sport-league-fallback" aria-hidden="true">⚽</span>')+
+    return '<span class="sport-league-emblem" aria-hidden="true">'+
+      '<span class="sport-league-fallback">⚽</span>'+
+      (img?'<img class="sport-league-logo" src="'+esc(img)+
+      '" alt="" loading="lazy" decoding="async">':'')+'</span>'+
       '<span>'+esc(game.league)+'</span>';
   }
   async function fetchSportsArtwork(){
@@ -1539,6 +1540,11 @@
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-featured-match]')){e.preventDefault();openFeaturedGame(e.target.dataset.featuredMatch);}});
+  // Si una insignia remota falla, conservar las iniciales/ícono en lugar de una imagen rota.
+  document.addEventListener('error',e=>{
+    if(e.target.matches?.('.sport-team-crest img,.sport-league-emblem img'))
+      e.target.remove();
+  },true);
   // Aviso informativo de edad mínima desde el footer.
   $('#pgAgeNoticeButton').addEventListener('click',()=>{
     const dialog=$('#pgAgeNotice');
