@@ -133,6 +133,37 @@ function pgOddsFetchLeague_(cfg,sport){
     return null;
   }
 }
+/** Comprobación manual desde el editor de Apps Script.
+ * Utiliza la misma caché y límite diario del sitio; nunca expone la clave.
+ * Si la cuota gratuita ya no permite consultar, conserva las últimas cuotas.
+ */
+function testTheOddsApiConnection(){
+  const cfg=pgOddsConfig_();
+  const data=pgOddsCatalog_();
+  const props=PropertiesService.getScriptProperties();
+  let todayUsed=null;
+  try{
+    const q=JSON.parse(String(props.getProperty('THE_ODDS_DAILY_USAGE')||'null'));
+    todayUsed=q&&Number.isInteger(q.count)?q.count:0;
+  }catch(e){}
+  const summary={
+    ok:Boolean(cfg.key)&&Boolean(data.ok),
+    configured:Boolean(cfg.key),
+    source:data.source,
+    region:cfg.region,
+    leagues:cfg.leagues,
+    refreshMinutes:Math.round(cfg.refreshMs/60000),
+    dailyLimit:cfg.maxDaily,
+    dailyRequestsUsed:todayUsed,
+    upcomingCount:(data.games.match||[]).length,
+    inProgressCount:(data.games.live||[]).length,
+    lastUpdate:data.updatedAt,
+    message:data.warning
+  };
+  console.log(JSON.stringify(summary));
+  return summary;
+}
+
 function pgOddsCatalog_(){
   const cfg=pgOddsConfig_();
   const empty=warning=>({ok:true,mode:'API_PREVIEW',source:'The Odds API',
