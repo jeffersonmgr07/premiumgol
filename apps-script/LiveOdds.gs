@@ -16,7 +16,7 @@ function pgOddsLiveCatalog_(){
       if(previous?.day===today&&Number.isInteger(previous.count)&&previous.count>=0)liveUse=previous;
     }catch(e){}
     const configured=Number(pgProp_('THE_ODDS_LIVE_MAX_DAILY'));
-    const dailyMax=Number.isInteger(configured)&&configured>0?Math.min(configured,30):6;
+    const dailyMax=Number.isInteger(configured)&&configured>0?Math.min(configured,30):3;
     const delay=Number(pgProp_('THE_ODDS_LIVE_REFRESH_MINUTES'));
     const refreshMs=(Number.isInteger(delay)&&delay>=15?Math.min(delay,120):20)*60000;
     const last=Number(props.getProperty('THE_ODDS_LIVE_LAST_ATTEMPT')||0);
