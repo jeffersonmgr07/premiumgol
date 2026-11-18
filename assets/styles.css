@@ -2035,3 +2035,20 @@ body.auth-request-busy{overflow:hidden}
   color:#d2e5ca;font-size:10.5px;
 }
 .sports-demo-balance strong{color:#d4fb72;font-size:12px;text-align:right}
+
+/* PremiumGol · origen de billetera para cuentas de demostración autorizadas. */
+.sports-private-balance{
+  display:grid;grid-template-columns:1fr;gap:5px;
+  border:1px solid #3d5c73;border-radius:10px;
+  background:#101d30;margin-bottom:13px;padding:11px 12px;
+  font-size:11px;color:#c9d7e8;
+}
+.sports-private-balance span{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sports-private-balance strong{color:#fff;font-size:12px;font-weight:850}
+.sports-wallet-select{
+  width:100%;padding:11px 12px;margin:7px 0 13px;
+  background:#12243a;color:#f8fafc;border:1px solid #58708c;border-radius:9px;
+  font:700 12px var(--font);cursor:pointer;
+}
+.sports-wallet-select:focus-visible{outline:2px solid #f7c85d;outline-offset:2px}
+.sports-wallet-select option{background:#12243a;color:#fff}
