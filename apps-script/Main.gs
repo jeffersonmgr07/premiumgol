@@ -17,11 +17,11 @@ function rpc(requestJson){
     const req=JSON.parse(requestJson),x=req.data||{};
     if(!req||typeof req.action!=='string'||typeof x!=='object')pgErr_('Solicitud inválida.');
     switch(req.action){
-      case 'catalog':return pgPublicSportsCatalog_();
+      case 'catalog':return pgOddsCatalog_();
       case 'golProgram':return pgPublicGolProgram_();
       case 'claimsConfig':return pgClaimsPublicConfig_();
       case 'submitClaim':return pgClaimsSave_(x);
-      case 'health':return {ok:true,server:'premiumgol',version:'2026-11-15',sportsConfigured:Boolean(pgProp_('API_SPORTS_KEY')),catalogMode:pgProp_('API_SPORTS_CATALOG_MODE')==='preview'?'preview':'disabled'};
+      case 'health':return {ok:true,server:'premiumgol',version:'2026-11-15',sportsConfigured:Boolean(pgProp_('THE_ODDS_API_KEY')),catalogMode:'API_PREVIEW',sportsProvider:'The Odds API'};
       case 'sendCode':return pgSendCode_(x);
       case 'verifyCode':return pgVerifyCode_(x);
       case 'googleLogin':return pgGoogleLogin_(x);
