@@ -189,7 +189,8 @@
   let liveCatalogLoading=false,liveCatalogRequestedAt=0;
   const sportsArtwork=new Map(),artworkPending=new Set();
   let sportSimReceipt='';
-  let sportsSandboxEnabled=false,sportsPolicyRequested=false;
+  let sportsSandboxEnabled=false,sportsPrivateEnabled=false,sportsPolicyRequested=false;
+  let sportsWalletSource='principal';
   const oddsGroups=[
     ['goles','Goles +/-'],['ambos','Ambos anotan'],['oportunidades','Doble oportunidad'],
     ['handicap','Hándicap'],['resultados','Resultados'],['corners','Córners'],
@@ -547,9 +548,10 @@
 
   async function loadSportsWagerPolicy(){
     try{
-      const data=await remote('sportsWagerPolicy',{});
-      sportsSandboxEnabled=Boolean(data?.ok&&data?.sandboxEnabled&&data?.realMoneyEnabled===false);
-    }catch(e){sportsSandboxEnabled=false;}
+      const data=await remote('sportsWagerPolicy',sessionToken?{sessionToken}:{});
+      sportsPrivateEnabled=Boolean(data?.ok&&data.privateEnabled&&hasUser());
+      sportsSandboxEnabled=Boolean(data?.ok&&data.sandboxEnabled&&!sportsPrivateEnabled);
+    }catch(e){sportsSandboxEnabled=false;sportsPrivateEnabled=false;}
     renderSlips();
   }
   function oddsDetailMarkup(g){
@@ -683,8 +685,9 @@
   }
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
   function renderSlips(){
-    const count=draft.slips.length;
-    const validStake=Number.isFinite(stake)&&stake>=1&&stake<=1000;
+    const count=draft.slips.length,privateMode=sportsPrivateEnabled;
+    const cap=privateMode?500:1000;
+    const validStake=Number.isInteger(stake)&&stake>=1&&stake<=cap;
     const total=validStake?stake*combinedOdds():0;
     const items=count?draft.slips.map(s=>`<div class="betslip-item">
       <div class="slip-team">${esc(s.home)} · ${esc(s.away)}</div>
@@ -693,17 +696,30 @@
         <b>${fmt2(s.odd)}</b>
         <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
           aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
+    const balance=privateMode?`<div class="sports-private-balance">
+      <span>Saldo principal: <strong>S/ ${fmt2(paidBalancePEN)}</strong></span>
+      <span>Saldo de bonos: <strong>S/ ${fmt2(bonusBalancePEN)}</strong></span>
+      </div>
+      <label for="sportsWalletSource">Pagar con</label>
+      <select id="sportsWalletSource" class="sports-wallet-select" aria-label="Origen del saldo">
+        <option value="principal" ${sportsWalletSource==='principal'?'selected':''}>Saldo principal</option>
+        <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${!bonusUnlocked?'disabled':''}>Saldo de bonos</option>
+      </select>`:sportsSandboxEnabled?
+      '<div class="sports-demo-balance"><span>Créditos disponibles</span><strong>'+
+      (hasUser()?fmt(accountBalance)+' CR':'Ingresa para consultar')+'</strong></div>':'';
+    const currency=privateMode?'S/':'CR';
     const footer=count?`<div class="betslip-footer">
-      ${sportsSandboxEnabled?'<div class="sports-demo-balance"><span>Créditos de prueba disponibles</span><strong>'+
-        (hasUser()?fmt(accountBalance)+' CR':'Ingresa para consultar')+'</strong></div>':''}
-      <label for="betStake">Importe de prueba (créditos virtuales)</label>
-      <div class="stake-entry"><input id="betStake" type="number" min="1" max="1000"
-        step="1" value="${esc(stake)}" inputmode="numeric"><span>CR</span></div>
+      ${balance}
+      <label for="betStake">${privateMode?'Importe de la apuesta (S/)':'Importe de prueba (créditos virtuales)'}</label>
+      <div class="stake-entry"><input id="betStake" type="number" min="1" max="${cap}"
+        step="1" value="${esc(stake)}" inputmode="numeric"><span>${currency}</span></div>
       <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
-      <div class="slip-total"><span>Retorno simulado</span><b id="slipReturn">${fmt2(total)} CR</b></div>
+      <div class="slip-total"><span>${privateMode?'Retorno posible':'Retorno simulado'}</span>
+        <b id="slipReturn">${privateMode?'S/ ':''}${fmt2(total)}${privateMode?'':' CR'}</b></div>
       <button id="placeBet" type="button" class="btn btn-gold btn-full"
-        ${!validStake?'disabled':''}>${sportsSandboxEnabled?'Registrar prueba':'Simular jugada'} ${icon('arrow')}</button>
-      <p class="slip-note">Solo créditos virtuales. Sin cargos ni premios reales.</p>
+        ${!validStake?'disabled':''}>${privateMode?'Colocar apuesta':sportsSandboxEnabled?'Registrar prueba':'Simular jugada'}
+        ${icon('arrow')}</button>
+      ${privateMode?'': '<p class="slip-note">Solo créditos virtuales. Sin cargos ni premios reales.</p>'}
     </div>`:`<div class="betslip-empty">${icon('ticket')}
       <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
     const receipt=sportSimReceipt?'<div class="sports-sim-receipt">'+
@@ -717,7 +733,9 @@
       .replaceAll('for="betStake"','for="betStakeLive"')
       .replaceAll('id="slipReturn"','id="slipReturnLive"')
       .replaceAll('id="placeBet"','id="placeBetLive"')
-      .replaceAll('id="clearBetslip"','id="clearBetslipLive"');
+      .replaceAll('id="clearBetslip"','id="clearBetslipLive"')
+      .replaceAll('id="sportsWalletSource"','id="sportsWalletSourceLive"')
+      .replaceAll('for="sportsWalletSource"','for="sportsWalletSourceLive"');
   }
   async function placeBet(){
     if(!draft.slips.length){toast('Selecciona una cuota.');return;}
