@@ -184,6 +184,9 @@
   }
   let catalogWarning='',catalogLoading=false,catalogRequested=false,golProgramRequested=false;
   let catalogUpdatedAt=null;
+  let liveCatalogLoading=false,liveCatalogRequestedAt=0;
+  const sportsArtwork=new Map(),artworkPending=new Set();
+  let sportSimReceipt='';
   const oddsGroups=[
     ['goles','Goles +/-'],['ambos','Ambos anotan'],['oportunidades','Doble oportunidad'],
     ['handicap','Hándicap'],['resultados','Resultados'],['corners','Córners'],
@@ -191,7 +194,7 @@
   ];
   let oddsExpandedId='',oddsSelectedGroup='goles',oddsLoading=false,oddsError='';
   const oddsDetailCache=new Map();
-  let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
+  let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=5;
   let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
   function couponTime(){
@@ -289,7 +292,10 @@
     if(name==='match'||name==='live'||name==='home'){
       if(!catalogRequested){catalogRequested=true;catalogLoading=true;loadCatalog();}
       if(name==='match')renderMatch();
-      else if(name==='live')renderLive();
+      else if(name==='live'){
+        renderLive();
+        if(!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>15*60000)loadLiveCatalog();
+      }
     }
     if(name==='gol'&&!golProgramRequested){golProgramRequested=true;loadGolProgram();}
     window.scrollTo({top:0,behavior:'smooth'});
@@ -457,11 +463,7 @@
     if(sortFilter==='league')games.sort((a,b)=>a.league.localeCompare(b.league,'es'));
     else if(sortFilter==='team')games.sort((a,b)=>a.home.localeCompare(b.home,'es'));
     else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
-    const fetchedLabel=catalogUpdatedAt?new Date(catalogUpdatedAt).toLocaleString('es-PE',{
-      timeZone:'America/Lima',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
-    $('#matchSourceLabel').textContent=catalogLoading?'Cargando encuentros…':
-      games.length?'Cuotas de referencia'+(fetchedLabel?' · '+fetchedLabel:''):
-      'Por el momento no hay partidos disponibles';
+    $('#matchSourceLabel').hidden=true;
     $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
     $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):
       `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando próximos encuentros…</h3><p>Estamos actualizando los partidos disponibles.</p>':
@@ -470,14 +472,67 @@
   }
   function renderLive(){
     $('#liveBanner').hidden=!liveGames.length;
-    const ts=liveGames[0]?.fetchedAt?new Date(liveGames[0].fetchedAt).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
-    $('#liveSourceLabel').textContent=catalogLoading?'Cargando encuentros…':
-      liveGames.length?'Cuotas consultadas de encuentros iniciados'+(ts?' · '+ts:''):
-      'No hay cuotas en vivo recientes disponibles';
+    $('#liveSourceLabel').hidden=true;
     $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):
-      `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando partidos en vivo…</h3><p>Estamos verificando los encuentros en curso.</p>':
-      '<h3>Por el momento no hay partidos en vivo</h3><p>Visita PremiumGol o vuelve más tarde para conocer los nuevos encuentros.</p><button type="button" class="btn btn-gold btn-mini" data-nav="gol">Ir a PremiumGol</button>'}</div>`;
+      `<div class="empty-state premium-empty-sports">${liveCatalogLoading?
+      '<span class="sports-loader" aria-hidden="true"></span><h3>Buscando partidos en vivo…</h3><p>Consultando las ligas disponibles.</p>':
+      '<h3>No hay partidos en vivo disponibles</h3><p>Prueba nuevamente más tarde.</p><button type="button" class="btn btn-gold btn-mini" data-nav="match">Ver próximos partidos</button>'}</div>`;
     renderSlips();
+  }
+
+
+  function normalizedSportsName(name){
+    return String(name||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().replace(/\b(?:fc|cf|ac|sc|afc|club|football|de|futbol)\b/g,'')
+      .replace(/[^a-z0-9]/g,'').trim();
+  }
+  function safeSportLogo(url){
+    const s=String(url||'');
+    return /^https:\/\/(?:www\.|r2\.|thumbs\.)?thesportsdb\.com\//i.test(s)?s:'';
+  }
+  function sportCrest(team,sportKey){
+    const art=sportsArtwork.get(sportKey);
+    const row=art?.teams?.find(x=>x.name===normalizedSportsName(team));
+    const img=safeSportLogo(row?.url);
+    return '<span class="sport-team-crest" aria-hidden="true"><span>'+
+      esc(initials(team))+'</span>'+(img?'<img src="'+esc(img)+
+      '" alt="" loading="lazy" decoding="async">':'')+'</span>';
+  }
+  function sportLeagueBadge(game){
+    const art=sportsArtwork.get(game.sportKey);
+    const img=safeSportLogo(art?.leagueLogo);
+    return (img?'<img class="sport-league-logo" src="'+esc(img)+
+      '" alt="" loading="lazy" decoding="async">':
+      '<span class="sport-league-fallback" aria-hidden="true">⚽</span>')+
+      '<span>'+esc(game.league)+'</span>';
+  }
+  async function fetchSportsArtwork(){
+    const leagues=[...new Set([...matches,...liveGames].map(x=>x.sportKey).filter(Boolean))].slice(0,6);
+    for(const key of leagues){
+      if(sportsArtwork.has(key)||artworkPending.has(key))continue;
+      artworkPending.add(key);
+      try{
+        const data=await remote('artwork',{sportKey:key});
+        if(data?.ok&&data?.sportKey===key&&Array.isArray(data.teams)){
+          sportsArtwork.set(key,data);
+          renderMatch();renderLive();
+        }
+      }catch(e){ /* Si la base de insignias no responde, se mantienen las iniciales. */ }
+      finally{artworkPending.delete(key);}
+    }
+  }
+  async function loadLiveCatalog(){
+    if(!CONFIG.appsScriptUrl||liveCatalogLoading)return;
+    liveCatalogLoading=true;liveCatalogRequestedAt=Date.now();renderLive();
+    try{
+      const data=await remote('liveCatalog',{});
+      if(data?.source==='The Odds API'&&data?.mode==='API_PREVIEW')
+        liveGames=Array.isArray(data.live)?data.live:[];
+    }catch(e){liveGames=[];}
+    finally{
+      liveCatalogLoading=false;
+      renderLive();fetchSportsArtwork();
+    }
   }
 
   function oddsDetailMarkup(g){
@@ -547,42 +602,62 @@
   }
 
   function marketCard(g,live){
-    const selected=draft.slips.find(s=>s.id===g.id)?.outcome;
-    const last=g.marketUpdatedAt&&Number.isFinite(Date.parse(g.marketUpdatedAt))?
-      new Date(g.marketUpdatedAt).toLocaleTimeString('es-PE',{
-        hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'
-      }):'';
-    const bookmaker=g.bookmaker?
-      '<div class="market-provider">Referencia: '+esc(g.bookmaker)+
-      (last?' · cuota consultada '+esc(last):'')+'</div>':'';
-    // The Odds API /odds no trae minutos ni marcador, no se inventan.
-    return `<article class="market-card ${live?'live-card':''}">
-      <div class="market-top"><span class="market-league"><span class="league-icon">✦</span>${esc(g.league)}</span>
-      <span class="market-schedule">${live?'<span class="tiny-live"></span> PARTIDO INICIADO':esc(visibleDate(g))}</span></div>
-      <div class="market-body"><div class="teams-block">
-        <span class="market-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span>
+    const selected=draft.slips.find(s=>s.gameId===g.id);
+    const kickoff=g.kickoff&&Number.isFinite(Date.parse(g.kickoff))?
+      new Date(g.kickoff).toLocaleString('es-PE',{
+        timeZone:'America/Lima',weekday:'short',day:'2-digit',
+        month:'short',hour:'2-digit',minute:'2-digit'}):'Por confirmar';
+    return `<article class="market-card sport-premium-card ${live?'live-card':''}">
+      <div class="market-top"><span class="market-league">${sportLeagueBadge(g)}</span>
+      <time class="market-kickoff-chip" datetime="${esc(g.kickoff)}">
+        ${icon('clock')} ${live?'En juego':esc(kickoff)}</time></div>
+      <div class="market-body sport-match-teams">
+        <span class="market-team">${sportCrest(g.home,g.sportKey)}<strong>${esc(g.home)}</strong></span>
         <span class="market-middle">VS</span>
-        <span class="market-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span>
-      </div></div>
-      <div class="market-choices">${outcomes.map((o,i)=>
-        `<button type="button" class="choice ${selected===o?'selected':''}" data-pick="${esc(g.id)}"
-        data-outcome="${o}" disabled aria-label="Cuota informativa ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
+        <span class="market-team">${sportCrest(g.away,g.sportKey)}<strong>${esc(g.away)}</strong></span>
+      </div>
+      <div class="market-choices sport-1x2">
+      ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}"
+        data-pick="${esc(g.id)}" data-outcome="${o}"
+        aria-label="Elegir ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
-      ${bookmaker}
       <button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
         aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
-        ${oddsExpandedId===g.id?'Ocultar mercados':'Ver más mercados y cuotas'}
+        ${oddsExpandedId===g.id?'Ocultar mercados':'Más mercados'} ${icon('arrow')}
       </button>
       ${oddsDetailMarkup(g)}</article>`;
   }
-  function changeSelection(id,outcome){
-    if(catalogMode==='API_PREVIEW'){toast('Las cuotas consultadas no están disponibles para jugar.');return;}
-    const game=allGames().find(g=>g.id===id);if(!game||!outcomes.includes(outcome))return;
-    const selected=draft.slips.find(s=>s.id===id)?.outcome===outcome;
-    delete draft.betRequestId;
-    draft.slips=draft.slips.filter(s=>s.id!==id);
-    if(!selected)draft.slips.push({id,outcome,odd:game.odds[outcomes.indexOf(outcome)],home:game.home,away:game.away,isLive:liveGames.some(g=>g.id===id)});
+  function addSportsSelection(g,selection){
+    const isSame=draft.slips.some(s=>s.gameId===g.id&&s.selectionId===selection.selectionId);
+    draft.slips=draft.slips.filter(s=>s.gameId!==g.id);
+    if(!isSame){
+      draft.slips.push({gameId:g.id,selectionId:selection.selectionId,
+        outcome:selection.outcome,odd:selection.odd,
+        marketLabel:selection.marketLabel,selectionLabel:selection.selectionLabel,
+        home:g.home,away:g.away,isLive:liveGames.some(x=>x.id===g.id)});
+    }
+    sportSimReceipt='';
     saveDraft();renderMatch();renderLive();
+  }
+  function changeSelection(id,outcome){
+    const g=allGames().find(x=>x.id===id);
+    if(!g||!outcomes.includes(outcome))return;
+    const price=Number(g.odds?.[outcomes.indexOf(outcome)]);
+    if(!Number.isFinite(price)||price<=1)return;
+    addSportsSelection(g,{selectionId:'h2h-'+outcome,outcome,odd:price,
+      marketLabel:'Resultado final',selectionLabel:outcomeName[outcomes.indexOf(outcome)]});
+  }
+  function changeDetailSelection(gameId,group,marketIndex,outcomeIndex){
+    const g=allGames().find(x=>x.id===gameId);
+    const data=oddsDetailCache.get(gameId+'|'+group);
+    const market=data?.markets?.[marketIndex],choice=market?.outcomes?.[outcomeIndex];
+    if(!g||!market||!choice||!Number.isFinite(Number(choice.price)))return;
+    const label=String(choice.name||'')+
+      (choice.point!==null&&choice.point!==undefined?' '+choice.point:'')+
+      (choice.description?' · '+choice.description:'');
+    addSportsSelection(g,{selectionId:market.key+'|'+label,
+      outcome:market.key,odd:Number(choice.price),
+      marketLabel:market.label,selectionLabel:label});
   }
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
   function renderSlips(){
