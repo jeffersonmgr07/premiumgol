@@ -207,7 +207,8 @@ function pgOddsEventMarkets_(x){
   const groupKey=String(x&&x.group||'').trim();
   const sport=String(x&&x.sportKey||'').trim();
   const eventId=String(x&&x.eventId||'').trim();
-  const group=PG_ODDS_MARKET_GROUPS[groupKey];
+  const group=Object.prototype.hasOwnProperty.call(PG_ODDS_MARKET_GROUPS,groupKey)?
+    PG_ODDS_MARKET_GROUPS[groupKey]:null;
   const empty=(message,cache)=>({ok:true,mode:'API_PREVIEW',source:'The Odds API',
     eventId,group:groupKey,markets:[],message,fromCache:Boolean(cache)});
   if(!group||!cfg.leagues.includes(sport)||!/^[A-Za-z0-9_-]{8,90}$/.test(eventId))
