@@ -37,8 +37,9 @@ function rpc(requestJson){
       case 'listTopupOrders':return pgListTopupOrders_(x);
       case 'claimCoupon':return pgClaimCoupon_(x);
       case 'saveBet':return pgSaveBet_(x);
-      case 'sportsWagerPolicy':return pgSportsWagerPolicy_();
+      case 'sportsWagerPolicy':return pgSportsWagerPolicy_(x);
       case 'submitSportsDemoBet':return pgSportsDemoSubmit_(x);
+      case 'submitSportsPrivateBet':return pgSportsPrivatePlace_(x);
       case 'signout':return pgSignout_(x);
       default:pgErr_('Operación no disponible.');
     }
@@ -93,7 +94,15 @@ function rpc(requestJson){
       'El partido ya no está disponible.',
       'La selección ya no está disponible.',
       'Una sola selección por partido.',
-      'La cuota combinada excede el límite de prueba.'
+      'La cuota combinada excede el límite de prueba.',
+      'Esta modalidad no está habilitada para tu cuenta.',
+      'El partido ya no está disponible para nuevas apuestas.',
+      'No se pudo verificar la cuota actual. Inténtalo más tarde.',
+      'La cuota está desactualizada.','La cuota cambió. Actualiza el cupón.',
+      'La operación ya fue registrada.','La operación quedó pendiente de conciliación.',
+      'Ingresa un importe válido.','Selecciona entre uno y cuatro partidos.',
+      'Una sola selección por partido.','Las cuotas no están disponibles.',
+      'La cuota combinada excede el límite permitido.'
     ];
     const message=err&&publicMessages.includes(err.message)?err.message:'No se pudo completar la solicitud. Intenta nuevamente.';
     return {ok:false,message};
