@@ -1395,6 +1395,8 @@
         if(sessionToken!==checkedToken)return;
         lastSessionVerification=Date.now();
         updateAccount(response);
+        if(restoring&&(activeView==='match'||activeView==='live'))
+          loadSportsWagerPolicy();
       }catch(err){
         if(sessionToken!==checkedToken)return;
         // Solo el servidor puede invalidar una sesión guardada.
