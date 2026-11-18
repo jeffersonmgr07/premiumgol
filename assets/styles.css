@@ -2025,3 +2025,13 @@ body.auth-request-busy{overflow:hidden}
   #view-match .sport-premium-card .sport-event-time,
   #view-live .sport-premium-card .sport-event-time{font-weight:800}
 }
+
+/* Créditos de prueba diferenciados del saldo principal monetario. */
+.sports-demo-balance{
+  display:flex;align-items:center;justify-content:space-between;gap:9px;
+  margin:0 0 12px;padding:9px 10px;
+  border:1px solid #60774d;border-radius:9px;
+  background:#b7f14612;
+  color:#d2e5ca;font-size:10.5px;
+}
+.sports-demo-balance strong{color:#d4fb72;font-size:12px;text-align:right}
