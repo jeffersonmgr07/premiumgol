@@ -10,12 +10,14 @@
  *   THE_ODDS_REFRESH_MINUTES = 720 (opcional)
  *   THE_ODDS_DAILY_LIMIT = 12 (opcional; protege cuota gratuita)
  * PRUEBAS DEPORTIVAS:
- *   PG_SPORTS_SANDBOX_ENABLED = true  (opcional: prueba en Sheets con créditos virtuales)
- * APUESTAS MONETARIAS FUTURAS (reservado, NO operativo):
- *   PG_SPORTS_REAL_WAGERS_ENABLED = false
- *   El cambio a true NO permite apuestas con dinero real por sí solo.
- *   Se requiere autorización MINCETUR y motor homologado de cuotas y liquidación.
- *   Las pruebas NO modifican payments_ledger ni bonus_ledger.
+ *   PG_SPORTS_SANDBOX_ENABLED = true  (opcional: créditos virtuales)
+ * DEMOSTRACIONES MONETARIAS PRIVADAS (sin acceso de visitantes generales):
+ *   PG_SPORTS_PRIVATE_MONEY_ENABLED = false  (activar solo cuando corresponda)
+ *   PG_SPORTS_PRIVATE_EMAILS = correos autorizados separados por comas
+ *   La colocación privada requiere sesión, cuota revalidada y cuenta en lista blanca.
+ *   No habilitar para el público sin completar licencias, liquidación y controles.
+ *   Ver docs/demo-privada-saldo-real.md.
+ *   La modalidad virtual sigue separada de payments_ledger y bonus_ledger.
  * Nunca publicar secretos en GitHub ni en assets/config.js.
  */
 const PG = Object.freeze({
