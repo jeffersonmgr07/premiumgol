@@ -183,6 +183,7 @@
     renderAccount();if(tab==='wallet')loadTopupOrders();
   }
   let catalogWarning='',catalogLoading=false,catalogRequested=false,golProgramRequested=false;
+  let catalogUpdatedAt=null;
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
   let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
@@ -234,8 +235,8 @@
     ['Helmond Sport','FC Dordrecht','Eerste Divisie · Países Bajos','2026-11-20T14:00:00-05:00'],
     ['Cercle Brugge','KVC Westerlo','Jupiler Pro League · Bélgica','2026-11-20T14:45:00-05:00']
   ].map(([home,away,league,kickoff],i)=>({id:'gol'+(i+1),home,away,league,kickoff,homeLogo:'',awayLogo:''}));
-  // Partidos y cuotas llegan únicamente desde API-FOOTBALL a través de Apps Script.
-  // Nunca pintar datos ficticios como cuotas disponibles.
+  // Cuotas 1X2 de The Odds API v4, consultadas exclusivamente por Apps Script.
+  // Son datos informativos: ninguna apuesta queda habilitada por esta integración.
   let matches=[];
   let liveGames=[];
   const hasUser = () => Boolean(account && sessionToken && !sessionExpired());
@@ -278,11 +279,10 @@
     if(!skipHash)history.replaceState(null,'',name==='home'?'#inicio':`#${name}`);
     window.PremiumGolMeasurement?.pageView(name);
     if(name==='account')renderAccount();
-    if(name==='match'||name==='live'){
+    if(name==='match'||name==='live'||name==='home'){
       if(!catalogRequested){catalogRequested=true;catalogLoading=true;loadCatalog();}
       if(name==='match')renderMatch();
-      else renderLive();
-      openComingSoon(name);
+      else if(name==='live')renderLive();
     }
     if(name==='gol'&&!golProgramRequested){golProgramRequested=true;loadGolProgram();}
     window.scrollTo({top:0,behavior:'smooth'});
@@ -450,7 +450,11 @@
     if(sortFilter==='league')games.sort((a,b)=>a.league.localeCompare(b.league,'es'));
     else if(sortFilter==='team')games.sort((a,b)=>a.home.localeCompare(b.home,'es'));
     else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
-    $('#matchSourceLabel').textContent=catalogLoading?'Cargando encuentros…':games.length?'Encuentros disponibles':'Por el momento no hay partidos disponibles';
+    const fetchedLabel=catalogUpdatedAt?new Date(catalogUpdatedAt).toLocaleString('es-PE',{
+      timeZone:'America/Lima',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    $('#matchSourceLabel').textContent=catalogLoading?'Cargando encuentros…':
+      games.length?'Cuotas de referencia'+(fetchedLabel?' · '+fetchedLabel:''):
+      'Por el momento no hay partidos disponibles';
     $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
     $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):
       `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando próximos encuentros…</h3><p>Estamos actualizando los partidos disponibles.</p>':
@@ -460,7 +464,9 @@
   function renderLive(){
     $('#liveBanner').hidden=!liveGames.length;
     const ts=liveGames[0]?.fetchedAt?new Date(liveGames[0].fetchedAt).toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
-    $('#liveSourceLabel').textContent=catalogLoading?'Cargando encuentros…':liveGames.length?'Partidos en vivo'+(ts?' · '+ts:''):'Por el momento no hay partidos en vivo';
+    $('#liveSourceLabel').textContent=catalogLoading?'Cargando encuentros…':
+      liveGames.length?'Cuotas consultadas de encuentros iniciados'+(ts?' · '+ts:''):
+      'No hay cuotas en vivo recientes disponibles';
     $('#liveFixtures').innerHTML=liveGames.length?liveGames.map(g=>marketCard(g,true)).join(''):
       `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando partidos en vivo…</h3><p>Estamos verificando los encuentros en curso.</p>':
       '<h3>Por el momento no hay partidos en vivo</h3><p>Visita PremiumGol o vuelve más tarde para conocer los nuevos encuentros.</p><button type="button" class="btn btn-gold btn-mini" data-nav="gol">Ir a PremiumGol</button>'}</div>`;
@@ -468,7 +474,27 @@
   }
   function marketCard(g,live){
     const selected=draft.slips.find(s=>s.id===g.id)?.outcome;
-    return `<article class="market-card ${live?'live-card':''}"><div class="market-top"><span class="market-league"><span class="league-icon">✦</span>${esc(g.league)}</span><span class="market-schedule">${live?`<span class="tiny-live"></span> ${Number(g.minute)||0}' EN VIVO`:esc(visibleDate(g))}</span></div><div class="market-body"><div class="teams-block"><span class="market-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="market-middle">${live?'':'VS'}</span><span class="market-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>${live?`<span class="market-score">${Number(g.score?.[0])||0} <small>:</small> ${Number(g.score?.[1])||0}</span>`:''}</div><div class="market-choices">${outcomes.map((o,i)=>`<button type="button" class="choice ${selected===o?'selected':''}" data-pick="${esc(g.id)}" data-outcome="${o}" ${catalogMode==='API_PREVIEW'||!Number.isFinite(Number(g.odds?.[i]))?'disabled':''} aria-label="${outcomeName[i]} para ${esc(g.home)} contra ${esc(g.away)}"><small>${o}</small><b>${g.odds?.[i]?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div></article>`;
+    const last=g.marketUpdatedAt&&Number.isFinite(Date.parse(g.marketUpdatedAt))?
+      new Date(g.marketUpdatedAt).toLocaleTimeString('es-PE',{
+        hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'
+      }):'';
+    const bookmaker=g.bookmaker?
+      '<div class="market-provider">Referencia: '+esc(g.bookmaker)+
+      (last?' · cuota consultada '+esc(last):'')+'</div>':'';
+    // The Odds API /odds no trae minutos ni marcador, no se inventan.
+    return `<article class="market-card ${live?'live-card':''}">
+      <div class="market-top"><span class="market-league"><span class="league-icon">✦</span>${esc(g.league)}</span>
+      <span class="market-schedule">${live?'<span class="tiny-live"></span> PARTIDO INICIADO':esc(visibleDate(g))}</span></div>
+      <div class="market-body"><div class="teams-block">
+        <span class="market-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span>
+        <span class="market-middle">VS</span>
+        <span class="market-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span>
+      </div></div>
+      <div class="market-choices">${outcomes.map((o,i)=>
+        `<button type="button" class="choice ${selected===o?'selected':''}" data-pick="${esc(g.id)}"
+        data-outcome="${o}" disabled aria-label="Cuota informativa ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
+        <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
+      ${bookmaker}</article>`;
   }
   function changeSelection(id,outcome){
     if(catalogMode==='API_PREVIEW'){toast('Las cuotas consultadas no están disponibles para jugar.');return;}
@@ -1116,7 +1142,8 @@
       const data=await remote('catalog',{});
       catalogLoading=false;
       catalogMode='API_PREVIEW';
-      const verified=data.mode==='API_PREVIEW';
+      const verified=data.mode==='API_PREVIEW'&&data.source==='The Odds API';
+      catalogUpdatedAt=verified&&data.updatedAt?String(data.updatedAt):null;
       catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
       matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
       liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
@@ -1130,7 +1157,7 @@
       catalogWarning=!bridge.ready?
         'No se pudo conectar con Apps Script. Revisa el despliegue y FRONTEND_ORIGIN.':
         'No fue posible obtener los partidos. Revisa las ejecuciones de Apps Script y vuelve a intentarlo.';
-      matches=[];liveGames=[];renderAll();
+      matches=[];liveGames=[];catalogUpdatedAt=null;renderAll();
       console.warn('Catálogo deportivo sin respuesta:',e.message);
     }
   }
@@ -1392,7 +1419,7 @@
     }else img.remove();
   },true);
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
-  // El navegador consulta el caché del servidor; no realiza solicitudes a API-FOOTBALL.
+  // El navegador consulta la caché de Apps Script; nunca lleva la clave de The Odds API.
   setInterval(()=>{
     if(document.visibilityState==='visible'&&['match','live'].includes(activeView)&&!authBusy)loadCatalog();
   },300000);
