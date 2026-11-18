@@ -1,5 +1,33 @@
 # PremiumGol · The Odds API v4 (cuotas de fútbol)
 
+## Ampliación: mercados adicionales (noviembre de 2026)
+
+Además de las cuotas **1X2** del catálogo, PremiumGol tiene un botón **«Ver más mercados y cuotas»** en cada encuentro. Al pulsarlo, puede consultar las categorías siguientes:
+
+| Pestaña | Mercados consultados (The Odds API v4) |
+| --- | --- |
+| Goles +/- | `totals`, `alternate_totals` |
+| Ambos anotan | `btts`, `team_totals` |
+| Doble oportunidad | `double_chance`, `draw_no_bet` |
+| Hándicap | `spreads` |
+| Resultados | `correct_score`, `halftime_fulltime` |
+| Córners | `alternate_totals_corners` |
+| Goleadores | `player_goal_scorer_anytime` |
+
+Las consultas de detalle usan el endpoint `/v4/sports/{sport}/events/{eventId}/odds`. **No se consultan automáticamente todos los mercados**: únicamente se solicita la categoría que abre el visitante. El servidor muestra los mercados efectivamente devueltos, con **nombre de casa**, línea (por ejemplo 2.5, 3.5), equipo/jugador cuando corresponda y precio decimal. Algunos mercados son más frecuentes en casas estadounidenses; podría ser necesario cambiar `THE_ODDS_REGION` de `eu` a `us` para ver datos de goleadores, siempre sujeto a disponibilidad real.
+
+Para conservar créditos del plan gratuito, el intervalo predeterminado del catálogo principal ahora es **720 minutos (12 horas)**. Las peticiones de detalle tienen caché compartida por 30 minutos y reserva conservadora de **1 crédito por cada mercado solicitado** del límite configurado `THE_ODDS_DAILY_LIMIT` (12 créditos/día por defecto). Si ya habías creado `THE_ODDS_REFRESH_MINUTES=360`, puedes **cambiarlo a 720** para reservar más créditos para los mercados avanzados. Si el límite diario se alcanza, aparecerá un aviso sin hacer una nueva consulta al proveedor.
+
+Para activar esta ampliación, además de mantener `THE_ODDS_API_KEY`, debes actualizar **`apps-script/TheOddsApi.gs` y `apps-script/Main.gs`** en el mismo proyecto y **publicar una nueva versión** de la Web App. No es necesario ejecutar `setupPremiumGol()` ni modificar Sheets. `Config.gs` permanece igual para esta ampliación.
+
+**Importante:** solo lectura de cuotas. No se activó recepción de apuestas deportivas, cobro, liquidación de premios ni apuestas en vivo con dinero real. El endpoint de cuotas no proporciona minutos ni marcadores verificables.
+
+Referencias: [mercados](https://the-odds-api.com/sports-odds-data/betting-markets.html) · [API v4](https://the-odds-api.com/liveapi/guides/v4/).
+
+---
+
+
+
 Integración de **consultas informativas** de cuotas 1X2 de partidos de fútbol (local/empate/visita). La web usa **GitHub Pages → iframe Apps Script → The Odds API**. La clave API vive **solo** en las propiedades privadas de Google Apps Script.
 
 ## Archivos modificados en GitHub
@@ -51,7 +79,7 @@ La consulta usa `GET https://api.the-odds-api.com/v4/sports/{sport}/odds` con `r
 
 ## Protección de cuota gratuita
 
-The Odds API publica un plan gratis de **500 créditos por mes**. Un mercado en una región cuesta normalmente **1 crédito por liga**. Los valores iniciales (3 ligas, intervalo de 6 h) pueden consumir aproximadamente **12 créditos diarios** o unos **360 en 30 días**, si hay mercados disponibles. El servidor guarda los últimos resultados y **limita a 12 las llamadas al día** para no consumir toda la cuota. Esto **no es un servicio de cuotas en vivo en tiempo real**: para frecuencias de actualización más altas se requerirá revisar plan y límites.
+The Odds API publica un plan gratis de **500 créditos por mes**. Un mercado en una región cuesta normalmente **1 crédito por liga**. Los valores iniciales (3 ligas, intervalo de 12 h) pueden consumir aproximadamente **6 créditos diarios** o unos **180 en 30 días**, si hay mercados disponibles. El servidor guarda los últimos resultados y **limita a 12 las llamadas al día** para no consumir toda la cuota. Esto **no es un servicio de cuotas en vivo en tiempo real**: para frecuencias de actualización más altas se requerirá revisar plan y límites.
 
 El servidor guarda metadatos internos en estas propiedades (no es necesario crearlas): `THE_ODDS_DAILY_USAGE`, `THE_ODDS_LAST_ATTEMPT` y `THE_ODDS_SNAPSHOT_<liga>`.
 
@@ -61,7 +89,7 @@ El servidor guarda metadatos internos en estas propiedades (no es necesario crea
 
 - Si el sitio indica que falta configurar: comprueba `THE_ODDS_API_KEY` exactamente, el proyecto Apps Script correcto y el despliegue **Nueva versión**.
 - Si el servidor indica que no hay partidos: verifica que la liga esté activa y disponible en la región del mercado; prueba `THE_ODDS_REGION=uk` o una liga diferente, sin incluir regiones múltiples para ahorrar créditos.
-- Si no aparecen cambios instantáneamente: los resultados están en caché hasta 6 horas de forma predeterminada. El plan gratuito no resulta adecuado para apostar con cotizaciones que exigen actualización instantánea.
+- Si no aparecen cambios instantáneamente: los resultados están en caché hasta 12 horas de forma predeterminada. El plan gratuito no resulta adecuado para apostar con cotizaciones que exigen actualización instantánea.
 - Si hay errores de conexión, revisa **Apps Script → Ejecuciones**, sin imprimir credenciales. El cliente no necesita una clave API.
 - No guardar claves ni respuestas sin revisar en el repositorio.
 
