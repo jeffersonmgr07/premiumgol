@@ -184,6 +184,13 @@
   }
   let catalogWarning='',catalogLoading=false,catalogRequested=false,golProgramRequested=false;
   let catalogUpdatedAt=null;
+  const oddsGroups=[
+    ['goles','Goles +/-'],['ambos','Ambos anotan'],['oportunidades','Doble oportunidad'],
+    ['handicap','Hándicap'],['resultados','Resultados'],['corners','Córners'],
+    ['goleadores','Goleadores']
+  ];
+  let oddsExpandedId='',oddsSelectedGroup='goles',oddsLoading=false,oddsError='';
+  const oddsDetailCache=new Map();
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=20;
   let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
@@ -472,6 +479,73 @@
       '<h3>Por el momento no hay partidos en vivo</h3><p>Visita PremiumGol o vuelve más tarde para conocer los nuevos encuentros.</p><button type="button" class="btn btn-gold btn-mini" data-nav="gol">Ir a PremiumGol</button>'}</div>`;
     renderSlips();
   }
+
+  function oddsDetailMarkup(g){
+    if(oddsExpandedId!==g.id)return '';
+    const key=g.id+'|'+oddsSelectedGroup;
+    const data=oddsDetailCache.get(key);
+    let output='';
+    if(oddsLoading)output='<div class="market-detail-note"><span class="sports-loader" aria-hidden="true"></span> Consultando cuotas…</div>';
+    else if(oddsError)output='<div class="market-detail-note">'+esc(oddsError)+'</div>';
+    else if(!data||!data.markets?.length)output='<div class="market-detail-note">'+esc(data?.message||'Selecciona una categoría para consultar sus mercados.')+'</div>';
+    else output=data.markets.map(m=>{
+      const rows=m.outcomes.map(o=>{
+        const n=String(o.name||'');
+        const name=/^over$/i.test(n)?'Más':/^under$/i.test(n)?'Menos':
+          /^yes$/i.test(n)?'Sí':/^no$/i.test(n)?'No':/^draw$/i.test(n)?'Empate':n;
+        const label=esc(name)+(o.point!==null&&o.point!==undefined?' '+esc(o.point):'');
+        const desc=o.description?'<small>'+esc(o.description)+'</small>':'';
+        return '<div class="market-detail-option"><div><span>'+label+'</span>'+desc+
+          '</div><strong>'+fmt2(o.price)+'</strong></div>';
+      }).join('');
+      const time=m.updatedAt&&Number.isFinite(Date.parse(m.updatedAt))?
+        new Date(m.updatedAt).toLocaleTimeString('es-PE',{
+          hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
+      return '<section class="market-detail-market"><header><strong>'+
+        esc(m.label)+'</strong><small>'+esc(m.bookmaker)+
+        (time?' · '+esc(time):'')+'</small></header>'+
+        '<div class="market-detail-options">'+rows+'</div></section>';
+    }).join('');
+    return '<div class="market-detail-panel" role="region" aria-label="Cuotas adicionales del partido">'+
+      '<p>Cuotas de referencia; disponibles según la liga y la casa de apuestas. No se pueden seleccionar para apostar.</p>'+
+      '<div class="market-detail-tabs" role="group" aria-label="Categorías de mercados">'+
+      oddsGroups.map(([id,title])=>'<button type="button" data-odds-group="'+id+
+        '" data-odds-event="'+esc(g.id)+'" class="'+(id===oddsSelectedGroup?'active':'')+'">'+esc(title)+'</button>').join('')+
+      '</div><div class="market-detail-results" aria-live="polite">'+output+'</div></div>';
+  }
+  async function loadOddsGroup(game){
+    const id=game.id,group=oddsSelectedGroup,key=id+'|'+group;
+    oddsError='';
+    const saved=oddsDetailCache.get(key);
+    if(saved){oddsLoading=false;renderMatch();renderLive();return;}
+    oddsLoading=true;renderMatch();renderLive();
+    try{
+      const data=await remote('eventMarkets',{eventId:id,sportKey:game.sportKey,group});
+      if(data?.source!=='The Odds API'||data?.mode!=='API_PREVIEW'||data?.eventId!==id||data?.group!==group)
+        throw new Error('La respuesta del proveedor no coincide con el partido.');
+      oddsDetailCache.set(key,data);
+    }catch(e){
+      if(oddsExpandedId===id&&oddsSelectedGroup===group)
+        oddsError='No se pudieron obtener las cuotas. '+String(e.message||'Vuelve a intentarlo.');
+    }finally{
+      if(oddsExpandedId===id&&oddsSelectedGroup===group){oddsLoading=false;renderMatch();renderLive();}
+    }
+  }
+  function toggleOddsDetails(id){
+    const game=allGames().find(x=>x.id===id);
+    if(!game)return;
+    if(oddsExpandedId===id){oddsExpandedId='';oddsLoading=false;renderMatch();renderLive();return;}
+    oddsExpandedId=id;oddsSelectedGroup='goles';oddsLoading=false;oddsError='';
+    loadOddsGroup(game);
+  }
+  function chooseOddsGroup(id,group){
+    if(!oddsGroups.some(x=>x[0]===group)||oddsExpandedId!==id)return;
+    const game=allGames().find(x=>x.id===id);
+    if(!game)return;
+    oddsSelectedGroup=group;oddsLoading=false;oddsError='';
+    loadOddsGroup(game);
+  }
+
   function marketCard(g,live){
     const selected=draft.slips.find(s=>s.id===g.id)?.outcome;
     const last=g.marketUpdatedAt&&Number.isFinite(Date.parse(g.marketUpdatedAt))?
@@ -494,7 +568,12 @@
         `<button type="button" class="choice ${selected===o?'selected':''}" data-pick="${esc(g.id)}"
         data-outcome="${o}" disabled aria-label="Cuota informativa ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
-      ${bookmaker}</article>`;
+      ${bookmaker}
+      <button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
+        aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
+        ${oddsExpandedId===g.id?'Ocultar mercados':'Ver más mercados y cuotas'}
+      </button>
+      ${oddsDetailMarkup(g)}</article>`;
   }
   function changeSelection(id,outcome){
     if(catalogMode==='API_PREVIEW'){toast('Las cuotas consultadas no están disponibles para jugar.');return;}
@@ -1147,6 +1226,7 @@
       catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
       matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
       liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
+      if(oddsExpandedId&&!allGames().some(g=>g.id===oddsExpandedId))oddsExpandedId='';
       if(catalogMode==='API_PREVIEW')draft.slips=[];
       // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
       const ids=new Set(allGames().map(g=>g.id));
@@ -1312,6 +1392,10 @@
       if(!catalogLoading){catalogLoading=true;catalogWarning='';renderAll();loadCatalog();}
       return;
     }
+    const detail=e.target.closest('[data-odds-details]');
+    if(detail){e.preventDefault();toggleOddsDetails(detail.dataset.oddsDetails);return;}
+    const marketGroup=e.target.closest('[data-odds-group]');
+    if(marketGroup){e.preventDefault();chooseOddsGroup(marketGroup.dataset.oddsEvent,marketGroup.dataset.oddsGroup);return;}
     const nav=e.target.closest('[data-nav]');
     if(nav){
       e.preventDefault();
