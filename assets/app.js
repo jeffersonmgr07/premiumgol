@@ -298,7 +298,8 @@
       if(name==='match')renderMatch();
       else if(name==='live'){
         renderLive();
-        if(!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>15*60000)loadLiveCatalog();
+        if(!catalogLoading&&!liveCatalogLoading&&
+          Date.now()-liveCatalogRequestedAt>15*60000)loadLiveCatalog();
       }
     }
     if(name==='gol'&&!golProgramRequested){golProgramRequested=true;loadGolProgram();}
@@ -1355,6 +1356,9 @@
       matches=[];liveGames=[];catalogUpdatedAt=null;renderAll();
       console.warn('Catálogo deportivo sin respuesta:',e.message);
     }
+    // Esperar a que termine el catálogo antes de consultar Live: Apps Script usa un bloqueo compartido.
+    if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>15*60000)
+      loadLiveCatalog();
   }
   $('#comingSoonBack').addEventListener('click',backFromComingSoon);
   $('#comingSoonDialog').addEventListener('cancel',e=>{e.preventDefault();backFromComingSoon();});
@@ -1635,7 +1639,10 @@
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
   // El navegador consulta la caché de Apps Script; nunca lleva la clave de The Odds API.
   setInterval(()=>{
-    if(document.visibilityState==='visible'&&['match','live'].includes(activeView)&&!authBusy)loadCatalog();
+    if(document.visibilityState!=='visible'||authBusy)return;
+    if(activeView==='match')loadCatalog();
+    if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>15*60000)
+      loadLiveCatalog();
   },300000);
   const hash=location.hash.slice(1);
   const view=hash==='inicio'?'home':hash;
