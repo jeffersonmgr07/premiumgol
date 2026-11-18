@@ -112,7 +112,7 @@ function pgOddsSnapshot_(props,sport){
     return data&&Array.isArray(data.games)?data:{updatedAt:'',games:[]};
   }catch(e){return {updatedAt:'',games:[]};}
 }
-function pgOddsFetchLeague_(cfg,sport){
+function pgOddsFetchLeague_(cfg,sport,maxGames=15){
   const url='https://api.the-odds-api.com/v4/sports/'+encodeURIComponent(sport)+
     '/odds/?regions='+encodeURIComponent(cfg.region)+
     '&markets=h2h&oddsFormat=decimal&dateFormat=iso';
@@ -126,7 +126,7 @@ function pgOddsFetchLeague_(cfg,sport){
     if(!Array.isArray(data))return null;
     const timestamp=new Date().toISOString();
     // Google PropertiesService admite ~9 KB por valor: acotar solo campos públicos.
-    const games=pgOddsNormalize_(data,sport,timestamp).slice(0,15);
+    const games=pgOddsNormalize_(data,sport,timestamp).slice(0,maxGames);
     return {updatedAt:timestamp,games};
   }catch(e){
     // Nunca mostrar ni registrar key, URL autenticada ni respuestas del proveedor.
