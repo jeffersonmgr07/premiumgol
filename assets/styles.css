@@ -1658,3 +1658,114 @@ body.auth-request-busy{overflow:hidden}
   .market-detail-panel{margin:0 10px 13px}
   .market-detail-market header{flex-direction:column;align-items:flex-start;gap:5px}
 }
+
+/* Tarjetas deportivas renovadas · verde neón y jerarquía visual responsive */
+#matchSourceLabel[hidden],#liveSourceLabel[hidden]{display:none!important}
+.sport-premium-card{
+  overflow:hidden;
+  border:1px solid #394e64;
+  border-radius:16px;
+  background:linear-gradient(145deg,#12243b,#0c1a2c 78%);
+  box-shadow:0 7px 28px #00000033;
+  transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.sport-premium-card:hover{
+  border-color:#b6f32788;box-shadow:0 12px 31px #00000055;
+  transform:translateY(-2px)
+}
+.sport-premium-card .market-top{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;padding:13px 16px;
+  border-bottom:1px solid #35516b55
+}
+.sport-premium-card .market-league{
+  display:flex;align-items:center;gap:8px;min-width:0;
+  font-weight:850;color:#fff;font-size:12px
+}
+.sport-league-logo{
+  display:block;width:24px;height:24px;object-fit:contain;flex:0 0 24px;
+  filter:drop-shadow(0 1px 3px #0008)
+}
+.sport-league-fallback{
+  width:25px;height:25px;display:inline-grid;place-items:center;
+  border-radius:8px;background:#b6f3271b;font-size:15px
+}
+.market-kickoff-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 10px;border:1px solid #6b8a9d;
+  border-radius:999px;background:#1c2f45;
+  color:#f4f8fa;font-size:10px;font-weight:800;
+  white-space:nowrap;font-variant-numeric:tabular-nums
+}
+.market-kickoff-chip svg{width:13px;height:13px;color:#b6f327}
+.sport-premium-card .sport-match-teams{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:15px;padding:18px 17px 14px
+}
+.sport-premium-card .market-team{
+  flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;
+  gap:8px;text-align:center;font-size:12px;color:#fff;
+}
+.sport-premium-card .market-team strong{font-size:12px;line-height:1.3;overflow-wrap:anywhere}
+.sport-team-crest{
+  width:51px;height:51px;flex:0 0 51px;display:grid;place-items:center;
+  position:relative;border-radius:13px;border:1px solid #426077;
+  background:#1c344c;box-shadow:0 3px 11px #0004
+}
+.sport-team-crest>span{color:#d9e8f3;font:900 16px var(--display)}
+.sport-team-crest img{
+  position:absolute;inset:3px;width:calc(100% - 6px);height:calc(100% - 6px);
+  object-fit:contain;border-radius:9px;background:#1c344c
+}
+.sport-premium-card .market-middle{
+  flex:0 0 auto;padding:5px 8px;
+  font:900 12px var(--display);color:#b6f327
+}
+.sport-premium-card .market-choices{gap:7px;padding:6px 15px 12px}
+.sport-premium-card .market-choices .choice{
+  border-color:#5e7889;background:#152a41;
+  cursor:pointer;transition:background .17s,border-color .17s,transform .17s;
+}
+.sport-premium-card .market-choices .choice:hover{
+  background:#b6f3271f;border-color:#b6f327;transform:translateY(-1px)
+}
+.sport-premium-card .market-choices .choice.selected{
+  background:#b6f32727;border-color:#b6f327
+}
+.sport-premium-card .market-choices .choice b{color:#d3fc47}
+.sport-premium-card .market-choices .choice.selected b{color:#efffad}
+.sport-premium-card .market-detail-trigger{
+  background:transparent;color:#d5fc58;border-color:#547047;
+  font-size:11px;margin-bottom:12px
+}
+.sport-premium-card .market-detail-trigger:hover{background:#b6f32718}
+.sport-premium-card .market-detail-option{
+  appearance:none;width:100%;text-align:left;
+  border:0;background:#102138;color:inherit;cursor:pointer;
+  font:inherit;transition:background .15s ease
+}
+.sport-premium-card .market-detail-option:hover,
+.sport-premium-card .market-detail-option:focus-visible{
+  background:#b6f3271b;outline:1px solid #b6f327
+}
+.sport-premium-card .market-detail-option strong{color:#d3fc47}
+.sport-market-heading{margin-bottom:10px!important;color:#c8d8ea!important}
+.betslip .slip-market-label{display:block;color:#b6f327;font-size:10px;margin-bottom:4px}
+.sports-sim-receipt{
+  margin:12px 13px 15px;padding:12px;
+  border:1px solid #b6f32788;border-radius:10px;
+  background:#b6f32712;color:#e5fdbb;font-size:12px;line-height:1.6
+}
+.sport-premium-card .market-kickoff-chip{color:#eff7fc}
+@media(max-width:720px){
+  .sport-premium-card .market-top{padding:11px;gap:7px}
+  .sport-premium-card .market-league{font-size:11px}
+  .market-kickoff-chip{font-size:9px;padding:6px 8px}
+  .sport-premium-card .sport-match-teams{padding:14px 9px 9px}
+  .sport-team-crest{width:43px;height:43px;flex-basis:43px}
+  .sport-premium-card .market-choices{padding:8px 10px 12px}
+  .sport-premium-card .market-team strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  .sport-premium-card,.sport-premium-card .choice{transition:none!important;transform:none!important}
+}
