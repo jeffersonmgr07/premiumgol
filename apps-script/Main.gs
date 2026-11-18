@@ -18,6 +18,8 @@ function rpc(requestJson){
     if(!req||typeof req.action!=='string'||typeof x!=='object')pgErr_('Solicitud inválida.');
     switch(req.action){
       case 'catalog':return pgOddsCatalog_();
+      case 'liveCatalog':return pgOddsLiveCatalog_();
+      case 'artwork':return pgSportsArtwork_(x);
       case 'eventMarkets':return pgOddsEventMarkets_(x);
       case 'golProgram':return pgPublicGolProgram_();
       case 'claimsConfig':return pgClaimsPublicConfig_();
