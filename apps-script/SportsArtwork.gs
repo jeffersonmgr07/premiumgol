@@ -49,7 +49,14 @@ function pgSportsArtwork_(x){
   const url='https://www.thesportsdb.com/api/v1/json/123/search_all_teams.php?l='+
     encodeURIComponent(league.replace(/ /g,'_'));
   const listing=pgSportsRead_(url);
-  const games=pgOddsSnapshot_(PropertiesService.getScriptProperties(),sport).games;
+  const props=PropertiesService.getScriptProperties();
+  const games=pgOddsSnapshot_(props,sport).games.slice();
+  // Live puede haberse consultado antes que el catálogo principal.
+  try{
+    const live=JSON.parse(String(props.getProperty('THE_ODDS_LIVE_SNAPSHOT')||'null'));
+    if(Array.isArray(live?.games))
+      live.games.filter(g=>g.sportKey===sport).forEach(g=>games.push(g));
+  }catch(e){}
   const requested=new Set();
   games.forEach(game=>{requested.add(pgSportsName_(game.home));requested.add(pgSportsName_(game.away));});
   const names=[];
