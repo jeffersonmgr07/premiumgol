@@ -223,7 +223,11 @@
     try{const result=await remote('claimCoupon',{sessionToken});updateAccount(result);$('#couponDialog').close();toast('¡50 créditos de bono añadidos a tu saldo virtual!');}
     catch(e){toast(e.message||'No se pudo activar el cupón.');}
     finally{btn.disabled=false;}
-  }
+    const w=getLocalWallet();
+      w.bono+=50;        // mismo monto que el bono del cupón
+      w.bonoActivo=true;
+      saveLocalWallet(w);
+        }
   function toast(msg){const el=$('#toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),4200);}
   function showInsufficientFunds(){
     const dialog=$('#insufficientFundsDialog');
@@ -684,131 +688,208 @@
       marketLabel:market.label,selectionLabel:label,group});
   }
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
-  function renderSlips(){
-    const count=draft.slips.length,privateMode=sportsPrivateEnabled;
-    const cap=privateMode?500:1000;
-    const validStake=Number.isInteger(stake)&&stake>=1&&stake<=cap;
-    const total=validStake?stake*combinedOdds():0;
-    const items=count?draft.slips.map(s=>`<div class="betslip-item">
-      <div class="slip-team">${esc(s.home)} · ${esc(s.away)}</div>
-      <div class="slip-detail"><span><b class="slip-market-label">${esc(s.marketLabel||'Resultado final')}</b>
-        ${esc(s.selectionLabel||s.outcome||'')}</span>
-        <b>${fmt2(s.odd)}</b>
-        <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
-          aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
-    const balance=privateMode?`<div class="sports-private-balance">
-      <span>Saldo principal: <strong>S/ ${fmt2(paidBalancePEN)}</strong></span>
-      <span>Saldo de bonos: <strong>S/ ${fmt2(bonusBalancePEN)}</strong></span>
-      </div>
-      <label for="sportsWalletSource">Pagar con</label>
-      <select id="sportsWalletSource" class="sports-wallet-select" aria-label="Origen del saldo">
-        <option value="principal" ${sportsWalletSource==='principal'?'selected':''}>Saldo principal</option>
-        <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${!bonusUnlocked?'disabled':''}>Saldo de bonos</option>
-      </select>`:sportsSandboxEnabled?
-      '<div class="sports-demo-balance"><span>Créditos disponibles</span><strong>'+
-      (hasUser()?fmt(accountBalance)+' CR':'Ingresa para consultar')+'</strong></div>':'';
-    const currency=privateMode?'S/':'CR';
-    const footer=count?`<div class="betslip-footer">
-      ${balance}
-      <label for="betStake">${privateMode?'Importe de la apuesta (S/)':'Importe de prueba (créditos virtuales)'}</label>
-      <div class="stake-entry"><input id="betStake" type="number" min="1" max="${cap}"
-        step="1" value="${esc(stake)}" inputmode="numeric"><span>${currency}</span></div>
-      <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
-      <div class="slip-total"><span>${privateMode?'Retorno posible':'Retorno simulado'}</span>
-        <b id="slipReturn">${privateMode?'S/ ':''}${fmt2(total)}${privateMode?'':' CR'}</b></div>
-      <button id="placeBet" type="button" class="btn btn-gold btn-full"
-        ${!validStake?'disabled':''}>${privateMode?'Colocar apuesta':sportsSandboxEnabled?'Registrar prueba':'Simular jugada'}
-        ${icon('arrow')}</button>
-      ${privateMode?'': '<p class="slip-note">Solo créditos virtuales. Sin cargos ni premios reales.</p>'}
-    </div>`:`<div class="betslip-empty">${icon('ticket')}
-      <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
-    const receipt=sportSimReceipt?'<div class="sports-sim-receipt">'+
-      esc(sportSimReceipt)+'</div>':'';
-    const content=`<div class="betslip">
-      <div class="betslip-head"><h3>Mi cupón <span>${count}</span></h3>
-        ${count?'<button id="clearBetslip" type="button">Vaciar cupón</button>':''}</div>
-      ${items}${footer}${receipt}</div>`;
-    $('#matchBetslip').innerHTML=content;
-    $('#liveBetslip').innerHTML=content.replaceAll('id="betStake"','id="betStakeLive"')
-      .replaceAll('for="betStake"','for="betStakeLive"')
-      .replaceAll('id="slipReturn"','id="slipReturnLive"')
-      .replaceAll('id="placeBet"','id="placeBetLive"')
-      .replaceAll('id="clearBetslip"','id="clearBetslipLive"')
-      .replaceAll('id="sportsWalletSource"','id="sportsWalletSourceLive"')
-      .replaceAll('for="sportsWalletSource"','for="sportsWalletSourceLive"');
+  /* PremiumGol · billetera local en PEN (saldo principal + bono) */
+const LOCAL_WALLET_KEY='premiumgol_local_wallet_v1';
+function getLocalWallet(){
+  try{
+    const w=JSON.parse(localStorage.getItem(LOCAL_WALLET_KEY)||'null');
+    if(w&&Number.isFinite(Number(w.principal))&&Number.isFinite(Number(w.bono)))
+      return {principal:Number(w.principal),bono:Number(w.bono),bonoActivo:Boolean(w.bonoActivo)};
+  }catch(e){}
+  return {principal:1000,bono:0,bonoActivo:false};
+}
+function saveLocalWallet(w){try{localStorage.setItem(LOCAL_WALLET_KEY,JSON.stringify(w));}catch(e){}}
+
+/* Jugadas deportivas locales para el dashboard (Mis jugadas) */
+function getLocalSportsPlays(){
+  try{
+    const h=JSON.parse(localStorage.getItem('premiumgol_sports_simulations_v1')||'[]');
+    return (Array.isArray(h)?h:[]).map(r=>({
+      type:'sports',id:r.id,title:'Apuesta deportiva · '+r.id,
+      stake:r.stake,at:r.createdAt
+    }));
+  }catch(e){return [];}
+}
+function renderSlips(){
+  const count=draft.slips.length,privateMode=sportsPrivateEnabled;
+  const cap=privateMode?500:1000;
+  const validStake=Number.isInteger(stake)&&stake>=1&&stake<=cap;
+  const total=validStake?stake*combinedOdds():0;
+  const wallet=getLocalWallet();
+  const items=count?draft.slips.map(s=>`<div class="betslip-item">
+    <div class="slip-team">${esc(s.home)} · ${esc(s.away)}</div>
+    <div class="slip-detail"><span><b class="slip-market-label">${esc(s.marketLabel||'Resultado final')}</b>
+      ${esc(s.selectionLabel||s.outcome||'')}</span>
+      <b>${fmt2(s.odd)}</b>
+      <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
+        aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
+  const balance=privateMode?`<div class="sports-private-balance">
+    <span>Saldo principal: <strong>S/ ${fmt2(paidBalancePEN)}</strong></span>
+    <span>Saldo de bonos: <strong>S/ ${fmt2(bonusBalancePEN)}</strong></span>
+    </div>
+    <label for="sportsWalletSource">Pagar con</label>
+    <select id="sportsWalletSource" class="sports-wallet-select" aria-label="Origen del saldo">
+      <option value="principal" ${sportsWalletSource==='principal'?'selected':''}>Saldo principal</option>
+      <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${!bonusUnlocked?'disabled':''}>Saldo de bonos</option>
+    </select>`:`<div class="sports-private-balance">
+    <span>Saldo principal: <strong>PEN ${fmt2(wallet.principal)}</strong></span>
+    <span>Saldo de bonos: <strong>PEN ${fmt2(wallet.bono)}</strong></span>
+    </div>
+    <label for="sportsWalletSource">Pagar con</label>
+    <select id="sportsWalletSource" class="sports-wallet-select" aria-label="Origen del saldo">
+      <option value="principal" ${sportsWalletSource==='principal'?'selected':''}>Saldo principal</option>
+      <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${!wallet.bonoActivo?'disabled':''}>Saldo de bonos</option>
+    </select>`;
+  const currency=privateMode?'S/':'PEN';
+  const footer=count?`<div class="betslip-footer">
+    ${balance}
+    <label for="betStake">${privateMode?'Importe de la apuesta (S/)':'Monto apuesta'}</label>
+    <div class="stake-entry"><input id="betStake" type="number" min="1" max="${cap}"
+      step="1" value="${esc(stake)}" inputmode="numeric"><span>${currency}</span></div>
+    <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
+    <div class="slip-total"><span>${privateMode?'Retorno posible':'Posible ganancia'}</span>
+      <b id="slipReturn">${privateMode?'S/ ':''}${fmt2(total)}${privateMode?'':' PEN'}</b></div>
+    <button id="placeBet" type="button" class="btn btn-gold btn-full"
+      ${!validStake?'disabled':''}>${privateMode?'Colocar apuesta':'Colocar jugada'}
+      ${icon('arrow')}</button>
+    ${privateMode?'':'<p class="slip-note">Las cuotas pueden cambiar mientras se procesa la jugada.</p>'}
+  </div>`:`<div class="betslip-empty">${icon('ticket')}
+    <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
+  const receipt=sportSimReceipt?'<div class="sports-sim-receipt">'+
+    esc(sportSimReceipt)+'</div>':'';
+  const content=`<div class="betslip">
+    <div class="betslip-head"><h3>Mi cupón <span>${count}</span></h3>
+      ${count?'<button id="clearBetslip" type="button">Vaciar cupón</button>':''}</div>
+    ${items}${footer}${receipt}</div>`;
+  $('#matchBetslip').innerHTML=content;
+  $('#liveBetslip').innerHTML=content.replaceAll('id="betStake"','id="betStakeLive"')
+    .replaceAll('for="betStake"','for="betStakeLive"')
+    .replaceAll('id="slipReturn"','id="slipReturnLive"')
+    .replaceAll('id="placeBet"','id="placeBetLive"')
+    .replaceAll('id="clearBetslip"','id="clearBetslipLive"')
+    .replaceAll('id="sportsWalletSource"','id="sportsWalletSourceLive"')
+    .replaceAll('for="sportsWalletSource"','for="sportsWalletSourceLive"');
+}
+async function placeBet(){
+  if(!draft.slips.length){toast('Selecciona una cuota.');return;}
+  const cap=sportsPrivateEnabled?500:1000;
+  if(!Number.isInteger(stake)||stake<1||stake>cap){
+    toast('Ingresa un importe válido entre 1 y '+cap+'.');return;
   }
-  async function placeBet(){
-    if(!draft.slips.length){toast('Selecciona una cuota.');return;}
-    const cap=sportsPrivateEnabled?500:1000;
-    if(!Number.isInteger(stake)||stake<1||stake>cap){
-      toast('Ingresa un importe válido entre 1 y '+cap+'.');return;
+  if(sportsPrivateEnabled){
+    if(!hasUser()){
+      pendingAfterAuth='bet';openAuth('login');return;
     }
-    if(sportsPrivateEnabled){
-      if(!hasUser()){
-        pendingAfterAuth='bet';openAuth('login');return;
-      }
-      const available=sportsWalletSource==='principal'?paidBalancePEN:bonusBalancePEN;
-      if(sportsWalletSource==='bonos'&&!bonusUnlocked){
-        toast('Primero activa tus bonos con una recarga aprobada.');return;
-      }
-      if(available<stake){
-        toast('Saldo insuficiente. Puedes hacer una recarga en Mi cuenta.');
-        accountTab='wallet';showView('account');return;
-      }
-      if(sendingPlay)return;
-      sendingPlay=true;
-      draft.sportsPrivateRequestId=draft.sportsPrivateRequestId||randomId();saveDraft();
-      try{
-        const res=await remote('submitSportsPrivateBet',{
-          sessionToken,stake,walletSource:sportsWalletSource,
-          clientRequestId:draft.sportsPrivateRequestId,
-          selections:draft.slips.map(leg=>({
-            gameId:leg.gameId,sportKey:leg.sportKey,selectionId:leg.selectionId,
-            group:leg.group,expectedOdd:Number(leg.odd)
-          }))
-        });
-        if(!res?.ok||!res?.privateAccepted)
-          throw new Error('No se confirmó el cupón.');
-        const ticket=String(res.privateTicketId||draft.sportsPrivateRequestId);
-        const amount=Number(res.privateStakePEN??stake);
-        draft.slips=[];delete draft.sportsPrivateRequestId;saveDraft();
-        updateAccount(res);
-        sportSimReceipt='Cupón registrado · '+ticket+
-          ' · Importe S/ '+fmt2(amount);
-        renderSlips();
-        toast('Cupón registrado. Se descontó el importe de tu billetera.');
-      }catch(err){
-        toast(err?.message||'No se pudo registrar el cupón.');
-      }finally{sendingPlay=false;}
-      return;
+    const available=sportsWalletSource==='principal'?paidBalancePEN:bonusBalancePEN;
+    if(sportsWalletSource==='bonos'&&!bonusUnlocked){
+      toast('Primero activa tus bonos con una recarga aprobada.');return;
     }
-    if(sportsSandboxEnabled){
-      if(!hasUser()){
-        pendingAfterAuth='bet';openAuth('login');return;
-      }
-      if(sendingPlay)return;
-      sendingPlay=true;
-      draft.sportsDemoRequestId=draft.sportsDemoRequestId||randomId();saveDraft();
-      try{
-        const response=await remote('submitSportsDemoBet',{
-          sessionToken,stake,clientRequestId:draft.sportsDemoRequestId,
-          selections:draft.slips.map(leg=>({
-            gameId:leg.gameId,sportKey:leg.sportKey,
-            selectionId:leg.selectionId,group:leg.group
-          }))
-        });
-        if(!response?.ok)throw new Error('No se registró la prueba.');
-        const number=String(response.simulationId||draft.sportsDemoRequestId);
-        const returnValue=Number(response.simulatedReturn||stake*combinedOdds());
-        draft.slips=[];delete draft.sportsDemoRequestId;saveDraft();
-        updateAccount(response);
-        sportSimReceipt='Prueba registrada: '+number+
-          ' · Retorno simulado '+fmt2(returnValue)+' créditos';
-        renderSlips();toast('Prueba registrada con créditos virtuales.');
-      }catch(err){toast(err?.message||'No se pudo registrar la prueba.');}
-      finally{sendingPlay=false;}
-      return;
+    if(available<stake){
+      toast('Saldo insuficiente. Puedes hacer una recarga en Mi cuenta.');
+      accountTab='wallet';showView('account');return;
     }
+    if(sendingPlay)return;
+    sendingPlay=true;
+    draft.sportsPrivateRequestId=draft.sportsPrivateRequestId||randomId();saveDraft();
+    try{
+      const res=await remote('submitSportsPrivateBet',{
+        sessionToken,stake,walletSource:sportsWalletSource,
+        clientRequestId:draft.sportsPrivateRequestId,
+        selections:draft.slips.map(leg=>({
+          gameId:leg.gameId,sportKey:leg.sportKey,selectionId:leg.selectionId,
+          group:leg.group,expectedOdd:Number(leg.odd)
+        }))
+      });
+      if(!res?.ok||!res?.privateAccepted)
+        throw new Error('No se confirmó el cupón.');
+      const ticket=String(res.privateTicketId||draft.sportsPrivateRequestId);
+      const amount=Number(res.privateStakePEN??stake);
+      const placedLegs=draft.slips.map(leg=>({...leg}));
+      const placedOdds=combinedOdds();
+      draft.slips=[];delete draft.sportsPrivateRequestId;saveDraft();
+      updateAccount(res);
+      renderSlips();
+      showSportsPlayDialog({
+        id:ticket,createdAt:new Date().toISOString(),stake:amount,
+        walletSource:sportsWalletSource,combinedOdds:placedOdds,
+        possibleReturn:Math.round(amount*placedOdds*100)/100,
+        selections:placedLegs
+      });
+    }catch(err){
+      toast(err?.message||'No se pudo registrar el cupón.');
+    }finally{sendingPlay=false;}
+    return;
+  }
+  if(sportsSandboxEnabled){
+    if(!hasUser()){
+      pendingAfterAuth='bet';openAuth('login');return;
+    }
+    if(sendingPlay)return;
+    sendingPlay=true;
+    draft.sportsDemoRequestId=draft.sportsDemoRequestId||randomId();saveDraft();
+    try{
+      const response=await remote('submitSportsDemoBet',{
+        sessionToken,stake,clientRequestId:draft.sportsDemoRequestId,
+        selections:draft.slips.map(leg=>({
+          gameId:leg.gameId,sportKey:leg.sportKey,
+          selectionId:leg.selectionId,group:leg.group
+        }))
+      });
+      if(!response?.ok)throw new Error('No se registró la jugada.');
+      const number=String(response.simulationId||draft.sportsDemoRequestId);
+      const returnValue=Number(response.simulatedReturn||stake*combinedOdds());
+      const placedLegs=draft.slips.map(leg=>({...leg}));
+      const placedOdds=combinedOdds();
+      draft.slips=[];delete draft.sportsDemoRequestId;saveDraft();
+      updateAccount(response);
+      renderSlips();
+      showSportsPlayDialog({
+        id:number,createdAt:new Date().toISOString(),stake,
+        walletSource:sportsWalletSource,combinedOdds:placedOdds,
+        possibleReturn:returnValue,selections:placedLegs
+      });
+    }catch(err){toast(err?.message||'No se pudo colocar la jugada.');}
+    finally{sendingPlay=false;}
+    return;
+  }
+  /* Jugada local PEN: descuento de saldo principal o bono (el cliente elige) */
+  const wallet=getLocalWallet();
+  if(sportsWalletSource==='bonos'&&!wallet.bonoActivo){
+    toast('Primero activa tus bonos.');return;
+  }
+  const available=sportsWalletSource==='principal'?wallet.principal:wallet.bono;
+  if(available<stake){
+    toast('Saldo insuficiente. Puedes hacer una recarga en Mi cuenta.');
+    accountTab='wallet';showView('account');return;
+  }
+  if(sendingPlay)return;
+  sendingPlay=true;
+  try{
+    if(sportsWalletSource==='principal')wallet.principal-=stake;
+    else wallet.bono-=stake;
+    saveLocalWallet(wallet);
+    const receipt={
+      id:'PG-'+Date.now().toString(36).toUpperCase(),
+      type:'sports',
+      createdAt:new Date().toISOString(),
+      stake,
+      walletSource:sportsWalletSource,
+      combinedOdds:Math.round(combinedOdds()*100)/100,
+      possibleReturn:Math.round(stake*combinedOdds()*100)/100,
+      selections:draft.slips.map(leg=>({...leg}))
+    };
+    const key='premiumgol_sports_simulations_v1';
+    const history=JSON.parse(localStorage.getItem(key)||'[]');
+    const data=Array.isArray(history)?history.slice(-19):[];
+    data.push(receipt);
+    localStorage.setItem(key,JSON.stringify(data));
+    draft.slips=[];saveDraft();
+    renderSlips();
+    showSportsPlayDialog(receipt);
+  }catch(err){
+    toast('No se pudo colocar la jugada.');
+  }finally{sendingPlay=false;}
+}
     const receipt={id:'PG-DEMO-'+Date.now(),createdAt:new Date().toISOString(),
       stake,combinedOdds:Math.round(combinedOdds()*100)/100,
       possibleReturn:Math.round(stake*combinedOdds()*100)/100,
@@ -1614,7 +1695,7 @@
       delete draft.sportsPrivateRequestId;
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
       $('[id^="slipReturn"]').forEach(el=>el.textContent=sportsPrivateEnabled?
-        'S/ '+fmt2(stake*combinedOdds()):fmt2(stake*combinedOdds())+' CR');
+        'S/ '+fmt2(stake*combinedOdds()):fmt2(stake*combinedOdds())+' PEN');
     }
   });
   document.addEventListener('click',e=>{
