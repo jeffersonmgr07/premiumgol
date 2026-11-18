@@ -694,6 +694,8 @@
         <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
           aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
     const footer=count?`<div class="betslip-footer">
+      ${sportsSandboxEnabled?'<div class="sports-demo-balance"><span>Créditos de prueba disponibles</span><strong>'+
+        (hasUser()?fmt(accountBalance)+' CR':'Ingresa para consultar')+'</strong></div>':''}
       <label for="betStake">Importe de prueba (créditos virtuales)</label>
       <div class="stake-entry"><input id="betStake" type="number" min="1" max="1000"
         step="1" value="${esc(stake)}" inputmode="numeric"><span>CR</span></div>
