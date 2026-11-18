@@ -55,7 +55,7 @@ No se alteraron las recargas, cuentas, bonos, pronósticos PremiumGol ni la lóg
    | --- | --- | --- |
    | `THE_ODDS_SPORT_KEYS` | `soccer_epl,soccer_spain_la_liga,soccer_italy_serie_a` | Ligas, separadas por coma, máximo 6 |
    | `THE_ODDS_REGION` | `eu` | Una sola región (`eu`, `uk`, `us`, `au`) |
-   | `THE_ODDS_REFRESH_MINUTES` | `360` | Caché compartida 6 horas; mínimo 30 minutos |
+   | `THE_ODDS_REFRESH_MINUTES` | `720` | Caché compartida 12 horas; mínimo 30 minutos |
    | `THE_ODDS_DAILY_LIMIT` | `12` | Máximo diario de llamadas API desde el servidor |
 
    Si no creas estas propiedades, funcionan los valores predeterminados.
