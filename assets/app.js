@@ -1246,7 +1246,8 @@
       if($('#authDialog').open)$('#authDialog').close();
       showGoogleLoginStatus('',false);
     }
-    if(activeView==='match'||activeView==='live')loadSportsWagerPolicy();
+    sportsPolicyRequested=false;
+    loadSportsWagerPolicy();
     const next=pendingAfterAuth;pendingAfterAuth=null;
     accountTab='overview';
     try{
