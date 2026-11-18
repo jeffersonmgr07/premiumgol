@@ -300,6 +300,14 @@
   <dialog data-clarity-mask="true" id="authBusyOverlay" class="auth-busy-overlay" aria-labelledby="authBusyTitle" aria-describedby="authBusyDesc">
     <div class="auth-busy-box"><img class="auth-busy-google auth-busy-logo-img" src="assets/premiumgol-logo-oficial.png" alt="PremiumGol" width="72" height="72"><img class="auth-busy-icon" src="assets/favicon-96.png" alt="" aria-hidden="true" width="96" height="96"><span class="auth-busy-spinner" aria-hidden="true"></span><strong id="authBusyTitle">Verificando tu cuenta…</strong><p id="authBusyDesc">Estamos confirmando tu acceso a PremiumGol.</p></div>
   </dialog>
+  <dialog id="sportsPlayDialog" class="sports-play-dialog" aria-labelledby="sportsPlayTitle">
+    <div class="sports-play-box">
+      <button id="closeSportsPlay" class="modal-x" type="button" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
+      <h3 id="sportsPlayTitle">Jugada registrada</h3>
+      <div id="sportsPlayBody"></div>
+      <button id="sportsPlayOk" type="button" class="btn btn-gold btn-full">OK</button>
+    </div>
+  </dialog>
   <dialog id="golRulesDialog" class="gol-rules-dialog" aria-labelledby="golRulesTitle">
     <div class="gol-rules-inner">
       <button id="closeGolRules" class="modal-x" aria-label="Cerrar reglas" type="button"><svg><use href="#i-close"></use></svg></button>
