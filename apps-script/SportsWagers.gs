@@ -3,19 +3,19 @@
  *
  * Propiedades privadas en Apps Script (NO en GitHub):
  *  PG_SPORTS_SANDBOX_ENABLED=true  -> acepta tickets de prueba solo con users.balance
- *  PG_SPORTS_REAL_WAGERS_ENABLED=false -> interruptor de solicitud FUTURA de dinero real
- *
- * Dinero real SIEMPRE bloqueado aquí: falta motor homologado de captura,
- * validación de cuotas, conciliación, liquidación, KYC y cumplimiento.
- * Cambiar un booleano no constituye autorización MINCETUR ni activa débitos reales.
+ *  PG_SPORTS_PRIVATE_MONEY_ENABLED=true + PG_SPORTS_PRIVATE_EMAILS=
+ *    habilita demostraciones monetarias solo a cuentas explícitamente autorizadas
+ *    según SportsPrivate.gs. No equivale a publicar una plataforma abierta.
  */
-function pgSportsWagerPolicy_(){
+function pgSportsWagerPolicy_(x){
+  const privatePolicy=pgSportsPrivatePolicy_(x);
   return {
     ok:true,
     sandboxEnabled:pgProp_('PG_SPORTS_SANDBOX_ENABLED')==='true',
-    moneyRequested:pgProp_('PG_SPORTS_REAL_WAGERS_ENABLED')==='true',
-    realMoneyEnabled:false,
-    mode:'SANDBOX_ONLY'
+    privateEnabled:Boolean(privatePolicy.privateEnabled),
+    currency:'PEN',
+    availableWallets:privatePolicy.availableWallets,
+    mode:privatePolicy.privateEnabled?'PRIVATE_ACCOUNT':'SANDBOX_ONLY'
   };
 }
 function pgRequireSportsRealWagers_(){
