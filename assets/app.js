@@ -292,7 +292,9 @@
     window.PremiumGolMeasurement?.pageView(name);
     if(name==='account')renderAccount();
     if(name==='match'||name==='live'||name==='home'){
-      if(!catalogRequested){catalogRequested=true;catalogLoading=true;loadCatalog();}
+      if(name!=='live'&&!catalogRequested){
+        catalogRequested=true;catalogLoading=true;loadCatalog();
+      }
       if(name==='match')renderMatch();
       else if(name==='live'){
         renderLive();
