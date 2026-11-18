@@ -32,7 +32,9 @@
   let activeCard=SLOTS.includes(draft.activeCard)?draft.activeCard:'A';
   let golLocked={};let couponClaimed=false;
   const currentPicks=()=>draft.golCards[activeCard];
-  draft.slips = Array.isArray(draft.slips) ? draft.slips : [];
+  draft.slips = Array.isArray(draft.slips) ?
+    draft.slips.filter(s=>s&&typeof s.gameId==='string'&&typeof s.selectionId==='string'&&
+      Number(s.odd)>1) : [];
   const saveDraft = () => {try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));}catch{}};
   function readStoredSession(){
     try{
