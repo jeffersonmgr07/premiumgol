@@ -1613,3 +1613,48 @@ body.auth-request-busy{overflow:hidden}
 @media(max-width:720px){
   .market-provider{font-size:10px;margin:3px 10px 12px;text-align:left}
 }
+
+/* Mercados The Odds API: detalle de consulta a demanda. */
+.market-detail-trigger{
+  display:block;width:calc(100% - 28px);margin:2px 14px 14px;
+  padding:11px 14px;border:1px solid #F7C85D88;border-radius:10px;
+  background:#F7C85D12;color:#F7C85D;font-weight:800;font-size:12px;
+  cursor:pointer;text-align:center
+}
+.market-detail-trigger:hover{background:#F7C85D24}
+.market-detail-trigger:focus-visible,.market-detail-tabs button:focus-visible{
+  outline:2px solid #F7C85D;outline-offset:2px
+}
+.market-detail-panel{margin:0 14px 16px;border-top:1px solid #3a4b63;padding-top:13px}
+.market-detail-panel>p{font-size:11px;line-height:1.6;color:#aebfd1;margin:0 0 12px}
+.market-detail-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.market-detail-tabs button{
+  border:1px solid #455770;color:#d8e6f4;background:#17273d;
+  border-radius:999px;padding:8px 10px;font-size:10px;font-weight:750;cursor:pointer
+}
+.market-detail-tabs button.active{border-color:#F7C85D;background:#F7C85D22;color:#F7C85D}
+.market-detail-results{display:grid;gap:12px}
+.market-detail-market{border:1px solid #364b63;border-radius:11px;overflow:hidden}
+.market-detail-market header{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:11px 13px;background:#1b2b41
+}
+.market-detail-market header strong{color:#fff;font-size:12px}
+.market-detail-market header small{color:#b5c7d8;font-size:10px;text-align:right}
+.market-detail-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:#31445a}
+.market-detail-option{
+  background:#101f32;padding:11px 12px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0
+}
+.market-detail-option>div{display:flex;flex-direction:column;gap:4px;min-width:0}
+.market-detail-option span{color:#edf4fb;font-size:11px;overflow-wrap:anywhere}
+.market-detail-option small{font-size:10px;color:#aebed0;overflow-wrap:anywhere}
+.market-detail-option strong{color:#F7C85D;font-size:13px;white-space:nowrap}
+.market-detail-note{display:flex;align-items:center;gap:12px;padding:17px 4px;color:#b8cbdb;font-size:12px;line-height:1.5}
+.market-detail-note .sports-loader{width:19px;height:19px;flex:0 0 19px}
+@media(max-width:620px){
+  .market-detail-options{grid-template-columns:minmax(0,1fr)}
+  .market-detail-trigger{margin:1px 10px 12px;width:calc(100% - 20px)}
+  .market-detail-panel{margin:0 10px 13px}
+  .market-detail-market header{flex-direction:column;align-items:flex-start;gap:5px}
+}
