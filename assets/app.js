@@ -543,26 +543,25 @@
     if(oddsLoading)output='<div class="market-detail-note"><span class="sports-loader" aria-hidden="true"></span> Consultando cuotas…</div>';
     else if(oddsError)output='<div class="market-detail-note">'+esc(oddsError)+'</div>';
     else if(!data||!data.markets?.length)output='<div class="market-detail-note">'+esc(data?.message||'Selecciona una categoría para consultar sus mercados.')+'</div>';
-    else output=data.markets.map(m=>{
-      const rows=m.outcomes.map(o=>{
+    else output=data.markets.map((m,mi)=>{
+      const rows=m.outcomes.map((o,oi)=>{
         const n=String(o.name||'');
         const name=/^over$/i.test(n)?'Más':/^under$/i.test(n)?'Menos':
           /^yes$/i.test(n)?'Sí':/^no$/i.test(n)?'No':/^draw$/i.test(n)?'Empate':n;
         const label=esc(name)+(o.point!==null&&o.point!==undefined?' '+esc(o.point):'');
         const desc=o.description?'<small>'+esc(o.description)+'</small>':'';
-        return '<div class="market-detail-option"><div><span>'+label+'</span>'+desc+
-          '</div><strong>'+fmt2(o.price)+'</strong></div>';
+        return '<button type="button" class="market-detail-option" data-market-pick="'+
+          esc(g.id)+'" data-market-group="'+esc(oddsSelectedGroup)+
+          '" data-market-index="'+mi+'" data-market-outcome="'+oi+
+          '"><div><span>'+label+'</span>'+desc+
+          '</div><strong>'+fmt2(o.price)+'</strong></button>';
       }).join('');
-      const time=m.updatedAt&&Number.isFinite(Date.parse(m.updatedAt))?
-        new Date(m.updatedAt).toLocaleTimeString('es-PE',{
-          hour:'2-digit',minute:'2-digit',timeZone:'America/Lima'}):'';
       return '<section class="market-detail-market"><header><strong>'+
-        esc(m.label)+'</strong><small>'+esc(m.bookmaker)+
-        (time?' · '+esc(time):'')+'</small></header>'+
+        esc(m.label)+'</strong></header>'+
         '<div class="market-detail-options">'+rows+'</div></section>';
     }).join('');
     return '<div class="market-detail-panel" role="region" aria-label="Cuotas adicionales del partido">'+
-      '<p>Cuotas de referencia; disponibles según la liga y la casa de apuestas. No se pueden seleccionar para apostar.</p>'+
+      '<p class="sport-market-heading">Elige una opción y agrégala a tu cupón.</p>'+
       '<div class="market-detail-tabs" role="group" aria-label="Categorías de mercados">'+
       oddsGroups.map(([id,title])=>'<button type="button" data-odds-group="'+id+
         '" data-odds-event="'+esc(g.id)+'" class="'+(id===oddsSelectedGroup?'active':'')+'">'+esc(title)+'</button>').join('')+
@@ -662,25 +661,60 @@
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
   function renderSlips(){
     const count=draft.slips.length;
-    const content=`<div class="betslip"><div class="betslip-head"><h3>Mi cupón <span>${count}</span></h3>${count?'<button id="clearBetslip">Vaciar cupón</button>':''}</div>${count?draft.slips.map(s=>`<div class="betslip-item"><div class="slip-team">${esc(s.home)} · ${esc(s.away)}</div><div class="slip-detail"><span>${s.isLive?'En vivo · ':''}${esc(outcomeName[outcomes.indexOf(s.outcome)])} (${esc(s.outcome)})</span><b>${fmt2(s.odd)}</b><button data-remove="${esc(s.id)}" aria-label="Quitar selección">${icon('close')}</button></div></div>`).join('')+`<div class="betslip-footer"><label for="betStake">Tu jugada</label><div class="stake-entry"><input id="betStake" type="number" min="1" max="1000" step="1" value="${stake}" inputmode="numeric"><span>CRÉDITOS</span></div><div class="slip-total"><span>Retorno posible</span><b id="slipReturn">${fmt2(stake*combinedOdds())}</b></div><button id="placeBet" class="btn btn-gold btn-full">Confirmar jugada ${icon('arrow')}</button><p class="slip-note">Créditos virtuales · Cuotas ilustrativas. Sin dinero real.</p></div>`:`<div class="betslip-empty">${icon('ticket')}<strong>Tu jugada comienza aquí</strong><p>Consulta las cuotas y mercados disponibles en los partidos. Las apuestas permanecen deshabilitadas.</p></div>`}</div>`;
+    const validStake=Number.isFinite(stake)&&stake>=1&&stake<=1000;
+    const total=validStake?stake*combinedOdds():0;
+    const items=count?draft.slips.map(s=>`<div class="betslip-item">
+      <div class="slip-team">${esc(s.home)} · ${esc(s.away)}</div>
+      <div class="slip-detail"><span><b class="slip-market-label">${esc(s.marketLabel||'Resultado final')}</b>
+        ${esc(s.selectionLabel||s.outcome||'')}</span>
+        <b>${fmt2(s.odd)}</b>
+        <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
+          aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
+    const footer=count?`<div class="betslip-footer">
+      <label for="betStake">Importe de prueba (S/)</label>
+      <div class="stake-entry"><input id="betStake" type="number" min="1" max="1000"
+        step="1" value="${esc(stake)}" inputmode="decimal"><span>S/</span></div>
+      <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
+      <div class="slip-total"><span>Retorno simulado</span><b id="slipReturn">S/ ${fmt2(total)}</b></div>
+      <button id="placeBet" type="button" class="btn btn-gold btn-full"
+        ${!validStake?'disabled':''}>Simular jugada ${icon('arrow')}</button>
+      <p class="slip-note">Prueba sin cargos ni premios reales. Tu saldo principal no se modifica.</p>
+    </div>`:`<div class="betslip-empty">${icon('ticket')}
+      <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
+    const receipt=sportSimReceipt?'<div class="sports-sim-receipt">'+
+      esc(sportSimReceipt)+'</div>':'';
+    const content=`<div class="betslip">
+      <div class="betslip-head"><h3>Mi cupón <span>${count}</span></h3>
+        ${count?'<button id="clearBetslip" type="button">Vaciar cupón</button>':''}</div>
+      ${items}${footer}${receipt}</div>`;
     $('#matchBetslip').innerHTML=content;
-    $('#liveBetslip').innerHTML=content.replaceAll('id="betStake"','id="betStakeLive"').replaceAll('for="betStake"','for="betStakeLive"').replaceAll('id="slipReturn"','id="slipReturnLive"').replaceAll('id="placeBet"','id="placeBetLive"').replaceAll('id="clearBetslip"','id="clearBetslipLive"');
+    $('#liveBetslip').innerHTML=content.replaceAll('id="betStake"','id="betStakeLive"')
+      .replaceAll('for="betStake"','for="betStakeLive"')
+      .replaceAll('id="slipReturn"','id="slipReturnLive"')
+      .replaceAll('id="placeBet"','id="placeBetLive"')
+      .replaceAll('id="clearBetslip"','id="clearBetslipLive"');
   }
   async function placeBet(){
-    if(catalogMode==='API_PREVIEW'){toast('Las cuotas consultadas no están disponibles para jugar.');return;}
-    if(!draft.slips.length){toast('Selecciona al menos un resultado.');return;}
-    if(!hasUser()){pendingAfterAuth='bet';openAuth('login');toast('Ingresa o regístrate para guardar tu cupón.');return;}
-    if(!Number.isInteger(stake)||stake<1||stake>1000){toast('Ingresa entre 1 y 1,000 créditos.');return;}
-    if(accountBalance<stake){showInsufficientFunds();return;}
-    if(sendingPlay)return;
-    sendingPlay=true;
+    if(!draft.slips.length){toast('Selecciona una cuota.');return;}
+    if(!Number.isInteger(stake)||stake<1||stake>1000){
+      toast('Ingresa un importe de prueba entre S/ 1 y S/ 1,000.');return;
+    }
+    // Esta prueba se almacena SOLO en el dispositivo; jamás modifica wallets.
+    const receipt={id:'PG-DEMO-'+Date.now(),createdAt:new Date().toISOString(),
+      stake,combinedOdds:Math.round(combinedOdds()*100)/100,
+      possibleReturn:Math.round(stake*combinedOdds()*100)/100,
+      selections:draft.slips.map(s=>({...s}))};
     try{
-      // El servidor vuelve a calcular las cuotas y el saldo. No acepta retornos enviados por el cliente.
-      draft.betRequestId=draft.betRequestId||randomId();saveDraft();
-      const res=await remote('saveBet',{sessionToken,stake,selections:draft.slips.map(s=>({id:s.id,outcome:s.outcome})),clientRequestId:draft.betRequestId});
-      updateAccount(res);draft.slips=[];delete draft.betRequestId;saveDraft();renderAll();toast(`¡Jugada registrada! ${fmt(stake)} créditos utilizados.`);
-    }catch(e){if(/saldo virtual insuficiente|créditos insuficientes/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo registrar el cupón.');}
-    finally{sendingPlay=false;}
+      const key='premiumgol_sports_simulations_v1';
+      const history=JSON.parse(localStorage.getItem(key)||'[]');
+      const data=Array.isArray(history)?history.slice(-19):[];
+      data.push(receipt);
+      localStorage.setItem(key,JSON.stringify(data));
+    }catch(e){ /* El comprobante se muestra aunque se rechace el almacenamiento. */ }
+    sportSimReceipt='Simulación registrada: '+receipt.id+
+      ' · Retorno ilustrativo S/ '+fmt2(receipt.possibleReturn);
+    draft.slips=[];saveDraft();renderSlips();
+    toast('Simulación registrada. No se descontó saldo principal.');
   }
   function updateAccount(result){
     if(result.user)account=result.user;
@@ -1305,8 +1339,8 @@
       if(catalogMode==='API_PREVIEW')draft.slips=[];
       // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
       const ids=new Set(allGames().map(g=>g.id));
-      draft.slips=draft.slips.filter(s=>ids.has(s.id));saveDraft();
-      renderAll();
+      draft.slips=draft.slips.filter(s=>ids.has(s.gameId)&&s.selectionId);saveDraft();
+      renderAll();fetchSportsArtwork();
     }catch(e){
       catalogLoading=false;
       catalogWarning=!bridge.ready?
@@ -1452,7 +1486,7 @@
     if(e.target.matches('[id^="betStake"]')){
       const v=Number(e.target.value);stake=Number.isFinite(v)?Math.floor(v):0;delete draft.betRequestId;
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
-      $$('[id^="slipReturn"]').forEach(el=>el.textContent=fmt2(stake*combinedOdds()));
+      $('[id^="slipReturn"]').forEach(el=>el.textContent='S/ '+fmt2(stake*combinedOdds()));
     }
   });
   document.addEventListener('click',e=>{
@@ -1484,8 +1518,14 @@
     const tab=e.target.closest('[data-account-tab]');
     if(tab){e.preventDefault();openAccountTab(tab.dataset.accountTab);return;}
     const amountButton=e.target.closest('[data-topup-amount]');if(amountButton){topupSelection=amountButton.dataset.topupAmount;topupRequestId=null;$('#rechargeOrder').hidden=true;renderTopup();if(topupSelection==='custom')$('#rechargeOther').focus();return;}
+    const marketChoice=e.target.closest('[data-market-pick]');
+    if(marketChoice){changeDetailSelection(marketChoice.dataset.marketPick,
+      marketChoice.dataset.marketGroup,Number(marketChoice.dataset.marketIndex),
+      Number(marketChoice.dataset.marketOutcome));return;}
     const pick=e.target.closest('[data-pick]');if(pick){changeSelection(pick.dataset.pick,pick.dataset.outcome);return;}
-    const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>s.id!==rem.dataset.remove);delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
+    const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>
+      s.gameId!==rem.dataset.removeGame||s.selectionId!==rem.dataset.remove);
+      sportSimReceipt='';saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];delete draft.betRequestId;saveDraft();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
