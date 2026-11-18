@@ -1769,3 +1769,15 @@ body.auth-request-busy{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .sport-premium-card,.sport-premium-card .choice{transition:none!important;transform:none!important}
 }
+
+/* Respaldo visual cuando un escudo externo todavía no está disponible. */
+.sport-league-emblem{
+  position:relative;width:26px;height:26px;flex:0 0 26px;
+  display:grid;place-items:center
+}
+.sport-league-emblem .sport-league-fallback{
+  position:absolute;inset:0;width:26px;height:26px
+}
+.sport-league-emblem .sport-league-logo{
+  position:absolute;inset:0;width:26px;height:26px;z-index:1
+}
