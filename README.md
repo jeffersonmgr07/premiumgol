@@ -1,5 +1,7 @@
 ## Cuotas deportivas — The Odds API v4
 
+**Diseño horizontal de apuestas y pruebas seguras con interruptores privados:** [docs/apuestas-deportivas-pruebas.md](docs/apuestas-deportivas-pruebas.md).
+
 La sección Apuestas y Premium Live obtiene cuotas 1X2 de casas externas mediante Google Apps Script (solo consulta, sin aceptar apuestas). La clave se configura exclusivamente en la propiedad privada `THE_ODDS_API_KEY` de Apps Script, no en GitHub.
 
 **Guía de instalación:** [docs/the-odds-api.md](docs/the-odds-api.md).
