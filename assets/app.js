@@ -1336,9 +1336,10 @@
       catalogUpdatedAt=verified&&data.updatedAt?String(data.updatedAt):null;
       catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
       matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
-      liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
+      // La consulta Live independiente no debe sobrescribirse con el catálogo de 12 h.
+      if(!liveCatalogRequestedAt)
+        liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
       if(oddsExpandedId&&!allGames().some(g=>g.id===oddsExpandedId))oddsExpandedId='';
-      if(catalogMode==='API_PREVIEW')draft.slips=[];
       // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
       const ids=new Set(allGames().map(g=>g.id));
       draft.slips=draft.slips.filter(s=>ids.has(s.gameId)&&s.selectionId);saveDraft();
