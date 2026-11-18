@@ -608,14 +608,17 @@
 
   function marketCard(g,live){
     const selected=draft.slips.find(s=>s.gameId===g.id);
-    const kickoff=g.kickoff&&Number.isFinite(Date.parse(g.kickoff))?
-      new Date(g.kickoff).toLocaleString('es-PE',{
-        timeZone:'America/Lima',weekday:'short',day:'2-digit',
-        month:'short',hour:'2-digit',minute:'2-digit'}):'Por confirmar';
+    const kickoffValid=g.kickoff&&Number.isFinite(Date.parse(g.kickoff));
+    const kickoffDate=kickoffValid?new Date(g.kickoff).toLocaleDateString('es-PE',{
+      timeZone:'America/Lima',day:'2-digit',month:'2-digit'}):'—';
+    const kickoffHour=kickoffValid?new Date(g.kickoff).toLocaleTimeString('es-PE',{
+      timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}):'—';
     return `<article class="market-card sport-premium-card ${live?'live-card':''}">
       <div class="market-top"><span class="market-league">${sportLeagueBadge(g)}</span>
-      <time class="market-kickoff-chip" datetime="${esc(g.kickoff)}">
-        ${icon('clock')} ${live?'En juego':esc(kickoff)}</time></div>
+      <time class="market-kickoff-chip" datetime="${esc(g.kickoff||'')}">
+        <span class="sport-event-date">${live?'EN VIVO':esc(kickoffDate)}</span>
+        <span class="sport-event-time">${esc(kickoffHour)}</span>
+      </time></div>
       <div class="market-body sport-match-teams">
         <span class="market-team">${sportCrest(g.home,g.sportKey)}<strong>${esc(g.home)}</strong></span>
         <span class="market-middle">VS</span>
@@ -628,7 +631,8 @@
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
       <button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
         aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
-        ${oddsExpandedId===g.id?'Ocultar mercados':'Más mercados'} ${icon('arrow')}
+        <span class="sport-more-label">${oddsExpandedId===g.id?'Ocultar mercados':'Más mercados'}</span>
+        ${icon('arrow')}
       </button>
       ${oddsDetailMarkup(g)}</article>`;
   }
