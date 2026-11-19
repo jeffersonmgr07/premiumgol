@@ -28,11 +28,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=51">
-  <script defer src="assets/config.js?v=23"></script>
+  <link rel="stylesheet" href="assets/styles.css?v=52">
+  <script defer src="assets/config.js?v=24"></script>
   <script defer src="assets/measurement-config.js?v=1"></script>
   <script defer src="assets/measurement.js?v=1"></script>
-  <script defer src="assets/app.js?v=51"></script>
+  <script defer src="assets/app.js?v=52"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -52,18 +52,11 @@
     <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
   </svg>
 
-  <div class="top-line">
-    <div class="container top-line-inner">
-      <div class="promo-ticker" aria-label="Promoción Premium">
-        <div class="promo-ticker-track">
-          <span>¡ATENTO! EN CUALQUIER MOMENTO PUEDE APARECER AQUÍ UN CUPÓN PREMIUM DE S/ 50 EN BONOS. ¡NO TE LO PIERDAS!</span>
-          <span aria-hidden="true">¡ATENTO! EN CUALQUIER MOMENTO PUEDE APARECER AQUÍ UN CUPÓN PREMIUM DE S/ 50 EN BONOS. ¡NO TE LO PIERDAS!</span>
-        </div>
-      </div>
-      <button id="premiumCoupon" class="premium-coupon" hidden type="button" aria-label="Cupón Premium de 50 bonos">✦ 50 BW PREMIUM ✦</button>
-      <span class="top-line-right">Una experiencia de <b>PremiumLott</b></span>
-    </div>
-  </div>
+  <div class="top-line"><div class="container top-line-inner">
+    <div class="promo-ticker" aria-label="Promoción Premium"><div class="promo-ticker-track"><span>¡ATENTO! EN CUALQUIER MOMENTO PUEDE APARECER AQUÍ UN CUPÓN PREMIUM DE S/ 50 EN BONOS. ¡NO TE LO PIERDAS!</span><span aria-hidden="true">¡ATENTO! EN CUALQUIER MOMENTO PUEDE APARECER AQUÍ UN CUPÓN PREMIUM DE S/ 50 EN BONOS. ¡NO TE LO PIERDAS!</span></div></div>
+    <button id="premiumCoupon" class="premium-coupon" hidden type="button" aria-label="Cupón Premium de 50 bonos">✦ 50 BW PREMIUM ✦</button>
+    <span class="top-line-right">Una experiencia de <b>PremiumLott</b></span>
+  </div></div>
 
   <header class="site-header">
     <div class="container header-inner">
@@ -74,32 +67,25 @@
         <button type="button" class="nav-link active" data-nav="home">Inicio</button>
         <button type="button" class="nav-link" data-nav="gol">PremiumGol</button>
         <button type="button" class="nav-link" data-nav="match">Apuestas deportivas</button>
-        <button type="button" class="nav-link" data-nav="live">Premium Live <span class="live-mini" aria-hidden="true"></span></button>
+        <button type="button" class="nav-link" data-nav="live">Premium Live <span class="live-mini"></span></button>
       </nav>
       <div class="header-actions">
-        <button class="wallet-chip" data-clarity-mask="true" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden>
-          <svg aria-hidden="true"><use href="#i-wallet"></use></svg>
-          <span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span>
-        </button>
+        <button class="wallet-chip" data-clarity-mask="true" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button>
         <div class="wallet-breakdown" id="walletBreakdown" data-clarity-mask="true" role="region" aria-label="Detalle de saldos" hidden>
           <div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div>
           <div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div>
           <p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Realiza una recarga para activar el uso de tu saldo de bonos.</p>
           <div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div>
         </div>
-        <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse">
-          <svg aria-hidden="true"><use href="#i-user"></use></svg>
-          <span class="session-restore-indicator" aria-hidden="true"></span>
-          <span id="loginTopLabel">Ingresar</span>
-        </button>
-        <button type="button" class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
+        <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span class="session-restore-indicator" aria-hidden="true"></span><span id="loginTopLabel">Ingresar</span></button>
+        <button class="btn btn-gold btn-register" id="registerTop" type="button">Registrarse</button>
         <div class="account-menu" id="accountMenu" role="menu" aria-label="Mi cuenta" hidden>
-          <button type="button" data-account-tab="overview" role="menuitem"><svg aria-hidden="true"><use href="#i-user"></use></svg>Resumen</button>
-          <button type="button" data-account-tab="history" role="menuitem"><svg aria-hidden="true"><use href="#i-ticket"></use></svg>Mis jugadas</button>
-          <button type="button" data-account-tab="wallet" role="menuitem"><svg aria-hidden="true"><use href="#i-wallet"></use></svg>Recargar saldo</button>
-          <button type="button" data-account-tab="bonuses" role="menuitem"><svg aria-hidden="true"><use href="#i-trophy"></use></svg>Mis bonos</button>
-          <button type="button" data-account-tab="profile" role="menuitem"><svg aria-hidden="true"><use href="#i-shield"></use></svg>Mi perfil</button>
-          <button type="button" data-account-signout="1" role="menuitem"><svg aria-hidden="true"><use href="#i-arrow"></use></svg>Cerrar sesión</button>
+          <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
+          <button type="button" data-account-tab="history" role="menuitem"><svg><use href="#i-ticket"></use></svg>Mis jugadas</button>
+          <button type="button" data-account-tab="wallet" role="menuitem"><svg><use href="#i-wallet"></use></svg>Recargar saldo</button>
+          <button type="button" data-account-tab="bonuses" role="menuitem"><svg><use href="#i-trophy"></use></svg>Mis bonos</button>
+          <button type="button" data-account-tab="profile" role="menuitem"><svg><use href="#i-shield"></use></svg>Mi perfil</button>
+          <button type="button" data-account-signout="1" role="menuitem"><svg><use href="#i-arrow"></use></svg>Cerrar sesión</button>
         </div>
       </div>
     </div>
@@ -108,48 +94,48 @@
   <main id="main">
     <section id="view-home" class="view is-active" aria-label="Inicio">
       <div class="hero">
-        <div class="hero-backdrop"></div>
-        <div class="hero-vignette"></div>
-        <div class="hero-fieldline"></div>
-        <div class="container hero-content">
+        <div class="hero-backdrop" aria-hidden="true" style="pointer-events:none;"></div>
+        <div class="hero-vignette" aria-hidden="true" style="pointer-events:none;"></div>
+        <div class="hero-fieldline" aria-hidden="true" style="pointer-events:none;"></div>
+        <div class="container hero-content" style="position:relative;z-index:4;pointer-events:auto;">
           <div class="hero-copy">
             <div class="eyebrow"><span class="eyebrow-rule"></span> PLATAFORMA DE APUESTAS DEPORTIVAS</div>
             <h1>Haz de cada encuentro de fútbol<br><em>una emoción entre patas.</em></h1>
             <div class="hero-actions">
-              <button type="button" class="btn btn-gold btn-xl" data-nav="gol">Empezar a jugar <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
-              <button type="button" class="btn btn-glass btn-xl hero-secondary-action" data-nav="match"><svg aria-hidden="true"><use href="#i-ball"></use></svg> Ver partidos</button>
+              <button type="button" class="btn btn-gold btn-xl" data-nav="gol">Empezar a jugar <svg><use href="#i-arrow"></use></svg></button>
+              <button type="button" class="btn btn-glass btn-xl hero-secondary-action" data-nav="match"><svg><use href="#i-ball"></use></svg> Ver partidos</button>
             </div>
           </div>
-          <div class="hero-visual hero-player-visual" aria-hidden="true">
-            <img class="hero-player" src="assets/hero-player.webp" width="620" height="918" alt="" fetchpriority="high" decoding="async">
+          <div class="hero-visual hero-player-visual" aria-hidden="true" style="pointer-events:none;">
+            <img class="hero-player" src="assets/hero-player.webp" width="620" height="918" alt="" fetchpriority="high" decoding="async" style="pointer-events:none;">
           </div>
         </div>
-        <div class="hero-bottom-fade"></div>
+        <div class="hero-bottom-fade" aria-hidden="true" style="pointer-events:none;"></div>
       </div>
 
       <div class="container home-content">
         <div class="section-heading"><div><h2>Empieza a jugar ahora<span class="gold-dot">.</span></h2></div></div>
         <div class="modes-grid">
           <button type="button" class="mode-card mode-gol" data-nav="gol">
-            <div class="mode-top"><span class="mode-number">01 / 03</span><span class="mode-icon"><svg aria-hidden="true"><use href="#i-trophy"></use></svg></span></div>
+            <div class="mode-top"><span class="mode-number">01 / 03</span><span class="mode-icon"><svg><use href="#i-trophy"></use></svg></span></div>
             <div><span class="mode-tag">12 PARTIDOS · L / E / V</span><h3>Premium<strong>Gol</strong></h3><p>Elige local, empate o visita en cada partido. ¡Cada acierto cuenta!</p></div>
-            <div class="mode-bottom"><span>Arma tu jugada</span><span class="circle-arrow"><svg aria-hidden="true"><use href="#i-arrow"></use></svg></span></div>
+            <div class="mode-bottom"><span>Arma tu jugada</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div>
           </button>
           <button type="button" class="mode-card mode-match" data-nav="match">
-            <div class="mode-top"><span class="mode-number">02 / 03</span><span class="mode-icon"><svg aria-hidden="true"><use href="#i-ball"></use></svg></span></div>
+            <div class="mode-top"><span class="mode-number">02 / 03</span><span class="mode-icon"><svg><use href="#i-ball"></use></svg></span></div>
             <div><span class="mode-tag">ANTES DEL PITAZO INICIAL</span><h3>Apuestas <strong>deportivas</strong></h3><p>Explora los próximos encuentros, compara cuotas y elige tus pronósticos.</p></div>
-            <div class="mode-bottom"><span>Ver próximos partidos</span><span class="circle-arrow"><svg aria-hidden="true"><use href="#i-arrow"></use></svg></span></div>
+            <div class="mode-bottom"><span>Ver próximos partidos</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div>
           </button>
           <button type="button" class="mode-card mode-live" data-nav="live">
-            <div class="mode-top"><span class="mode-number">03 / 03</span><span class="mode-icon"><svg aria-hidden="true"><use href="#i-pulse"></use></svg></span></div>
-            <div><span class="mode-tag"><span class="tiny-live" aria-hidden="true"></span> LA EMOCIÓN EN DIRECTO</span><h3>Premium <strong>Live</strong></h3><p>Sigue el minuto a minuto y haz tus elecciones mientras rueda el balón.</p></div>
-            <div class="mode-bottom"><span>Entrar al Live</span><span class="circle-arrow"><svg aria-hidden="true"><use href="#i-arrow"></use></svg></span></div>
+            <div class="mode-top"><span class="mode-number">03 / 03</span><span class="mode-icon"><svg><use href="#i-pulse"></use></svg></span></div>
+            <div><span class="mode-tag"><span class="tiny-live"></span> LA EMOCIÓN EN DIRECTO</span><h3>Premium <strong>Live</strong></h3><p>Sigue el minuto a minuto y haz tus elecciones mientras rueda el balón.</p></div>
+            <div class="mode-bottom"><span>Entrar al Live</span><span class="circle-arrow"><svg><use href="#i-arrow"></use></svg></span></div>
           </button>
         </div>
 
         <div class="section-heading preview-heading">
           <div><h2>Partidos destacados<span class="gold-dot">.</span></h2></div>
-          <button type="button" class="text-link" data-nav="match">Ver todos <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+          <button type="button" class="text-link" data-nav="match">Ver todos <svg><use href="#i-arrow"></use></svg></button>
         </div>
         <div class="preview-list" id="homeFixtures" aria-live="polite"></div>
       </div>
@@ -169,13 +155,12 @@
           </div>
           <div class="progress-box">
             <div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div>
-            <div class="progress-track" role="progressbar" aria-label="Progreso de pronósticos" aria-valuemin="0" aria-valuemax="12" aria-valuenow="0"><i id="golProgress"></i></div>
+            <div class="progress-track"><i id="golProgress"></i></div>
           </div>
         </div>
-
         <div class="gol-layout">
           <div>
-            <div class="content-tag"><svg aria-hidden="true"><use href="#i-clock"></use></svg> Jornada 18–20 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div>
+            <div class="content-tag"><svg><use href="#i-clock"></use></svg> Jornada 18–20 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div>
             <div id="golFixtures" class="gol-fixtures"></div>
           </div>
           <aside class="gol-side">
@@ -192,7 +177,7 @@
               <div id="golSummary" class="gol-summary" aria-live="polite"></div>
               <div class="gol-stat"><span>Pronósticos completados</span><b id="golCountSide">0 de 12</b></div>
               <div class="gol-price"><span>Valor de cada jugada</span><strong>S/ 5.00</strong></div>
-              <button type="button" class="btn btn-gold btn-full" id="submitGol">Colocar jugada <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+              <button type="button" class="btn btn-gold btn-full" id="submitGol">Colocar jugada <svg><use href="#i-arrow"></use></svg></button>
               <button type="button" class="text-link centered" id="resetGol">Borrar selección</button>
               <button class="gol-rules-link" type="button" id="openGolRules"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Ver reglas y condiciones</button>
             </div>
@@ -205,7 +190,7 @@
       <div class="container page-body">
         <div class="game-toolbar">
           <div><h2>Próximos encuentros</h2></div>
-          <span class="demo-label" id="matchSourceLabel"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Cargando encuentros…</span>
+          <span class="demo-label" id="matchSourceLabel"><svg><use href="#i-shield"></use></svg> Cargando encuentros…</span>
         </div>
         <div class="game-layout">
           <div>
@@ -227,11 +212,11 @@
       <div class="container page-body">
         <div class="game-toolbar">
           <div><h2>Partidos en curso</h2></div>
-          <span class="demo-label" id="liveSourceLabel"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Cargando encuentros…</span>
+          <span class="demo-label" id="liveSourceLabel"><svg><use href="#i-shield"></use></svg> Cargando encuentros…</span>
         </div>
         <div class="game-layout">
           <div>
-            <div class="live-banner" id="liveBanner" hidden><span class="live-ping" aria-hidden="true"></span><b>EN JUEGO</b><span>Vista previa de la experiencia en vivo</span><svg aria-hidden="true"><use href="#i-pulse"></use></svg></div>
+            <div class="live-banner" id="liveBanner" hidden><span class="live-ping"></span><b>EN JUEGO</b><span>Vista previa de la experiencia en vivo</span><svg><use href="#i-pulse"></use></svg></div>
             <div id="liveFixtures" class="market-list"></div>
           </div>
           <aside id="liveBetslip"></aside>
@@ -246,47 +231,44 @@
           <h3 id="profileName">Jugador</h3>
           <span id="profileSubtitle">Tu cuenta PremiumGol</span>
           <div class="side-divider"></div>
-          <button type="button" class="account-side-link active" data-account-tab="overview"><svg aria-hidden="true"><use href="#i-user"></use></svg> Resumen</button>
-          <button type="button" class="account-side-link" data-account-tab="history"><svg aria-hidden="true"><use href="#i-ticket"></use></svg> Mis jugadas</button>
-          <button type="button" class="account-side-link" data-account-tab="wallet"><svg aria-hidden="true"><use href="#i-wallet"></use></svg> Recargar saldo</button>
-          <button type="button" class="account-side-link" data-account-tab="bonuses"><svg aria-hidden="true"><use href="#i-trophy"></use></svg> Mis bonos</button>
-          <button type="button" class="account-side-link" data-account-tab="profile"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Mi perfil</button>
-          <button type="button" class="account-side-link" id="accountSignout"><svg aria-hidden="true"><use href="#i-arrow"></use></svg> Cerrar sesión</button>
+          <button type="button" class="account-side-link active" data-account-tab="overview"><svg><use href="#i-user"></use></svg> Resumen</button>
+          <button type="button" class="account-side-link" data-account-tab="history"><svg><use href="#i-ticket"></use></svg> Mis jugadas</button>
+          <button type="button" class="account-side-link" data-account-tab="wallet"><svg><use href="#i-wallet"></use></svg> Recargar saldo</button>
+          <button type="button" class="account-side-link" data-account-tab="bonuses"><svg><use href="#i-trophy"></use></svg> Mis bonos</button>
+          <button type="button" class="account-side-link" data-account-tab="profile"><svg><use href="#i-shield"></use></svg> Mi perfil</button>
+          <button type="button" class="account-side-link" id="accountSignout"><svg><use href="#i-arrow"></use></svg> Cerrar sesión</button>
         </aside>
 
         <div class="account-quick-tabs" role="group" aria-label="Navegación de cuenta">
-          <button type="button" data-account-tab="overview" title="Resumen" aria-label="Resumen"><svg aria-hidden="true"><use href="#i-user"></use></svg></button>
-          <button type="button" data-account-tab="history" title="Mis jugadas" aria-label="Mis jugadas"><svg aria-hidden="true"><use href="#i-ticket"></use></svg></button>
-          <button type="button" data-account-tab="wallet" title="Recargar saldo" aria-label="Recargar saldo"><svg aria-hidden="true"><use href="#i-wallet"></use></svg></button>
-          <button type="button" data-account-tab="bonuses" title="Mis bonos" aria-label="Mis bonos"><svg aria-hidden="true"><use href="#i-trophy"></use></svg></button>
-          <button type="button" data-account-tab="profile" title="Mi perfil" aria-label="Mi perfil"><svg aria-hidden="true"><use href="#i-shield"></use></svg></button>
-          <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+          <button type="button" data-account-tab="overview" title="Resumen" aria-label="Resumen"><svg><use href="#i-user"></use></svg></button>
+          <button type="button" data-account-tab="history" title="Mis jugadas" aria-label="Mis jugadas"><svg><use href="#i-ticket"></use></svg></button>
+          <button type="button" data-account-tab="wallet" title="Recargar saldo" aria-label="Recargar saldo"><svg><use href="#i-wallet"></use></svg></button>
+          <button type="button" data-account-tab="bonuses" title="Mis bonos" aria-label="Mis bonos"><svg><use href="#i-trophy"></use></svg></button>
+          <button type="button" data-account-tab="profile" title="Mi perfil" aria-label="Mi perfil"><svg><use href="#i-shield"></use></svg></button>
+          <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg><use href="#i-arrow"></use></svg></button>
         </div>
 
         <div class="account-main">
           <div id="accountOverview" class="account-content is-active">
             <div class="account-welcome">
               <div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus saldos y tu actividad reciente.</p></div>
-              <svg aria-hidden="true"><use href="#i-ball"></use></svg>
+              <svg><use href="#i-ball"></use></svg>
             </div>
             <div class="stats-grid">
               <div class="stat-card"><span>Saldo principal</span><b id="accountBalance">S/ 0.00</b><small>Recargas verificadas</small></div>
               <div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div>
               <div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div>
             </div>
-            <button type="button" class="account-view-plays" data-account-tab="history">Ver mis jugadas <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+            <button type="button" class="account-view-plays" data-account-tab="history">Ver mis jugadas <svg><use href="#i-arrow"></use></svg></button>
             <div class="wallet-note">
-              <svg aria-hidden="true"><use href="#i-wallet"></use></svg>
+              <svg><use href="#i-wallet"></use></svg>
               <div><b>Tu saldo</b><span>Consulta el saldo principal y recarga tu cuenta.</span></div>
               <button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button>
             </div>
             <div class="account-panel referral-panel">
               <div class="panel-head"><h3>Invita a tus amigos</h3></div>
               <p class="referral-description">Comparte tu enlace. Recibe S/ 5 de bono por cada amigo que se registre y complete su primera recarga aprobada.</p>
-              <div class="referral-link">
-                <input id="referralLink" type="text" value="Tu enlace de invitación" readonly aria-label="Mi enlace de invitación">
-                <button id="copyReferral" type="button" class="btn btn-outline btn-mini">Copiar enlace</button>
-              </div>
+              <div class="referral-link"><input id="referralLink" type="text" value="Tu enlace de invitación" readonly aria-label="Mi enlace de invitación"><button id="copyReferral" type="button" class="btn btn-outline btn-mini">Copiar enlace</button></div>
               <p class="referral-detail" id="referralCount">Invitaciones pendientes de activación</p>
               <div class="referral-wallet-summary">
                 <div><span>Saldo de bonos</span><strong id="referralBonusBalance">S/ 0.00</strong></div>
@@ -295,7 +277,7 @@
               <div id="referralActivity" class="referral-activity-list"><p>Aún no hay invitaciones registradas.</p></div>
             </div>
             <div class="account-panel">
-              <div class="panel-head"><h3>Actividad reciente</h3><button type="button" class="text-link" data-account-tab="history">Ver todas <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button></div>
+              <div class="panel-head"><h3>Actividad reciente</h3><button type="button" class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div>
               <div id="recentHistory"></div>
             </div>
           </div>
@@ -319,7 +301,7 @@
               </div>
               <label class="field recharge-other-field" id="rechargeOtherWrap" hidden><span>Ingresa el importe (mínimo S/ 5)</span><input id="rechargeOther" type="number" min="5" max="10000" step="0.01" inputmode="decimal" placeholder="Ej.: 75.50"></label>
               <div class="recharge-total"><span>Importe solicitado</span><b id="rechargeSelected">S/ 5.00</b></div>
-              <button type="button" class="btn btn-gold btn-full" id="rechargeGenerate">Generar orden de recarga <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+              <button type="button" class="btn btn-gold btn-full" id="rechargeGenerate">Generar orden de recarga <svg><use href="#i-arrow"></use></svg></button>
               <div class="recharge-order" id="rechargeOrder" role="status" aria-live="polite" hidden></div>
               <div class="topup-history"><h3>Últimas recargas</h3><div id="topupHistory" class="topup-history-list"><p>Aún no has registrado recargas.</p></div></div>
             </div>
@@ -343,20 +325,11 @@
             <h2>Mi perfil</h2>
             <p class="profile-info">Completa tus datos personales y mantén tu cuenta actualizada.</p>
             <form id="profileForm" class="profile-form">
-              <div class="form-grid">
-                <label class="field"><span>Nombres</span><input id="profileFirst" name="given-name" autocomplete="given-name" maxlength="70" required></label>
-                <label class="field"><span>Apellidos</span><input id="profileLast" name="family-name" autocomplete="family-name" maxlength="70" required></label>
-              </div>
-              <label class="field"><span>Correo electrónico</span><input id="profileEmail" name="email" type="email" autocomplete="email" readonly></label>
-              <div class="form-grid">
-                <label class="field"><span>Prefijo WhatsApp</span><select id="profileCountry" name="tel-country-code"><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+57">🇨🇴 +57</option><option value="+56">🇨🇱 +56</option><option value="+54">🇦🇷 +54</option><option value="+52">🇲🇽 +52</option><option value="+1">🇺🇸 +1</option><option value="+34">🇪🇸 +34</option></select></label>
-                <label class="field"><span>Número de WhatsApp</span><input id="profilePhone" name="tel-national" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="Número sin prefijo" maxlength="15" pattern="[0-9]{6,15}" required></label>
-              </div>
-              <div class="form-grid">
-                <label class="field"><span>Tipo de documento</span><select id="profileDocType" name="doc-type"><option value="">Selecciona una opción</option><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PAS">Pasaporte</option></select></label>
-                <label class="field"><span>Número de documento</span><input id="profileDocNumber" name="doc-number" autocomplete="off" maxlength="20" placeholder="Por completar"></label>
-              </div>
-              <button class="btn btn-gold" type="submit" id="profileSave">Guardar datos <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+              <div class="form-grid"><label class="field"><span>Nombres</span><input id="profileFirst" autocomplete="given-name" maxlength="70" required></label><label class="field"><span>Apellidos</span><input id="profileLast" autocomplete="family-name" maxlength="70" required></label></div>
+              <label class="field"><span>Correo electrónico</span><input id="profileEmail" type="email" readonly></label>
+              <div class="form-grid"><label class="field"><span>Prefijo WhatsApp</span><select id="profileCountry"><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+57">🇨🇴 +57</option><option value="+56">🇨🇱 +56</option><option value="+54">🇦🇷 +54</option><option value="+52">🇲🇽 +52</option><option value="+1">🇺🇸 +1</option><option value="+34">🇪🇸 +34</option></select></label><label class="field"><span>Número de WhatsApp</span><input id="profilePhone" type="tel" autocomplete="tel-national" inputmode="tel" placeholder="Número sin prefijo" maxlength="15" pattern="[0-9]{6,15}" required></label></div>
+              <div class="form-grid"><label class="field"><span>Tipo de documento</span><select id="profileDocType"><option value="">Selecciona una opción</option><option value="DNI">DNI</option><option value="CE">Carné de extranjería</option><option value="PAS">Pasaporte</option></select></label><label class="field"><span>Número de documento</span><input id="profileDocNumber" autocomplete="off" maxlength="20" placeholder="Por completar"></label></div>
+              <button class="btn btn-gold" type="submit" id="profileSave">Guardar datos <svg><use href="#i-arrow"></use></svg></button>
             </form>
           </div>
         </div>
@@ -442,78 +415,48 @@
   </footer>
 
   <nav class="mobile-nav" aria-label="Menú inferior">
-    <button type="button" data-nav="home" class="active"><svg aria-hidden="true"><use href="#i-ball"></use></svg><span>Inicio</span></button>
-    <button type="button" data-nav="gol"><svg aria-hidden="true"><use href="#i-trophy"></use></svg><span>PremiumGol</span></button>
-    <button type="button" data-nav="match"><svg aria-hidden="true"><use href="#i-ticket"></use></svg><span>Apuestas</span></button>
-    <button type="button" data-nav="live"><svg aria-hidden="true"><use href="#i-pulse"></use></svg><span>Live</span></button>
-    <button type="button" data-nav="account"><svg aria-hidden="true"><use href="#i-user"></use></svg><span>Cuenta</span></button>
+    <button type="button" data-nav="home" class="active"><svg><use href="#i-ball"></use></svg><span>Inicio</span></button>
+    <button type="button" data-nav="gol"><svg><use href="#i-trophy"></use></svg><span>PremiumGol</span></button>
+    <button type="button" data-nav="match"><svg><use href="#i-ticket"></use></svg><span>Apuestas</span></button>
+    <button type="button" data-nav="live"><svg><use href="#i-pulse"></use></svg><span>Live</span></button>
+    <button type="button" data-nav="account"><svg><use href="#i-user"></use></svg><span>Cuenta</span></button>
   </nav>
 
-  <dialog class="auth-dialog" id="authDialog" data-clarity-mask="true" aria-labelledby="authTitle">
-    <div class="auth-box">
-      <button type="button" class="modal-x" id="closeAuth" aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <img class="auth-brand-logo" src="assets/premiumgol-modal-logo.png" alt="PremiumGol" width="1224" height="228">
-      <h2 id="authTitle" class="visually-hidden">Ingresar</h2>
-      <p id="authDescription">Tus jugadas y pronósticos.</p>
-      <div class="auth-tabs" role="tablist" aria-label="Acceso a tu cuenta">
-        <button type="button" id="tabLogin" class="active" role="tab" aria-selected="true">Ingresar</button>
-        <button type="button" id="tabRegister" role="tab" aria-selected="false">Registrarse</button>
-      </div>
-      <div class="google-signin-shell" id="googleSigninShell"><div id="googleButtonMount" class="google-button-mount"></div></div>
-      <p id="googleLoginStatus" class="google-login-status" role="status" aria-live="polite" hidden></p>
-      <p id="googleUnavailable" class="google-unavailable" hidden>El acceso con Google está en configuración. Puedes ingresar o registrarte con tu correo electrónico.</p>
-      <button type="button" id="emailAccessToggle" class="email-access-toggle" aria-controls="emailAccessPanel" aria-expanded="false">Usar correo electrónico</button>
-      <div id="emailAccessPanel" hidden>
-        <div class="auth-or"><span></span> o con correo electrónico <span></span></div>
-        <form id="emailForm" autocomplete="on">
-          <div id="signupFields" hidden>
-            <div class="form-grid">
-              <label class="field"><span>Nombres</span><input id="authFirst" name="given-name" autocomplete="given-name" maxlength="70"></label>
-              <label class="field"><span>Apellidos</span><input id="authLast" name="family-name" autocomplete="family-name" maxlength="70"></label>
-            </div>
-            <div class="form-grid">
-              <label class="field"><span>Código de país</span><select id="authCountry" name="tel-country-code"><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+57">🇨🇴 +57</option><option value="+56">🇨🇱 +56</option><option value="+54">🇦🇷 +54</option><option value="+52">🇲🇽 +52</option><option value="+1">🇺🇸 +1</option><option value="+34">🇪🇸 +34</option></select></label>
-              <label class="field"><span>Número de WhatsApp</span><input id="authPhone" name="tel-national" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" pattern="[0-9]{6,15}" placeholder="Número de WhatsApp"></label>
-            </div>
-          </div>
-          <label class="field"><span>Correo electrónico</span><input id="authEmail" name="email" type="email" placeholder="tu@correo.com" required autocomplete="email" maxlength="254"></label>
-          <button class="btn btn-gold btn-full" id="requestCode" type="submit">Enviar código de acceso <svg aria-hidden="true"><use href="#i-arrow"></use></svg></button>
-        </form>
-        <form id="verifyForm" hidden>
-          <p class="verification-help">Ingresa el código enviado a tu correo.</p>
-          <label class="field"><span>Código de 6 dígitos</span><input id="authCode" name="one-time-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required></label>
-          <button class="btn btn-gold btn-full" id="verifyCodeBtn" type="submit">Verificar e ingresar</button>
-          <button class="text-link" type="button" id="backToEmail">Cambiar correo</button>
-        </form>
-      </div>
-      <p class="auth-legal">Al registrarte declaras que tienes 18 años o más. Jugadas con créditos virtuales, sin dinero real.</p>
-    </div>
-  </dialog>
+  <dialog class="auth-dialog" id="authDialog" data-clarity-mask="true" aria-labelledby="authTitle"><div class="auth-box">
+    <button type="button" class="modal-x" id="closeAuth" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
+    <img class="auth-brand-logo" src="assets/premiumgol-modal-logo.png" alt="PremiumGol" width="1224" height="228">
+    <h2 id="authTitle" class="visually-hidden">Ingresar</h2><p id="authDescription">Tus jugadas y pronósticos.</p>
+    <div class="auth-tabs" role="tablist" aria-label="Acceso a tu cuenta"><button type="button" id="tabLogin" class="active" role="tab" aria-selected="true">Ingresar</button><button type="button" id="tabRegister" role="tab" aria-selected="false">Registrarse</button></div>
+    <div class="google-signin-shell" id="googleSigninShell"><div id="googleButtonMount" class="google-button-mount"></div></div>
+    <p id="googleLoginStatus" class="google-login-status" role="status" aria-live="polite" hidden></p>
+    <p id="googleUnavailable" class="google-unavailable" hidden>El acceso con Google está en configuración. Puedes ingresar o registrarte con tu correo electrónico.</p>
+    <button type="button" id="emailAccessToggle" class="email-access-toggle" aria-controls="emailAccessPanel" aria-expanded="false">Usar correo electrónico</button>
+    <div id="emailAccessPanel" hidden><div class="auth-or"><span></span> o con correo electrónico <span></span></div>
+    <form id="emailForm" autocomplete="on">
+      <div id="signupFields" hidden><div class="form-grid"><label class="field"><span>Nombres</span><input id="authFirst" name="given-name" autocomplete="given-name" maxlength="70"></label><label class="field"><span>Apellidos</span><input id="authLast" name="family-name" autocomplete="family-name" maxlength="70"></label></div>
+      <div class="form-grid"><label class="field"><span>Código de país</span><select id="authCountry"><option value="+51">🇵🇪 +51</option><option value="+58">🇻🇪 +58</option><option value="+57">🇨🇴 +57</option><option value="+56">🇨🇱 +56</option><option value="+54">🇦🇷 +54</option><option value="+52">🇲🇽 +52</option><option value="+1">🇺🇸 +1</option><option value="+34">🇪🇸 +34</option></select></label><label class="field"><span>Número de WhatsApp</span><input id="authPhone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" pattern="[0-9]{6,15}" placeholder="Número de WhatsApp"></label></div></div>
+      <label class="field"><span>Correo electrónico</span><input id="authEmail" type="email" placeholder="tu@correo.com" required autocomplete="email" maxlength="254"></label>
+      <button class="btn btn-gold btn-full" id="requestCode" type="submit">Enviar código de acceso <svg><use href="#i-arrow"></use></svg></button>
+    </form>
+    <form id="verifyForm" hidden><p class="verification-help">Ingresa el código enviado a tu correo.</p><label class="field"><span>Código de 6 dígitos</span><input id="authCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" required></label><button class="btn btn-gold btn-full" id="verifyCodeBtn" type="submit">Verificar e ingresar</button><button class="text-link" type="button" id="backToEmail">Cambiar correo</button></form></div>
+    <p class="auth-legal">Al registrarte declaras que tienes 18 años o más. Jugadas con créditos virtuales, sin dinero real.</p>
+  </div></dialog>
 
-  <dialog class="coupon-dialog" id="couponDialog" aria-labelledby="couponTitle">
-    <div class="coupon-box">
-      <button type="button" id="closeCoupon" class="modal-x" aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
-      <span class="coupon-seal">✦ 50 BW PREMIUM ✦</span>
-      <h2 id="couponTitle">¡Tu Cupón Premium está aquí!</h2>
-      <p>Activa <b>50 créditos de bono</b> para disfrutar PremiumGol.</p>
-      <button type="button" class="btn btn-gold btn-full" id="claimCoupon">Activar mi bono</button>
-      <small>Promoción limitada a un bono por cuenta. Saldo virtual de demostración; no canjeable por dinero.</small>
-    </div>
-  </dialog>
+  <dialog class="coupon-dialog" id="couponDialog" aria-labelledby="couponTitle"><div class="coupon-box">
+    <button type="button" id="closeCoupon" class="modal-x" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
+    <span class="coupon-seal">✦ 50 BW PREMIUM ✦</span><h2 id="couponTitle">¡Tu Cupón Premium está aquí!</h2>
+    <p>Activa <b>50 créditos de bono</b> para disfrutar PremiumGol.</p>
+    <button type="button" class="btn btn-gold btn-full" id="claimCoupon">Activar mi bono</button>
+    <small>Promoción limitada a un bono por cuenta. Saldo virtual de demostración; no canjeable por dinero.</small>
+  </div></dialog>
 
   <dialog data-clarity-mask="true" id="authBusyOverlay" class="auth-busy-overlay" aria-labelledby="authBusyTitle" aria-describedby="authBusyDesc">
-    <div class="auth-busy-box">
-      <img class="auth-busy-google auth-busy-logo-img" src="assets/premiumgol-logo-oficial.png" alt="PremiumGol" width="72" height="72">
-      <img class="auth-busy-icon" src="assets/favicon-96.png" alt="" aria-hidden="true" width="96" height="96">
-      <span class="auth-busy-spinner" aria-hidden="true"></span>
-      <strong id="authBusyTitle">Verificando tu cuenta…</strong>
-      <p id="authBusyDesc">Estamos confirmando tu acceso a PremiumGol.</p>
-    </div>
+    <div class="auth-busy-box"><img class="auth-busy-google auth-busy-logo-img" src="assets/premiumgol-logo-oficial.png" alt="PremiumGol" width="72" height="72"><img class="auth-busy-icon" src="assets/favicon-96.png" alt="" aria-hidden="true" width="96" height="96"><span class="auth-busy-spinner" aria-hidden="true"></span><strong id="authBusyTitle">Verificando tu cuenta…</strong><p id="authBusyDesc">Estamos confirmando tu acceso a PremiumGol.</p></div>
   </dialog>
 
   <dialog id="sportsPlayDialog" class="sports-play-dialog" aria-labelledby="sportsPlayTitle">
     <div class="sports-play-box">
-      <button id="closeSportsPlay" class="modal-x" type="button" aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button id="closeSportsPlay" class="modal-x" type="button" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
       <h3 id="sportsPlayTitle">Jugada registrada</h3>
       <div id="sportsPlayBody"></div>
       <button id="sportsPlayOk" type="button" class="btn btn-gold btn-full">OK</button>
@@ -522,7 +465,7 @@
 
   <dialog id="golRulesDialog" class="gol-rules-dialog" aria-labelledby="golRulesTitle">
     <div class="gol-rules-inner">
-      <button id="closeGolRules" class="modal-x" aria-label="Cerrar reglas" type="button"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button id="closeGolRules" class="modal-x" aria-label="Cerrar reglas" type="button"><svg><use href="#i-close"></use></svg></button>
       <h2 id="golRulesTitle">Reglas de PremiumGol</h2>
       <p>En cada jugada debes marcar un pronóstico para los 12 encuentros: <b>L</b> gana el local, <b>E</b> empate o <b>V</b> gana la visita.</p>
       <p>Las jugadas A, B, C y D son independientes. La jornada se cierra en la fecha y hora anunciadas; no se admiten cambios después del cierre.</p>
@@ -535,7 +478,7 @@
 
   <dialog data-clarity-mask="true" id="walletPayDialog" class="gol-rules-dialog wallet-pay-dialog" aria-labelledby="walletPayTitle">
     <div class="gol-rules-inner wallet-pay-content">
-      <button type="button" class="modal-x" id="walletPayClose" aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button type="button" class="modal-x" id="walletPayClose" aria-label="Cerrar"><svg><use href="#i-close"></use></svg></button>
       <h2 id="walletPayTitle">¿Con qué saldo deseas jugar?</h2>
       <p class="profile-info">PremiumGol · Costo de la jugada: <strong>S/ 5.00</strong></p>
       <div class="wallet-pay-options" role="radiogroup" aria-label="Selecciona el saldo para esta jugada">
@@ -553,7 +496,7 @@
 
   <dialog id="insufficientFundsDialog" class="gol-rules-dialog" aria-labelledby="insufficientFundsTitle">
     <div class="gol-rules-inner">
-      <button type="button" class="modal-x" id="closeInsufficientFunds" aria-label="Cerrar aviso"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button type="button" class="modal-x" id="closeInsufficientFunds" aria-label="Cerrar aviso"><svg><use href="#i-close"></use></svg></button>
       <h2 id="insufficientFundsTitle">Saldo insuficiente</h2>
       <p>No tienes saldo suficiente para colocar esta jugada.</p>
       <button type="button" class="btn btn-gold btn-full" id="insufficientFundsRecharge">Recargar saldo</button>
@@ -562,7 +505,7 @@
 
   <dialog data-clarity-mask="true" id="playDetailsDialog" class="gol-rules-dialog play-details-dialog" aria-labelledby="playDetailsTitle">
     <div class="gol-rules-inner">
-      <button type="button" class="modal-x" id="closePlayDetails" aria-label="Cerrar detalles"><svg aria-hidden="true"><use href="#i-close"></use></svg></button>
+      <button type="button" class="modal-x" id="closePlayDetails" aria-label="Cerrar detalles"><svg><use href="#i-close"></use></svg></button>
       <h2 id="playDetailsTitle">Detalles de tu jugada</h2>
       <div id="playDetailsBody"></div>
       <button type="button" class="btn btn-gold btn-full" id="donePlayDetails">Cerrar</button>
@@ -579,7 +522,6 @@
     </div>
   </dialog>
 
-  <!-- Medición opcional: sin identificadores ni consentimiento no se cargan etiquetas. -->
   <section id="measurementBanner" class="measurement-banner" role="region" aria-label="Preferencias de medición" hidden>
     <div class="measurement-banner-copy"><strong>Tu privacidad importa</strong>
       <p>Utilizamos herramientas opcionales para entender cómo se usa PremiumGol y mejorar la experiencia. Tú decides si aceptarlas.</p>
