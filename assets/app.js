@@ -121,7 +121,7 @@
   let account = null;
   let accountBalance = 0;
   let paidBalancePEN = 0;
-  let bonusBalancePEN=0,bonusUnlocked=false,bonusStatement=[],walletWagersEnabled=false,referralActivity=[];
+  let bonusBalancePEN=0,bonusAvailablePEN=0,bonusPendingPEN=0,bonusUnlocked=false,bonusStatement=[],walletWagersEnabled=false,referralActivity=[];
   let recentTopupOrders = [];
   let playHistory = [];
   let activeView='home',accountTab='overview',pendingAfterAuth=null,authMode='login',catalogMode='API_PREVIEW';
@@ -421,17 +421,17 @@
   function openWalletPayment(){
     const main=$('#walletPayPrincipal'),bonus=$('#walletPayBonuses');
     const enoughMain=Math.round(paidBalancePEN*100)>=500;
-    const enoughBonus=bonusUnlocked&&Math.round(bonusBalancePEN*100)>=500;
+    const enoughBonus=Math.round(bonusAvailablePEN*100)>=500;
     if(!enoughMain&&!enoughBonus){showInsufficientFunds();return;}
     main.disabled=!enoughMain;
     bonus.disabled=!enoughBonus;
     main.checked=enoughMain;
     bonus.checked=!enoughMain&&enoughBonus;
     $('#walletPayPrincipalAmount').textContent='S/ '+fmt2(paidBalancePEN);
-    $('#walletPayBonusesAmount').textContent='S/ '+fmt2(bonusBalancePEN);
-    $('#walletPayBonusesHint').textContent=bonusUnlocked?
-      'Bienvenida, referidos y promociones':
-      'Se habilita al completar tu primera recarga propia de S/ 5.';
+    $('#walletPayBonusesAmount').textContent='S/ '+fmt2(bonusAvailablePEN);
+    $('#walletPayBonusesHint').textContent=bonusPendingPEN>0?
+      'Disponibles para jugar · S/ '+fmt2(bonusPendingPEN)+' pendientes de otra recarga':
+      'Bonos activados para jugar';
     $('#walletPayNotice').textContent=walletWagersEnabled?
       'Se descontará S/ 5.00 únicamente de la billetera seleccionada.':
       'Las jugadas pagadas con saldo todavía están en preparación.';
@@ -449,10 +449,10 @@
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
     if(!walletSource){openWalletPayment();return;}
     if(!walletWagersEnabled){toast('Las jugadas con saldo todavía no están habilitadas.');return;}
-    if(walletSource==='bonos'&&!bonusUnlocked){
-      toast('Primero realiza una recarga de al menos S/ 5 para usar tus bonos.');return;
+    if(walletSource==='bonos'&&bonusAvailablePEN<5){
+      toast('Saldo de bonos activados insuficiente. Los bonos nuevos requieren otra recarga.');return;
     }
-    if((walletSource==='principal'?paidBalancePEN:bonusBalancePEN)<5){
+    if((walletSource==='principal'?paidBalancePEN:bonusAvailablePEN)<5){
       showInsufficientFunds();return;
     }
     if(sendingPlay)return;
@@ -724,12 +724,13 @@
     if(money&&hasUser()){
       balance=`<div class="sports-private-balance">
     <span>Saldo principal: <strong>S/ ${fmt2(paidBalancePEN)}</strong></span>
-    <span>Saldo de bonos: <strong>S/ ${fmt2(bonusBalancePEN)}</strong></span>
+    <span>Bonos disponibles: <strong>S/ ${fmt2(bonusAvailablePEN)}</strong></span>
+    <span>Bonos pendientes: <strong>S/ ${fmt2(bonusPendingPEN)}</strong></span>
     </div>
     <label for="sportsWalletSource">Pagar con</label>
     <select id="sportsWalletSource" class="sports-wallet-select" aria-label="Origen del saldo">
       <option value="principal" ${sportsWalletSource==='principal'?'selected':''}>Saldo principal</option>
-      <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${!bonusUnlocked?'disabled':''}>Saldo de bonos</option>
+      <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${bonusAvailablePEN<=0?'disabled':''}>Saldo de bonos</option>
     </select>`;
     }else if(money){
       balance='<div class="sports-private-balance"><span>Ingresa a tu cuenta para ver tu saldo y apostar.</span></div>';
@@ -796,11 +797,11 @@
       toast('Las jugadas con saldo todavía no están habilitadas.');return;
     }
     if(draft.slips.length>4){toast('Selecciona entre uno y cuatro partidos.');return;}
-    if(sportsWalletSource==='bonos'&&!bonusUnlocked){
+    if(sportsWalletSource==='bonos'&&bonusAvailablePEN<=0){
       toast('Primero activa tus bonos con una recarga aprobada.');return;
     }
     // Comprobación rápida en pantalla; la validación definitiva es la del servidor.
-    const available=sportsWalletSource==='principal'?paidBalancePEN:bonusBalancePEN;
+    const available=sportsWalletSource==='principal'?paidBalancePEN:bonusAvailablePEN;
     if(Math.round(available*100)<Math.round(stake*100)){
       toast('Saldo insuficiente. Puedes hacer una recarga en Mi cuenta.');
       accountTab='wallet';showView('account');return;
@@ -882,6 +883,8 @@
     if(Number.isSafeInteger(Number(result.referralCount)))referralsJoined=Number(result.referralCount);
     if(Array.isArray(result.referrals))referralActivity=result.referrals;
     if(Number.isFinite(Number(result.bonusBalancePEN)))bonusBalancePEN=Number(result.bonusBalancePEN);
+    if(Number.isFinite(Number(result.bonusAvailablePEN)))bonusAvailablePEN=Number(result.bonusAvailablePEN);
+    if(Number.isFinite(Number(result.bonusPendingPEN)))bonusPendingPEN=Number(result.bonusPendingPEN);
     if(typeof result.bonusUnlocked==='boolean')bonusUnlocked=result.bonusUnlocked;
     if(Array.isArray(result.bonusStatement))bonusStatement=result.bonusStatement;
     if(typeof result.walletWagersEnabled==='boolean')walletWagersEnabled=result.walletWagersEnabled;
@@ -911,7 +914,10 @@
     $('#topBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
     $('#walletMainBalance').textContent='S/ '+fmt2(paidBalancePEN);
     $('#walletBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
-    $('#walletBonusCondition').hidden=bonusUnlocked||bonusBalancePEN<=0;
+    $('#walletBonusAvailable').textContent='S/ '+fmt2(bonusAvailablePEN);
+    $('#walletBonusPending').textContent='S/ '+fmt2(bonusPendingPEN);
+    $('#walletBonusCondition').hidden=bonusPendingPEN<=0;
+    $('#walletBonusCondition').textContent='S/ '+fmt2(bonusPendingPEN)+' en bonos pendientes: se activan con tu próxima recarga aprobada.';
     $('#walletTotalBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
     $('#loginTopLabel').textContent=restoring?'Cargando…':
       reconnect?'Reconectar':hasUser()?'Mi cuenta':'Ingresar';
@@ -1020,6 +1026,10 @@
       const data=await remote('listTopupOrders',{sessionToken});
       if(Array.isArray(data.orders))recentTopupOrders=data.orders;
       if(Number.isFinite(Number(data.paidBalancePEN)))paidBalancePEN=Number(data.paidBalancePEN);
+      if(Number.isFinite(Number(data.bonusBalancePEN)))bonusBalancePEN=Number(data.bonusBalancePEN);
+      if(Number.isFinite(Number(data.bonusAvailablePEN)))bonusAvailablePEN=Number(data.bonusAvailablePEN);
+      if(Number.isFinite(Number(data.bonusPendingPEN)))bonusPendingPEN=Number(data.bonusPendingPEN);
+      if(typeof data.bonusUnlocked==='boolean')bonusUnlocked=data.bonusUnlocked;
       $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
       renderHeader();
       $('#accountBalance').textContent='S/ '+fmt2(paidBalancePEN);
@@ -1034,11 +1044,16 @@
     try{
       const result=await remote('getTopupStatus',{sessionToken,orderId:id});
       paidBalancePEN=Number(result.paidBalancePEN||0);
+      if(Number.isFinite(Number(result.bonusBalancePEN)))bonusBalancePEN=Number(result.bonusBalancePEN);
+      if(Number.isFinite(Number(result.bonusAvailablePEN)))bonusAvailablePEN=Number(result.bonusAvailablePEN);
+      if(Number.isFinite(Number(result.bonusPendingPEN)))bonusPendingPEN=Number(result.bonusPendingPEN);
+      if(typeof result.bonusUnlocked==='boolean')bonusUnlocked=result.bonusUnlocked;
       $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
       renderHeader();
       $('#accountBalance').textContent='S/ '+fmt2(paidBalancePEN);
       renderTopupOrder(result,returning);
       await loadTopupOrders();
+      if(String(result.status).toUpperCase()==='APPROVED')await refreshAccount();
     }catch(err){box.textContent=err?.message||'No se pudo verificar tu recarga.';}
     finally{setAuthBusy(false);}
   }
@@ -1155,9 +1170,8 @@
     $('#paidBalancePEN').textContent='S/ '+fmt2(paidBalancePEN);
     $('#referralBonusBalance').textContent='S/ '+fmt2(bonusBalancePEN);
     $('#bonusStatementBalance').textContent='S/ '+fmt2(bonusBalancePEN);
-    $('#bonusStatementEligibility').textContent=bonusUnlocked?
-      'Bonos habilitados tras tu primera recarga aprobada.':
-      'Para usar tus bonos, primero deberás realizar una recarga.';
+    $('#bonusStatementEligibility').textContent='Disponibles para jugar: S/ '+fmt2(bonusAvailablePEN)+
+      ' · Pendientes de próxima recarga: S/ '+fmt2(bonusPendingPEN)+'.';
     $('#totalPlays').textContent=playHistory.length;
     $('#totalGolPlays').textContent=playHistory.filter(h=>h.type==='gol').length;
     const when=value=>{
@@ -1207,12 +1221,12 @@
         timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric'
       }).format(d):'Fecha no disponible';
       const verified=Boolean(r.firstTopupVerified),awarded=Boolean(r.bonusAwarded);
-      const status=awarded?'Bono acreditado':verified?'Bono en verificación':'Registro confirmado';
+      const status=verified?'Recarga verificada':'Registro confirmado';
       return '<div class="referral-activity-item">'+
         '<div class="referral-activity-user"><small>Amigo invitado</small><strong>'+esc(r.label||'Invitado')+'</strong></div>'+
         '<div class="referral-activity-state"><small>Estado</small><span>'+esc(status)+'</span></div>'+
         '<div class="referral-activity-date"><small>Registro</small><time>'+esc(date)+'</time></div>'+
-        '<div class="referral-activity-amount"><small>Bono recibido</small><b>'+(awarded?'+ S/ 5.00':'S/ 0.00')+'</b></div>'+
+        '<div class="referral-activity-amount"><small>Bono recibido</small><b>'+(awarded?'+ S/ '+fmt2(Number(r.bonusAwardedPEN)||0):'S/ 0.00')+'</b></div>'+
         '</div>';
     }).join(''):'<p class="referral-detail">Aún no tienes amigos registrados con tu enlace.</p>';
     $('#bonusStatementList').innerHTML=bonusStatement.length?bonusStatement.map(event=>{
@@ -1225,9 +1239,10 @@
       const referred=event.category==='REFERIDO';
       const title=referred?(amount<0?'Reversión de bono por referido':'Bono por referido'):
         (event.description||event.category||'Bono');
-      const detail=referred?
-        (event.referralName?event.referralName+' · ':'')+date:
-        (event.category||'MOVIMIENTO')+' · '+date;
+      const detail=(referred?(event.referralName?event.referralName+' · ':''):
+        (event.category||'MOVIMIENTO')+' · ')+date+
+        (event.status==='PENDIENTE'?' · Pendiente de recarga':
+          event.status==='ACTIVADO'?' · Activado':'');
       return '<div class="bonus-statement-row"><div class="bonus-statement-info">'+
         '<strong>'+esc(title)+'</strong>'+
         '<span>'+esc(detail)+'</span></div>'+
@@ -1326,7 +1341,7 @@
     // La elección de cuenta/consentimiento sigue siendo controlada por Google.
     try{window.google?.accounts?.id?.disableAutoSelect?.();window.google?.accounts?.id?.cancel?.();}catch{}
     const old=sessionToken;sessionToken='';sessionRestoring=false;sessionRestoreFailed=false;
-    account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;bonusUnlocked=false;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
+    account=null;accountBalance=0;paidBalancePEN=0;bonusBalancePEN=0;bonusAvailablePEN=0;bonusPendingPEN=0;bonusUnlocked=false;referralActivity=[];recentTopupOrders=[];playHistory=[];golLocked={};couponClaimed=false;
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     bonusStatement=[];walletWagersEnabled=false;
@@ -1498,7 +1513,7 @@
         // Solo el servidor puede invalidar una sesión guardada.
         if(/Sesión vencida\. Vuelve a ingresar\./.test(String(err?.message||''))){
           sessionToken='';account=null;accountBalance=0;paidBalancePEN=0;
-          bonusBalancePEN=0;bonusUnlocked=false;bonusStatement=[];
+          bonusBalancePEN=0;bonusAvailablePEN=0;bonusPendingPEN=0;bonusUnlocked=false;bonusStatement=[];
           clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;
           renderAll();
           toast('Tu sesión venció. Vuelve a ingresar.');

@@ -69,7 +69,7 @@
         <button class="nav-link" data-nav="live">Premium Live <span class="live-mini"></span></button>
       </nav>
       <div class="header-actions">
-        <button class="wallet-chip" data-clarity-mask="true" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" data-clarity-mask="true" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos</span><strong id="walletBonusBalance">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Realiza una recarga para activar el uso de tu saldo de bonos.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
+        <button class="wallet-chip" data-clarity-mask="true" id="walletTop" type="button" title="Ver saldos" aria-controls="walletBreakdown" aria-expanded="false" hidden><svg><use href="#i-wallet"></use></svg><span><small>SALDO</small><b id="topBalance">S/ 0.00</b></span></button><div class="wallet-breakdown" id="walletBreakdown" data-clarity-mask="true" role="region" aria-label="Detalle de saldos" hidden><div><span>Saldo principal</span><strong id="walletMainBalance">S/ 0.00</strong></div><div><span>Saldo de bonos (total)</span><strong id="walletBonusBalance">S/ 0.00</strong></div><div><span>Bonos disponibles</span><strong id="walletBonusAvailable">S/ 0.00</strong></div><div><span>Bonos pendientes</span><strong id="walletBonusPending">S/ 0.00</strong></div><p class="wallet-bonus-condition" id="walletBonusCondition" hidden>Realiza una recarga para activar el uso de tu saldo de bonos.</p><div class="wallet-breakdown-total"><span>Saldo total</span><strong id="walletTotalBalance">S/ 0.00</strong></div></div>
         <button class="btn btn-outline btn-login" id="loginTop" type="button" aria-label="Ingresar o registrarse" title="Ingresar o registrarse"><svg><use href="#i-user"></use></svg><span class="session-restore-indicator" aria-hidden="true"></span><span id="loginTopLabel">Ingresar</span></button><button class="btn btn-gold btn-register" id="registerTop">Registrarse</button>
         <div class="account-menu" id="accountMenu" role="menu" aria-label="Mi cuenta" hidden>
           <button type="button" data-account-tab="overview" role="menuitem"><svg><use href="#i-user"></use></svg>Resumen</button>
@@ -149,7 +149,7 @@
   <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg><use href="#i-arrow"></use></svg></button>
 </div><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus saldos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Saldo principal</span><b id="accountBalance">S/ 0.00</b><small>Recargas verificadas</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><button type="button" class="account-view-plays" data-account-tab="history">Ver mis jugadas <svg><use href="#i-arrow"></use></svg></button>
 <div class="wallet-note"><svg><use href="#i-wallet"></use></svg><div><b>Tu saldo</b><span>Consulta el saldo principal y recarga tu cuenta.</span></div><button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button></div><div class="account-panel referral-panel"><div class="panel-head"><h3>Invita a tus amigos</h3></div>
-  <p class="referral-description">Comparte tu enlace. Recibe S/ 5 de bono por cada amigo que se registre y complete su primera recarga aprobada.</p>
+  <p class="referral-description">Comparte tu enlace. Recibe S/ 10 cuando un amigo se registre y S/ 5 adicionales cuando realice su primera recarga aprobada. Los nuevos bonos se activan con tu próxima recarga.</p>
   <div class="referral-link"><input id="referralLink" type="text" value="Tu enlace de invitación" readonly aria-label="Mi enlace de invitación"><button id="copyReferral" type="button" class="btn btn-outline btn-mini">Copiar enlace</button></div>
   <p class="referral-detail" id="referralCount">Invitaciones pendientes de activación</p>
   <div class="referral-wallet-summary">
@@ -160,7 +160,7 @@
 </div><div class="account-panel"><div class="panel-head"><h3>Actividad reciente</h3><button class="text-link" data-account-tab="history">Ver todas <svg><use href="#i-arrow"></use></svg></button></div><div id="recentHistory"></div></div></div><div id="accountWallet" class="account-content">
   <div class="panel-head"><h2>Recargar saldo</h2></div>
   <p class="profile-info">Selecciona un monto predeterminado o elige «Otro monto». El mínimo es S/ 5. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.</p>
-  <div class="paid-wallet-balance" role="status"><span>Saldo real verificado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Recargas aprobadas que forman parte de tu saldo principal.</small></div>
+  <div class="paid-wallet-balance" role="status"><span>Saldo real verificado</span><strong id="paidBalancePEN">S/ 0.00</strong><small>Recargas aprobadas y ganancias acreditadas, menos jugadas y reversos.</small></div>
   
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
@@ -184,7 +184,7 @@
   </div>
 </div><div id="accountBonuses" class="account-content"><div class="panel-head"><h2>Mis bonos</h2></div>
   <p class="profile-info">Consulta tus bonificaciones, promociones y movimientos en un solo estado de cuenta.</p>
-  <div class="bonus-statement-head"><span>Saldo de bonos</span><strong id="bonusStatementBalance">S/ 0.00</strong><small id="bonusStatementEligibility">Para usar tus bonos, primero deberás realizar una recarga.</small></div>
+  <div class="bonus-statement-head"><span>Saldo de bonos</span><strong id="bonusStatementBalance">S/ 0.00</strong><small id="bonusStatementEligibility">Los bonos nuevos se activan con una recarga posterior a su obtención.</small></div>
   <h3 class="bonus-statement-title">Registro de bonos</h3>
   <div class="bonus-statement-list" id="bonusStatementList"><p class="profile-info">Aún no se han registrado movimientos.</p></div>
 </div><div id="accountHistory" class="account-content"><div class="panel-head"><h2>Mis jugadas</h2></div>
