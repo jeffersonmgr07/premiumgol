@@ -26,14 +26,6 @@ Cuando `PG_SPORTS_SANDBOX_ENABLED=false`, los usuarios pueden seguir simulando u
 
 La función `pgRequireSportsRealWagers_()` rechaza toda solicitud de juego real de manera incondicional. `PG_SPORTS_REAL_WAGERS_ENABLED` es una **reserva para una futura integración homologada**, no un botón capaz de convertir la web actual en casa de apuestas real.
 
-## Requisitos antes de operar con dinero real
-
-La Ley peruana N.º 31557 y su reglamento regulan las apuestas deportivas a distancia. MINCETUR requiere autorización de explotación, homologación de la plataforma, identificación de jugadores, controles contables/auditoría, procedimientos de juego responsable, servicios y componentes autorizados y, según la norma, dominio autorizado `.bet.pe`. En la fase correspondiente deberá implementarse una pasarela de apuestas y su motor de liquidación, con conciliación, reversos, registros completos y pruebas certificadas. **No es apropiado probar apuestas monetarias antes de obtener las autorizaciones**.
-
-Referencias oficiales:
-- https://www.gob.pe/94255
-- https://www.gob.pe/94256-autorizacion-y-registro-homologacion-y-o-renovacion-y-o-modificacion-de-las-plataformas-tecnologicas-de-los-juegos-a-distancia-y-o-de-las-apuestas-deportivas-a-distancia
-- https://busquedas.elperuano.pe/dispositivo/NL/2095517-1
 
 ## Cómo desplegar los archivos
 

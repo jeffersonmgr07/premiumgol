@@ -550,7 +550,7 @@
     liveCatalogLoading=true;liveCatalogRequestedAt=Date.now();renderLive();
     try{
       const data=await remote('liveCatalog',{});
-      if(data?.source==='The Odds API'&&data?.mode==='API_PREVIEW')
+      if(data?.source==='API-Football'&&data?.mode==='API_PREVIEW')
         liveGames=Array.isArray(data.live)?data.live:[];
     }catch(e){liveGames=[];}
     finally{
@@ -607,7 +607,7 @@
     oddsLoading=true;renderMatch();renderLive();
     try{
       const data=await remote('eventMarkets',{eventId:id,sportKey:game.sportKey,group});
-      if(data?.source!=='The Odds API'||data?.mode!=='API_PREVIEW'||data?.eventId!==id||data?.group!==group)
+      if(data?.source!=='API-Football'||data?.mode!=='API_PREVIEW'||data?.eventId!==id||data?.group!==group)
         throw new Error('La respuesta del proveedor no coincide con el partido.');
       oddsDetailCache.set(key,data);
     }catch(e){
@@ -1539,7 +1539,7 @@
       const data=await remote('catalog',{});
       catalogLoading=false;
       catalogMode='API_PREVIEW';
-      const verified=data.mode==='API_PREVIEW'&&data.source==='The Odds API';
+      const verified=data.mode==='API_PREVIEW'&&data.source==='API-Football';
       catalogUpdatedAt=verified&&data.updatedAt?String(data.updatedAt):null;
       catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
       matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
