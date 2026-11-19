@@ -2075,156 +2075,45 @@ body.auth-request-busy{overflow:hidden}
 .sp-leg .sp-odd{color:#F7C85D;font-size:14px}
 #sportsPlayOk{margin-top:16px}
 
-/* ==========================================================================
-   PREMIUMGOL · PARCHE DE PRODUCCIÓN v52 (CLICS EN HERO + FOOTER MOBILE)
-   Anexar al final de assets/styles.css conservando las 2,076 líneas previas.
-   ========================================================================== */
+/* =====================================================================
+   PremiumGol v52 · correcciones finales de interacción y footer
+   (se mantiene al final del archivo para ganar la cascada)
+   ===================================================================== */
+:root{--pg-safe-bottom:env(safe-area-inset-bottom,0px)}
 
-/* 1. Blindaje estricto contra capas y modales cerrados que bloquean clics */
-[hidden],
-dialog:not([open]) {
-  display: none !important;
-  pointer-events: none !important;
+/* 1) Capas decorativas y elementos ocultos: NUNCA interceptan clics ni toques.
+      Los botones, enlaces y tarjetas del hero reciben el evento directamente. */
+.hero-backdrop,.hero-vignette,.hero-fieldline,.hero-bottom-fade,
+.hero-visual,.hero .hero-player-visual,.hero .hero-player,.halo,
+.page-hero:after,.mode-card:before,.mode-card:after{pointer-events:none!important}
+.hero .hero-actions,.hero .hero-actions .btn{z-index:5}
+/* Una ventana cerrada o un flotante oculto jamás deben capturar el puntero. */
+dialog:not([open]){display:none!important;pointer-events:none!important}
+.premium-coupon[hidden],.measurement-banner[hidden],.wallet-breakdown[hidden],
+.account-menu[hidden]{display:none!important;pointer-events:none!important}
+
+/* 2) Footer: sin recortes en móvil ni pantallas pequeñas. */
+.pg-rich-footer{overflow-wrap:break-word}
+.pg-rich-footer img{max-width:100%}
+.pg-rich-footer .pg-footer-group,.pg-rich-footer .pg-footer-identity{min-width:0}
+@media(max-width:767px){
+  /* Rejilla de UNA columna, sin desbordes horizontales. */
+  .pg-rich-footer .pg-footer-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0;width:min(1220px,calc(100% - 48px))}
+  .pg-rich-footer .pg-footer-grid>*{min-width:0;max-width:100%}
+  .pg-rich-footer .pg-footer-utility-links a{white-space:normal}
 }
-
-.hero {
-  position: relative;
-  isolation: isolate;
+@media(max-width:720px){
+  /* La barra inferior (mobile-nav, 60 px + zona segura del dispositivo) es fija y
+     cubre el final de la página: se reserva ese espacio dentro del propio footer. */
+  body{padding-bottom:0}
+  .pg-rich-footer{padding-bottom:calc(90px + var(--pg-safe-bottom))}
+  .pg-rich-footer .pg-footer-bottom{padding-bottom:12px}
+  /* Con el aviso de privacidad abierto, se añade además su altura aproximada. */
+  body:has(.measurement-banner:not([hidden])) .pg-rich-footer{padding-bottom:calc(250px + var(--pg-safe-bottom))}
 }
-
-.hero-backdrop,
-.hero-vignette,
-.hero-fieldline,
-.hero-bottom-fade,
-.hero-visual,
-.hero-player-visual,
-.hero-player {
-  pointer-events: none !important;
-  user-select: none;
-  -webkit-user-select: none;
+@media(min-width:721px){
+  body:has(.measurement-banner:not([hidden])) .pg-rich-footer{padding-bottom:130px}
 }
-
-.hero-backdrop,
-.hero-vignette,
-.hero-fieldline,
-.hero-bottom-fade {
-  z-index: 1 !important;
-}
-
-.hero-visual,
-.hero-player-visual {
-  z-index: 2 !important;
-}
-
-.hero-content {
-  position: relative;
-  z-index: 5 !important;
-  pointer-events: auto !important;
-}
-
-.hero-copy,
-.hero-actions,
-.hero-actions .btn,
-.hero-actions a,
-.modes-grid,
-.mode-card,
-.preview-list,
-.preview-list button,
-.preview-list a {
-  position: relative;
-  z-index: 6 !important;
-  pointer-events: auto !important;
-}
-
-.site-header,
-.header-inner,
-.desktop-nav,
-.header-actions {
-  position: relative;
-  z-index: 40;
-  pointer-events: auto !important;
-}
-
-.account-menu:not([hidden]),
-.wallet-breakdown:not([hidden]) {
-  z-index: 95 !important;
-  pointer-events: auto !important;
-}
-
-/* 2. Footer completo y sin recortes detrás de .mobile-nav en pantallas <= 980px */
-.pg-rich-footer,
-.footer {
-  position: relative;
-  width: 100%;
-  max-width: 100%;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow-x: clip;
-  overflow-y: visible !important;
-}
-
-.pg-rich-footer .pg-footer-grid,
-.pg-rich-footer .pg-footer-utilities,
-.pg-rich-footer .pg-footer-trust,
-.pg-rich-footer .pg-footer-bottom {
-  min-width: 0;
-  height: auto !important;
-  overflow: visible !important;
-}
-
-@media (max-width: 980px) {
-  .pg-rich-footer,
-  .footer {
-    padding-bottom: calc(108px + env(safe-area-inset-bottom, 0px)) !important;
-  }
-
-  .mobile-nav {
-    z-index: 120 !important;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
-}
-
-@media (max-width: 767px) {
-  .pg-rich-footer .pg-footer-grid {
-    display: flex !important;
-    flex-direction: column !important;
-    grid-template-columns: 1fr !important;
-    gap: 0 !important;
-    width: 100% !important;
-    padding: 28px 0 22px !important;
-  }
-
-  .pg-rich-footer .pg-footer-identity,
-  .pg-rich-footer .pg-footer-group,
-  .pg-rich-footer .pg-footer-payments-col,
-  .pg-rich-footer .pg-footer-about,
-  .pg-rich-footer .pg-footer-help {
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    grid-column: auto !important;
-  }
-
-  .pg-rich-footer .pg-footer-trust {
-    flex-wrap: wrap !important;
-    justify-content: space-between !important;
-    gap: 16px !important;
-    padding: 18px 0 !important;
-  }
-
-  .pg-rich-footer .pg-footer-bottom {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start !important;
-    text-align: left !important;
-    gap: 8px !important;
-    padding: 12px 0 16px !important;
-  }
-
-  .pg-rich-footer .pg-footer-bottom span,
-  .pg-rich-footer .pg-footer-bottom button {
-    white-space: normal !important;
-    word-break: break-word;
-    line-height: 1.45;
-  }
+@media(max-width:340px){
+  .pg-rich-footer .pg-footer-grid{width:calc(100% - 24px)}
 }

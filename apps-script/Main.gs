@@ -10,6 +10,34 @@ function doGet(e){
   // ALLOWALL permite integrar un iframe en el dominio indicado; Bridge valida origin en cada mensaje.
   return t.evaluate().setTitle('Premium Gol').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
+/** Acciones que mueven saldo y pueden llegar por fetch() POST desde el navegador.
+ * Mismas reglas que rpc(): sesión obligatoria, bloqueo y operación idempotente.
+ * Las lecturas y el inicio de sesión siguen usando el puente (doGet + Bridge.html).
+ */
+const PG_POST_ACTIONS=Object.freeze(['savePremiumGol','saveBet','submitSportsDemoBet','submitSportsPrivateBet','placeWalletBet']);
+/** POST de la Web App. El cliente envía Content-Type: text/plain (solicitud "simple", sin
+ * preflight CORS) con un JSON {action,data}; la respuesta es siempre JSON. */
+function doPost(e){
+  let out;
+  try{
+    const body=e&&e.postData&&typeof e.postData.contents==='string'?e.postData.contents:'';
+    if(!body||body.length>12000){
+      out={ok:false,message:'Solicitud inválida.'};
+    }else{
+      const req=JSON.parse(body);
+      if(!req||typeof req.action!=='string'||!PG_POST_ACTIONS.includes(req.action)||
+         (req.data!==undefined&&(req.data===null||typeof req.data!=='object'||Array.isArray(req.data)))){
+        out={ok:false,message:'Operación no disponible.'};
+      }else{
+        out=rpc(JSON.stringify({action:req.action,data:req.data||{}}));
+      }
+    }
+  }catch(err){
+    console.warn('doPost failed:',err&&err.message);
+    out={ok:false,message:'Solicitud inválida.'};
+  }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
 /** RPC: Todas las operaciones sensibles pasan por validación de sesión. */
 function rpc(requestJson){
   try{
@@ -40,6 +68,7 @@ function rpc(requestJson){
       case 'sportsWagerPolicy':return pgSportsWagerPolicy_(x);
       case 'submitSportsDemoBet':return pgSportsDemoSubmit_(x);
       case 'submitSportsPrivateBet':return pgSportsPrivatePlace_(x);
+      case 'placeWalletBet':return pgWalletBetPlace_(x);
       case 'signout':return pgSignout_(x);
       default:pgErr_('Operación no disponible.');
     }
