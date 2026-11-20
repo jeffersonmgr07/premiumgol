@@ -1,5 +1,5 @@
-/* PremiumGol · interfaz para créditos virtuales.
- * Los créditos, las cuotas de ejemplo y las jugadas SOLO son válidos tras confirmación del backend.
+/* PremiumGol · interfaz de saldos PEN.
+ * Las cuotas y las jugadas SOLO son válidas tras confirmación del backend.
  * La cartilla y el cupón sin enviar se guardan en este navegador como borrador.
  */
 (() => {
@@ -7,7 +7,7 @@
   const CONFIG = window.PREMIUMGOL_CONFIG || {};
   // Los ID OAuth WEB de Google no comienzan por GOCSPX: ese prefijo identifica secretos.
   const validGoogleClientId = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i.test(String(CONFIG.googleClientId||''));
-  const DRAFT_KEY = 'premiumgol_draft_20261118';
+  const DRAFT_KEY = 'premiumgol_draft_20261121';
   const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
   // Sesión persistente entre actualizaciones del navegador; caduca por inactividad.
   const SESSION_KEY = 'premiumgol_session_v3';
@@ -28,6 +28,56 @@
   const icon = name => `<svg aria-hidden="true"><use href="#i-${name}"></use></svg>`;
   const fmt = n => new Intl.NumberFormat('es-PE',{maximumFractionDigits:0}).format(Number(n)||0);
   const fmt2 = n => new Intl.NumberFormat('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(n)||0);
+/* Verified primary SVG logo registry. No client-side GitHub code-search or approximate matches. */
+const FOOTBALL_LOGOS_RAW='https://raw.githubusercontent.com/JoseArroyave/football-logos/main/';
+const FOOTBALL_LOGOS_PATHS={
+  "Borussia Mönchengladbach": "logos/germany/Borussia_Mönchengladbach.svg",
+  "Borussia Dortmund": "logos/germany/Borussia_Dortmund.svg",
+  "Sevilla": "logos/spain/Sevilla.svg",
+  "Real Betis": "logos/spain/Real_Betis.svg",
+  "Newcastle United": "logos/england/Newcastle_United.svg",
+  "Arsenal": "logos/england/Arsenal.svg",
+  "Real Madrid": "logos/spain/Real_Madrid.svg",
+  "Celta": "logos/spain/Celta.svg",
+  "Alianza Lima": "logos/peru/Alianza_Lima.svg",
+  "FC Cajamarca": "logos/peru/FC_Cajamarca.svg",
+  "Pumas UNAM": "logos/mexico/UNAM_Pumas.svg",
+  "Monterrey": "logos/mexico/Monterrey.svg",
+  "Tigres UANL": "logos/mexico/Tigres_UANL.svg",
+  "América": "logos/mexico/Club_America.svg",
+  "Barcelona": "logos/spain/Barcelona.svg",
+  "Villarreal": "logos/spain/Villarreal.svg",
+  "Augsburg": "logos/germany/Augsburg.svg",
+  "Mainz 05": "logos/germany/Mainz_05.svg",
+  "Racing Santander": "logos/spain/Racing_Santander.svg",
+  "Real Sociedad": "logos/spain/Real_Sociedad.svg",
+  "Sporting Cristal": "logos/peru/Sporting_Cristal.svg",
+  "Cienciano": "logos/peru/Cienciano_del_Cusco.svg",
+  "Sport Huancayo": "logos/peru/Sport_Huancayo.svg",
+  "Universitario": "logos/peru/Universitario_de_Deportes.svg",
+};
+const FOOTBALL_LOGOS_ALIASES={
+  "Pumas": "Pumas UNAM",
+  "UNAM Pumas": "Pumas UNAM",
+  "Club América": "América",
+  "America": "América",
+  "Tigres": "Tigres UANL",
+  "Borussia Monchengladbach": "Borussia Mönchengladbach",
+  "M Gladbach": "Borussia Mönchengladbach",
+  "Mainz": "Mainz 05",
+  "Real Betis Balompié": "Real Betis",
+  "Sport Huancayo": "Sport Huancayo",
+  "Universitario de Deportes": "Universitario",
+  "Racing Club": "Racing Santander",
+  "Newcastle": "Newcastle United",
+  "FC Barcelona": "Barcelona",
+  "SC Cienciano": "Cienciano",
+};
+function footballLogoUrl(name){
+  const canonical=FOOTBALL_LOGOS_ALIASES[name]||name;
+  const path=FOOTBALL_LOGOS_PATHS[canonical];
+  return path?FOOTBALL_LOGOS_RAW+path.split('/').map(encodeURIComponent).join('/'):'';
+}
   const randomId = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   const fixtureDays = n => {const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace('.','');};
   // El saldo y las jugadas viven SOLO en Google Sheets. Se eliminan los restos de la
@@ -202,8 +252,9 @@
   let liveCatalogLoading=false,liveCatalogRequestedAt=0;
   const sportsArtwork=new Map(),artworkPending=new Set();
   let sportSimReceipt='';
-  let sportsSandboxEnabled=false,sportsPrivateEnabled=false,sportsWalletEnabled=false,sportsPolicyRequested=false;
+  let sportsWalletEnabled=false,sportsPolicyRequested=false;
   let sportsWalletSource='principal';
+
   const oddsGroups=[
     ['goles','Goles +/-'],['ambos','Ambos anotan'],['oportunidades','Doble oportunidad'],
     ['handicap','Hándicap'],['resultados','Resultados'],['corners','Córners'],
@@ -214,10 +265,14 @@
   let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=5;
   let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
-  function couponTime(){
-    const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date());
-    const hh=Number(parts.find(p=>p.type==='hour')?.value), mm=Number(parts.find(p=>p.type==='minute')?.value);
-    return Number.isInteger(hh)&&Number.isInteger(mm)&&mm>=hh&&mm<hh+5;
+  let promoActive=false,promoLastCheck=0;
+  const couponTime=()=>promoActive;
+  async function loadPromoStatus(){
+    if(!CONFIG.appsScriptUrl||Date.now()-promoLastCheck<60000)return;
+    promoLastCheck=Date.now();
+    try{const res=await remote('promotionStatus',{});promoActive=res?.active===true;}
+    catch(e){promoActive=false;}
+    refreshCoupon();
   }
   function refreshCoupon(){
     const visible=couponTime();const coupon=$('#premiumCoupon');coupon.hidden=!visible;
@@ -233,7 +288,7 @@
     if(!couponTime()){refreshCoupon();toast('El cupón ya no está disponible.');return;}
     if(!hasUser()){pendingAfterAuth='coupon';openAuth('login');return;}
     const btn=$('#claimCoupon');btn.disabled=true;
-    try{const result=await remote('claimCoupon',{sessionToken});updateAccount(result);$('#couponDialog').close();toast('¡50 créditos de bono añadidos a tu saldo virtual!');}
+    try{const result=await remote('claimCoupon',{sessionToken});updateAccount(result);$('#couponDialog').close();toast('Bono promocional registrado: pendiente de activación mediante una recarga posterior.');}
     catch(e){toast(e.message||'No se pudo activar el cupón.');}
     finally{btn.disabled=false;}
   }
@@ -245,23 +300,24 @@
   const outcomes=['1','X','2'];
   const outcomeName=['Local','Empate','Visita'];
   const golLabel=['L','E','V'];
-  // Jornada 18–20 nov 2026. Todas las horas son de Perú (UTC−05:00).
-  // Se excluyen Cruzeiro–Palmeiras (inicia al cierre) y el amistoso Norrköping–KuPS.
-  let golCutoff='2026-11-18T18:30:00-05:00';
+  // Jornada 21–22 Nov 2026. Horas en America/Lima. El backend es la autoridad.
+  let golCutoff='2026-11-21T09:15:00-05:00';
+  let golJackpotPEN=0;
   let golGames=[
-    ['Grêmio','Bahia','Brasileirão · Serie A','2026-11-18T19:30:00-05:00'],
-    ['Vitória','RB Bragantino','Brasileirão · Serie A','2026-11-19T17:30:00-05:00'],
-    ['São Paulo','Fluminense','Brasileirão · Serie A','2026-11-19T19:30:00-05:00'],
-    ['Orlando City','FC Cincinnati','MLS Cup Playoffs','2026-11-19T19:30:00-05:00'],
-    ['Seattle Sounders','Real Salt Lake','MLS Cup Playoffs','2026-11-19T22:00:00-05:00'],
-    ['Septemvri Sofia','Lokomotiv Plovdiv','Primera Liga · Bulgaria','2026-11-20T11:00:00-05:00'],
-    ['Piast Gliwice','Korona Kielce','Ekstraklasa · Polonia','2026-11-20T12:00:00-05:00'],
-    ['Farul Constanța','Universitatea Cluj','SuperLiga · Rumanía','2026-11-20T13:30:00-05:00'],
-    ['FC Andorra','CD Leganés','LaLiga Hypermotion · España','2026-11-20T13:30:00-05:00'],
-    ['Almere City','NAC Breda','Eerste Divisie · Países Bajos','2026-11-20T14:00:00-05:00'],
-    ['Helmond Sport','FC Dordrecht','Eerste Divisie · Países Bajos','2026-11-20T14:00:00-05:00'],
-    ['Cercle Brugge','KVC Westerlo','Jupiler Pro League · Bélgica','2026-11-20T14:45:00-05:00']
-  ].map(([home,away,league,kickoff],i)=>({id:'gol'+(i+1),home,away,league,kickoff,homeLogo:'',awayLogo:''}));
+    ["Borussia Mönchengladbach","Borussia Dortmund","Bundesliga · Alemania","2026-11-21T09:30:00-05:00"],
+    ["Sevilla","Real Betis","LaLiga · España","2026-11-21T12:30:00-05:00"],
+    ["Newcastle United","Arsenal","Premier League · Inglaterra","2026-11-21T12:30:00-05:00"],
+    ["Real Madrid","Celta","LaLiga · España","2026-11-21T15:00:00-05:00"],
+    ["Alianza Lima","FC Cajamarca","Liga 1 · Perú","2026-11-21T15:30:00-05:00"],
+    ["Pumas UNAM","Monterrey","Liga MX · México","2026-11-21T20:00:00-05:00"],
+    ["Tigres UANL","América","Liga MX · México","2026-11-21T22:00:00-05:00"],
+    ["Barcelona","Villarreal","LaLiga · España","2026-11-22T08:00:00-05:00"],
+    ["Augsburg","Mainz 05","Bundesliga · Alemania","2026-11-22T09:30:00-05:00"],
+    ["Racing Santander","Real Sociedad","LaLiga · España","2026-11-22T10:15:00-05:00"],
+    ["Sporting Cristal","Cienciano","Liga 1 · Perú","2026-11-22T15:00:00-05:00"],
+    ["Sport Huancayo","Universitario","Liga 1 · Perú","2026-11-22T15:00:00-05:00"],
+  ].map(([home,away,league,kickoff],i)=>({id:'gol'+(i+1),home,away,league,kickoff,
+    homeLogo:'',awayLogo:''}));
   // Cuotas 1X2 de The Odds API v4, consultadas exclusivamente por Apps Script.
   // Son datos informativos: ninguna apuesta queda habilitada por esta integración.
   let matches=[];
@@ -356,41 +412,27 @@
     const month=values.month.slice(0,3).charAt(0).toUpperCase()+values.month.slice(1,3);
     return `${weekday} ${values.day} ${month} · ${values.hour}:${values.minute}`;
   }
-  // Archivos de insignias contrastados con las páginas de los clubes en Wikimedia Commons.
-  // Se cargan como imágenes, sin consumir el límite de API-FOOTBALL ni exponer una clave.
-  const golCommonsLogos={
-    'Grêmio':'Gremio logo.svg',
-    'Bahia':'Esporte Clube Bahia logo.svg',
-    'Vitória':'Esporte Clube Vitória (2024).svg',
-    'São Paulo':'São Paulo Futebol Clube logo (2022).svg',
-    'Fluminense':'Fluminense Football Club.svg',
-    'Septemvri Sofia':'Septemvri Sofia (logo).svg',
-    'Lokomotiv Plovdiv':'PFC Lokomotiv Plovdiv Logo.svg',
-    'FC Andorra':'Logo FC Andorra - 2021.svg',
-    'Almere City':'Almere City FC logo.jpg',
-    'NAC Breda':'Logo NAC Breda.svg',
-    'Universitatea Cluj':'Cfmuniversitateacluj.png',
-    'Cercle Brugge':'Logo Cercle Brugge 2022.png'
-  };
-  const golVerifiedExternal={
-    'Piast Gliwice':'https://piast-gliwice.eu/static/upload/store/materialy/file/PIAST_HERB.jpg'
-  };
   function golCrest(team,url){
-    const official=String(url||'');
-    const validOfficial=/^https:\/\/media\.api-sports\.io\/football\/teams\/[1-9]\d*\.png$/.test(official);
-    const commons=golCommonsLogos[team];
-    const verifiedUrl=commons?'https://commons.wikimedia.org/wiki/Special:FilePath/'+encodeURIComponent(commons)+'?width=96':golVerifiedExternal[team];
-    const src=validOfficial?official:verifiedUrl||'';
-    const fallback=validOfficial&&verifiedUrl?verifiedUrl:'';
-    return `<span class="gol-team-crest" aria-hidden="true"><span class="gol-crest-initial">${esc(initials(team))}</span>${src?`<img class="gol-crest-img" src="${esc(src)}" data-gol-logo-fallback="${esc(fallback)}" alt="" loading="lazy" decoding="async">`:''}</span>`;
+    const image=(/^https:\/\/(?:raw\.githubusercontent\.com\/JoseArroyave\/football-logos\/main\/logos\/|media\.api-sports\.io\/football\/teams\/)/.test(String(url||''))?
+      String(url):footballLogoUrl(team));
+    return `<span class="gol-team-crest" aria-hidden="true"><span class="gol-crest-initial">${esc(initials(team))}</span>`+
+      (image?`<img class="gol-crest-img" src="${esc(image)}" alt="" loading="lazy" decoding="async">`:'')+'</span>';
   }
   function renderGol(){
     const selections=currentPicks(),locked=Boolean(golLocked[activeCard]),closed=golClosed();
     const deadline=$('#golDeadline');
     deadline.classList.toggle('expired',closed);
-    deadline.setAttribute('aria-label',closed?'Jornada cerrada: miércoles 18 de noviembre a las 6:30 p. m. · Pozo anunciado S/ 10,000':
-      'Juega hasta el miércoles 18 de noviembre, 6:30 p. m. · Pozo acumulado S/ 10,000');
-    deadline.title=closed?'Jornada cerrada':'Cierre de jugadas el miércoles 18 de noviembre';
+    const cutoffText=new Date(golCutoff).toLocaleString('es-PE',{timeZone:'America/Lima',
+      weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+    const poolText=golJackpotPEN>0?'S/ '+fmt(golJackpotPEN):'Por anunciar';
+    deadline.setAttribute('aria-label',(closed?'Jornada cerrada. ':'Cierre: ')+cutoffText+'. Pozo mayor '+poolText);
+    deadline.title=closed?'Jornada cerrada':'Cierre de jugadas: '+cutoffText;
+    const long=deadline.querySelector('.gol-info-date .badge-long');
+    const short=deadline.querySelector('.gol-info-date .badge-short');
+    const pool=deadline.querySelector('.gol-info-time b');
+    if(long)long.textContent='Cierre: '+cutoffText;
+    if(short)short.textContent='Cierre: '+new Date(golCutoff).toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'short'});
+    if(pool)pool.textContent=poolText;
     $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}">
       <span class="fixture-number">${String(i+1).padStart(2,'0')}</span>
       <div class="fixture-main">
@@ -411,6 +453,10 @@
     $('#submitGol').disabled=closed||locked||completedPicks()!==12;
     $('#submitGol').innerHTML=closed?'Jornada cerrada':locked?'Jugada registrada ✓':`Colocar jugada ${icon('arrow')}`;
     $('#resetGol').hidden=locked||closed;
+    const fullSlots=SLOTS.filter(slot=>completedPicks(slot)===12&&!golLocked[slot]);
+    const batchButton=$('#submitGolBatch');
+    if(batchButton){batchButton.hidden=closed||fullSlots.length<2;batchButton.disabled=closed||fullSlots.length<2||sendingPlay;
+      batchButton.textContent='Comprar '+fullSlots.length+' cartillas · S/ '+fmt2(fullSlots.length*5);}
     $('#golSlotHint').textContent=closed?'La jornada ha finalizado.':locked?`Jugada ${activeCard} registrada. Elige otra letra para participar de nuevo.`:`Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
     $('#golTabs').innerHTML=SLOTS.map(slot=>`<button type="button" data-gol-slot="${slot}" class="${activeCard===slot?'active':''} ${golLocked[slot]?'recorded':''}" aria-pressed="${activeCard===slot}" title="Jugada ${slot}${golLocked[slot]?' registrada':''}">${slot}</button>`).join('');
     const list=golGames.map((g,i)=>({g,i,pick:selections[g.id]})).filter(x=>outcomes.includes(x.pick));
@@ -418,10 +464,12 @@
   }
 
   let sendingPlay=false;
-  function openWalletPayment(){
+  let golBatchPending=false;
+  function openWalletPayment(amount=5){
     const main=$('#walletPayPrincipal'),bonus=$('#walletPayBonuses');
-    const enoughMain=Math.round(paidBalancePEN*100)>=500;
-    const enoughBonus=Math.round(bonusAvailablePEN*100)>=500;
+    const totalCents=Math.round(amount*100);
+    const enoughMain=Math.round(paidBalancePEN*100)>=totalCents;
+    const enoughBonus=Math.round(bonusAvailablePEN*100)>=totalCents;
     if(!enoughMain&&!enoughBonus){showInsufficientFunds();return;}
     main.disabled=!enoughMain;
     bonus.disabled=!enoughBonus;
@@ -433,9 +481,10 @@
       'Disponibles para jugar · S/ '+fmt2(bonusPendingPEN)+' pendientes de otra recarga':
       'Bonos activados para jugar';
     $('#walletPayNotice').textContent=walletWagersEnabled?
-      'Se descontará S/ 5.00 únicamente de la billetera seleccionada.':
+      'Se descontará S/ '+fmt2(amount)+' únicamente de la billetera seleccionada.':
       'Las jugadas pagadas con saldo todavía están en preparación.';
     $('#walletPayConfirm').disabled=!walletWagersEnabled;
+    $('#walletPayConfirm').textContent='Confirmar compra de S/ '+fmt2(amount);
     if(!$('#walletPayDialog').open)$('#walletPayDialog').showModal();
   }
   async function saveGol(walletSource=''){
@@ -475,6 +524,28 @@
     }catch(e){if(/saldo (principal|de bonos) insuficiente/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo guardar la jugada.');}
     finally{sendingPlay=false;setAuthBusy(false);renderGol();}
   }
+  async function saveGolBatch(walletSource=''){
+    const slots=SLOTS.filter(slot=>completedPicks(slot)===12&&!golLocked[slot]);
+    if(golClosed()||slots.length<2){toast('Completa dos o más cartillas antes de comprar juntas.');return;}
+    if(!hasUser()){pendingAfterAuth='gol';openAuth('login');return;}
+    const total=slots.length*5;
+    if(!walletSource){golBatchPending=true;openWalletPayment(total);return;}
+    if(!walletWagersEnabled){toast('Las compras con saldo aún no están habilitadas.');return;}
+    if((walletSource==='principal'?paidBalancePEN:bonusAvailablePEN)<total){showInsufficientFunds();return;}
+    if(sendingPlay)return;
+    sendingPlay=true;setAuthBusy(true,'Registrando cartillas…','general');
+    try{
+      const cards=slots.map(slot=>({slot,picks:golGames.map(g=>({id:g.id,outcome:draft.golCards[slot][g.id]}))}));
+      draft.golBatchRequestId=draft.golBatchRequestId||randomId();saveDraft();
+      const res=await remote('savePremiumGolBatch',{sessionToken,clientRequestId:draft.golBatchRequestId,
+        walletSource,cards});
+      updateAccount(res);
+      for(const slot of slots){draft.golCards[slot]={};delete draft.golRequestIds[slot];}
+      delete draft.golBatchRequestId;saveDraft();
+      renderGol();toast('Se registraron '+slots.length+' tickets · S/ '+fmt2(total)+'.');
+    }catch(err){toast(err.message||'No se confirmó la compra de cartillas.');}
+    finally{golBatchPending=false;sendingPlay=false;setAuthBusy(false);renderGol();}
+  }
   function filterOptions(){
     const leagueSel=$('#matchLeague'),current=leagueFilter;
     const leagueValues=[...new Set(matches.map(g=>g.league))].sort((a,b)=>a.localeCompare(b,'es'));
@@ -511,19 +582,20 @@
   }
   function safeSportLogo(url){
     const s=String(url||'');
-    return /^https:\/\/(?:www\.|r2\.|thumbs\.)?thesportsdb\.com\//i.test(s)?s:'';
+    return /^https:\/\/(?:www\.|r2\.|thumbs\.)?thesportsdb\.com\//i.test(s)||
+      /^https:\/\/media\.api-sports\.io\/football\/(?:leagues|teams)\/[0-9]+\.png$/i.test(s)?s:'';
   }
-  function sportCrest(team,sportKey){
+  function sportCrest(team,sportKey,serverLogo){
     const art=sportsArtwork.get(sportKey);
     const row=art?.teams?.find(x=>x.name===normalizedSportsName(team));
-    const img=safeSportLogo(row?.url)||footballLogoUrl(team);
+    const img=footballLogoUrl(team)||safeSportLogo(serverLogo)||safeSportLogo(row?.url);
     return '<span class="sport-team-crest" aria-hidden="true"><span>'+
       esc(initials(team))+'</span>'+(img?'<img src="'+esc(img)+
       '" alt="" loading="lazy" decoding="async">':'')+'</span>';
   }
   function sportLeagueBadge(game){
     const art=sportsArtwork.get(game.sportKey);
-    const img=safeSportLogo(art?.leagueLogo)||footballLogoUrl(game.league);
+    const img=safeSportLogo(game.leagueLogo)||safeSportLogo(art?.leagueLogo);
     return '<span class="sport-league-emblem" aria-hidden="true">'+
       '<span class="sport-league-fallback">⚽</span>'+
       (img?'<img class="sport-league-logo" src="'+esc(img)+
@@ -562,10 +634,8 @@
   async function loadSportsWagerPolicy(){
     try{
       const data=await remote('sportsWagerPolicy',sessionToken?{sessionToken}:{});
-      sportsPrivateEnabled=Boolean(data?.ok&&data.privateEnabled&&hasUser());
-      sportsSandboxEnabled=Boolean(data?.ok&&data.sandboxEnabled&&!sportsPrivateEnabled);
-      sportsWalletEnabled=Boolean(data?.ok&&data.walletEnabled&&!sportsPrivateEnabled&&!sportsSandboxEnabled);
-    }catch(e){sportsSandboxEnabled=false;sportsPrivateEnabled=false;sportsWalletEnabled=false;}
+      sportsWalletEnabled=Boolean(data?.ok&&data.walletEnabled);
+    }catch(e){sportsWalletEnabled=false;}
     renderSlips();
   }
   function oddsDetailMarkup(g){
@@ -647,21 +717,20 @@
         <span class="sport-event-time">${esc(kickoffHour)}</span>
       </time></div>
       <div class="market-body sport-match-teams">
-        <span class="market-team">${sportCrest(g.home,g.sportKey)}<strong>${esc(g.home)}</strong></span>
+        <span class="market-team">${sportCrest(g.home,g.sportKey,g.homeLogo)}<strong>${esc(g.home)}</strong></span>
         <span class="market-middle">VS</span>
-        <span class="market-team">${sportCrest(g.away,g.sportKey)}<strong>${esc(g.away)}</strong></span>
+        <span class="market-team">${sportCrest(g.away,g.sportKey,g.awayLogo)}<strong>${esc(g.away)}</strong></span>
       </div>
       <div class="market-choices sport-1x2">
       ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}"
         data-pick="${esc(g.id)}" data-outcome="${o}"
         aria-label="Elegir ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
-      <button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
+      ${`<button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
         aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
         <span class="sport-more-label">${oddsExpandedId===g.id?'Ocultar mercados':'Más mercados'}</span>
         ${icon('arrow')}
-      </button>
-      ${oddsDetailMarkup(g)}</article>`;
+      </button>${oddsDetailMarkup(g)}`}</article>`;
   }
   function addSportsSelection(g,selection){
     const isSame=draft.slips.some(s=>s.gameId===g.id&&s.selectionId===selection.selectionId);
@@ -698,17 +767,13 @@
       marketLabel:market.label,selectionLabel:label,group});
   }
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
-  /* Cupón deportivo. TODOS los saldos provienen del servidor (Google Sheets):
-   *   private → cuenta autorizada con dinero real (cuota revalidada)  · submitSportsPrivateBet
-   *   sandbox → créditos virtuales de prueba (users.balance)           · submitSportsDemoBet
-   *   wallet  → billeteras principal / bonos (payments/bonus_ledger)   · placeWalletBet
-   * El navegador nunca modifica un saldo: solo envía la solicitud y muestra el
-   * saldo oficial que devuelve el servidor (updateAccount).
+  /* Premium Live: la cotización, aceptación, débito y liquidación se calculan
+   * en el backend. El navegador presenta sólo los saldos PEN confirmados.
    */
-  const betMode=()=>sportsPrivateEnabled?'private':(sportsSandboxEnabled?'sandbox':sportsWalletEnabled?'wallet':'preview');
-  const isMoneyMode=mode=>mode!=='sandbox';
-  const betCap=mode=>isMoneyMode(mode)?500:1000;
-  const slipMoney=value=>isMoneyMode(betMode())?'S/ '+fmt2(value):fmt2(value)+' créditos';
+  const betMode=()=>sportsWalletEnabled?'wallet':'preview';
+  const isMoneyMode=()=>true;
+  const betCap=()=>500;
+  const slipMoney=value=>'S/ '+fmt2(value);
   function renderSlips(){
     const mode=betMode(),money=isMoneyMode(mode),cap=betCap(mode);
     const count=draft.slips.length;
@@ -735,12 +800,8 @@
     </select>`;
     }else if(money){
       balance='<div class="sports-private-balance"><span>Ingresa a tu cuenta para ver tu saldo y apostar.</span></div>';
-    }else{
-      balance=`<div class="sports-private-balance">
-    <span>Créditos virtuales: <strong>${hasUser()?fmt(accountBalance):'—'}</strong></span>
-    </div>`;
     }
-    const currency=money?'S/':'créditos';
+    const currency='S/';
     const footer=count?`<div class="betslip-footer">
     ${balance}
     <label for="betStake">${money?'Importe de la apuesta (S/)':'Monto (créditos)'}</label>
@@ -749,14 +810,14 @@
     <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
     <div class="slip-total"><span>${money?'Retorno posible':'Posible ganancia'}</span>
       <b id="slipReturn">${slipMoney(total)}</b></div>
+    <button id="refreshSportsQuote" type="button" class="btn btn-outline btn-full">Actualizar cuotas del cupón</button>
     <button id="placeBet" type="button" class="btn btn-gold btn-full"
       ${!validStake||mode==='preview'?'disabled':''}>${mode==='preview'?'Vista previa: cupones no disponibles':money?'Colocar apuesta':'Colocar jugada'}
       ${icon('arrow')}</button>
     <p class="slip-note">Las cuotas pueden cambiar mientras se procesa la jugada.</p>
   </div>`:`<div class="betslip-empty">${icon('ticket')}
     <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
-    const receipt=sportSimReceipt?'<div class="sports-sim-receipt">'+
-      esc(sportSimReceipt)+'</div>':'';
+    const receipt='';
     const content=`<div class="betslip">
     <div class="betslip-head"><h3>Mi cupón <span>${count}</span></h3>
       ${count?'<button id="clearBetslip" type="button">Vaciar cupón</button>':''}</div>
@@ -766,6 +827,7 @@
       .replaceAll('for="betStake"','for="betStakeLive"')
       .replaceAll('id="slipReturn"','id="slipReturnLive"')
       .replaceAll('id="placeBet"','id="placeBetLive"')
+      .replaceAll('id="refreshSportsQuote"','id="refreshSportsQuoteLive"')
       .replaceAll('id="clearBetslip"','id="clearBetslipLive"')
       .replaceAll('id="sportsWalletSource"','id="sportsWalletSourceLive"')
       .replaceAll('for="sportsWalletSource"','for="sportsWalletSourceLive"');
@@ -782,20 +844,37 @@
       pendingAfterAuth='bet';openAuth('login');
       toast('Ingresa o regístrate para colocar tu apuesta.');return;
     }
-    // El modo (dinero / créditos virtuales) lo decide el servidor, no el navegador.
+    // El servidor decide si existe autorización para aceptar saldos monetarios.
     await loadSportsWagerPolicy();
     const mode=betMode(),cap=betCap(mode);
     if(!Number.isInteger(stake)||stake<1||stake>cap){
       toast('Ingresa un importe válido entre 1 y '+cap+'.');return;
     }
-    if(mode==='sandbox'&&!sportsSandboxEnabled){
-      toast('Las pruebas deportivas todavía no están habilitadas.');return;
-    }
     if(mode==='preview'||(mode==='wallet'&&!sportsWalletEnabled)){
       toast('Premium Live está en vista previa; aún no se aceptan cupones con saldo.');return;
     }
-    if(mode==='sandbox')return placeSandboxBet();
-    return placeMoneyBet(mode);
+    return placeMoneyBet('wallet');
+  }
+  async function refreshSportsQuote(){
+    if(!draft.slips.length||sendingPlay)return;
+    setAuthBusy(true,'Actualizando cuotas del cupón…','general');
+    try{
+      const result=await remote('sportsQuote',{selections:draft.slips.map(s=>({
+        gameId:s.gameId,sportKey:s.sportKey,selectionId:s.selectionId}))});
+      if(!result?.ok||!Array.isArray(result.picks)||result.picks.length!==draft.slips.length)
+        throw new Error('No se pudo verificar todo el cupón.');
+      let changed=false;
+      draft.slips=draft.slips.map((item,i)=>{
+        const quote=result.picks[i];
+        if(quote.gameId!==item.gameId||quote.selectionId!==item.selectionId)
+          throw new Error('El partido cambió. Vuelve a seleccionar tu pronóstico.');
+        if(Math.abs(Number(quote.odd)-Number(item.odd))>0.001)changed=true;
+        return {...item,odd:Number(quote.odd)};
+      });
+      delete draft.sportsWalletRequestId;saveDraft();renderMatch();renderLive();
+      toast(changed?'Las cuotas se actualizaron. Revísalas antes de confirmar.':'Cuotas verificadas.');
+    }catch(err){toast(err.message||'No se pudo actualizar el cupón.');}
+    finally{setAuthBusy(false);}
   }
   /** Apuesta con saldo (principal / bonos): el servidor valida cuotas, descuenta en
    *  Google Sheets, impide saldo negativo y devuelve el saldo oficial. */
@@ -813,8 +892,8 @@
       toast('Saldo insuficiente. Puedes hacer una recarga en Mi cuenta.');
       accountTab='wallet';showView('account');return;
     }
-    const action=mode==='private'?'submitSportsPrivateBet':'placeWalletBet';
-    const requestKey=mode==='private'?'sportsPrivateRequestId':'sportsWalletRequestId';
+    const action='placeWalletBet';
+    const requestKey='sportsWalletRequestId';
     sendingPlay=true;
     draft[requestKey]=draft[requestKey]||randomId();saveDraft();
     setAuthBusy(true,'Registrando tu apuesta…','general');
@@ -827,14 +906,12 @@
           group:leg.group,expectedOdd:Number(leg.odd)
         }))
       });
-      const accepted=mode==='private'?res?.privateAccepted:res?.walletBetAccepted;
+      const accepted=res?.walletBetAccepted;
       if(!res?.ok||!accepted)throw new Error('No se confirmó el cupón.');
-      const ticket=String(mode==='private'?(res.privateTicketId||draft[requestKey]):
-        (res.walletBetId||draft[requestKey]));
-      const amount=Number(mode==='private'?(res.privateStakePEN??stake):
-        (res.walletBetStakePEN??stake));
+      const ticket=String(res.walletBetId||draft[requestKey]);
+      const amount=Number(res.walletBetStakePEN??stake);
       const placedLegs=draft.slips.map(leg=>({...leg}));
-      const placedOdds=combinedOdds();
+      const placedOdds=Number(res.walletBetCombinedOdds)||combinedOdds();
       const usedWallet=sportsWalletSource;
       draft.slips=[];delete draft[requestKey];saveDraft();
       // Saldo OFICIAL devuelto por el servidor (ya descontado en Google Sheets).
@@ -843,8 +920,8 @@
       showSportsPlayDialog({
         id:ticket,createdAt:new Date().toISOString(),stake:amount,
         walletSource:usedWallet,combinedOdds:placedOdds,
-        possibleReturn:Math.round(amount*placedOdds*100)/100,
-        selections:placedLegs
+        possibleReturn:Number(res.walletBetPotentialReturnPEN)||Math.round(amount*placedOdds*100)/100,
+        selections:Array.isArray(res.walletBetPicks)?res.walletBetPicks.map(p=>({home:p.home,away:p.away,odd:p.odd,marketLabel:p.market,selectionLabel:p.outcome})):placedLegs
       });
     }catch(err){
       const message=String(err?.message||'');
@@ -853,37 +930,9 @@
         // Resincroniza la pantalla con el saldo oficial del servidor.
         lastSessionVerification=0;
         refreshAccount().catch(()=>{});
-      }else toast(message||'No se pudo registrar el cupón.');
+      }else{toast(message||'No se pudo registrar el cupón.');
+        if(/cuota cambió|desactualizada/i.test(message))refreshSportsQuote();}
     }finally{sendingPlay=false;setAuthBusy(false);}
-  }
-  /** Modo de pruebas: créditos virtuales descontados en users.balance (servidor). */
-  async function placeSandboxBet(){
-    sendingPlay=true;
-    draft.sportsDemoRequestId=draft.sportsDemoRequestId||randomId();saveDraft();
-    setAuthBusy(true,'Registrando tu jugada…','general');
-    try{
-      const response=await remote('submitSportsDemoBet',{
-        sessionToken,stake,clientRequestId:draft.sportsDemoRequestId,
-        selections:draft.slips.map(leg=>({
-          gameId:leg.gameId,sportKey:leg.sportKey,
-          selectionId:leg.selectionId,group:leg.group
-        }))
-      });
-      if(!response?.ok)throw new Error('No se registró la jugada.');
-      const number=String(response.simulationId||draft.sportsDemoRequestId);
-      const returnValue=Number(response.simulatedReturn||stake*combinedOdds());
-      const placedLegs=draft.slips.map(leg=>({...leg}));
-      const placedOdds=combinedOdds();
-      draft.slips=[];delete draft.sportsDemoRequestId;saveDraft();
-      updateAccount(response);
-      renderSlips();
-      showSportsPlayDialog({
-        id:number,createdAt:new Date().toISOString(),stake,
-        walletSource:'creditos',combinedOdds:placedOdds,
-        possibleReturn:returnValue,selections:placedLegs
-      });
-    }catch(err){toast(err?.message||'No se pudo colocar la jugada.');}
-    finally{sendingPlay=false;setAuthBusy(false);}
   }
   function updateAccount(result){
     if(result.user)account=result.user;
@@ -949,7 +998,7 @@
     $('#rechargeGenerate').disabled=amount===null||topupBusy;
   }
 
-  /** Dinero confirmado y créditos virtuales son balances distintos. */
+  /** Libro principal y libro de bonos son balances monetarios separados. */
   const mpSafeUrl=value=>{
     try{
       const u=new URL(value);
@@ -1355,7 +1404,7 @@
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     bonusStatement=[];walletWagersEnabled=false;
-    sportsPrivateEnabled=false;sportsSandboxEnabled=false;sportsWalletEnabled=false;sportsPolicyRequested=false;
+    sportsWalletEnabled=false;sportsPolicyRequested=false;
     renderAll();showView('home');
     toast(reason==='idle'?'Tu sesión terminó tras una hora de inactividad.':'Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
@@ -1369,7 +1418,7 @@
   }
   // Operaciones que mueven saldo: viajan por fetch() POST directo a la Web App de Apps Script.
   // Cada una es idempotente por clientRequestId, así que un reintento nunca cobra dos veces.
-  const POST_ACTIONS=new Set(['savePremiumGol','saveBet','submitSportsDemoBet','submitSportsPrivateBet','placeWalletBet']);
+  const POST_ACTIONS=new Set(['savePremiumGol','savePremiumGolBatch','placeWalletBet']);
   const POST_TIMEOUT_MS=30000;
   async function remotePost(action,data){
     const controller=new AbortController();
@@ -1548,10 +1597,11 @@
     if(!CONFIG.appsScriptUrl)return;
     try{
       const data=await remote('golProgram',{});
-      if(data?.roundId!=='premiumgol12-jornada-20261118'||!Array.isArray(data.games)||data.games.length!==12)return;
+      if(data?.roundId!=='premiumgol12-jornada-20261121'||!Array.isArray(data.games)||data.games.length!==12)return;
       if(!data.games.every((g,i)=>String(g.id)===`gol${i+1}`))return;
       golGames=data.games;
-      if(/^2026-11-18T18:30:00-05:00$/.test(String(data.cutoff||'')))golCutoff=data.cutoff;
+      if(Number.isFinite(Date.parse(data.cutoff)))golCutoff=data.cutoff;
+      golJackpotPEN=Number(data.jackpotPEN)>0?Number(data.jackpotPEN):0;
       renderGol();
     }catch(e){
       // La cartilla con jornadas, ligas y horarios funciona aunque la API aún no entregue escudos.
@@ -1585,7 +1635,7 @@
       console.warn('Catálogo deportivo sin respuesta:',e.message);
     }
     // Esperar a que termine el catálogo antes de consultar Live: Apps Script usa un bloqueo compartido.
-    if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>15*60000)
+    if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>60000)
       loadLiveCatalog();
   }
   on('#comingSoonBack','click',backFromComingSoon);
@@ -1657,15 +1707,16 @@
     finally{btn.disabled=false;setAuthBusy(false);}
   });
   on('#backToEmail','click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
-  on('#submitGol','click',()=>saveGol());
-  on('#walletPayClose','click',()=>$('#walletPayDialog').close());
+  on('#submitGol','click',()=>{golBatchPending=false;saveGol();});
+  on('#submitGolBatch','click',()=>saveGolBatch());
+  on('#walletPayClose','click',()=>{golBatchPending=false;$('#walletPayDialog').close();});
   on('#walletPayConfirm','click',()=>{
     const wallet=document.querySelector('input[name="walletPayment"]:checked')?.value;
     if(!wallet||!walletWagersEnabled)return;
-    $('#walletPayDialog').close();saveGol(wallet);
+    $('#walletPayDialog').close();if(golBatchPending)saveGolBatch(wallet);else saveGol(wallet);
   });
   on('#walletPayDialog','click',e=>{
-    if(e.target===$('#walletPayDialog'))e.target.close();
+    if(e.target===$('#walletPayDialog')){golBatchPending=false;e.target.close();}
   });
   on('#closeInsufficientFunds','click',()=>$('#insufficientFundsDialog').close());
   on('#insufficientFundsRecharge','click',()=>{$('#insufficientFundsDialog').close();openAccountTab('wallet');});
@@ -1715,6 +1766,9 @@
     setAuthBusy(true,'Guardando tu perfil…','general');
     try{const res=await remote('updateProfile',{sessionToken,firstName:$('#profileFirst').value.trim(),lastName:$('#profileLast').value.trim(),countryCode:$('#profileCountry').value,phone:$('#profilePhone').value.trim(),docType:$('#profileDocType').value,docNumber:$('#profileDocNumber').value.trim()});updateAccount(res);toast('Tus datos fueron actualizados.');}
     catch(err){toast(err.message||'No se pudieron guardar tus datos.');}finally{btn.disabled=false;setAuthBusy(false);}
+  });
+  document.addEventListener('click',e=>{
+    if(e.target.closest('#refreshSportsQuote, #refreshSportsQuoteLive')){refreshSportsQuote();}
   });
   document.addEventListener('change',e=>{
     if(e.target.matches('[id^="sportsWalletSource"]')){
@@ -1813,7 +1867,7 @@
   $('#footerYear').textContent=new Date().getFullYear();
   // Cada paso de arranque va aislado: un error en uno no impide que los demás se ejecuten.
   try{renderAll();}catch(err){console.error('PremiumGol: error al dibujar la interfaz.',err);}
-  try{refreshCoupon();setInterval(refreshCoupon,15000);}catch(err){console.error('PremiumGol: cupón.',err);}
+  try{refreshCoupon();loadPromoStatus();setInterval(()=>{if(document.visibilityState==='visible')loadPromoStatus();},60000);}catch(err){console.error('PremiumGol: cupón.',err);}
   initBridge();
   // La actividad real del usuario prolonga su sesión; las consultas automáticas
   // no la prolongan. El servidor verifica la inactividad en cada operación.
@@ -1878,11 +1932,16 @@
     }else img.remove();
   },true);
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
+  // Live real: consultar sólo con pestaña activa; el backend comparte caché del proveedor.
+  setInterval(()=>{
+    if(document.visibilityState==='visible'&&activeView==='live'&&
+      !liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>=60000)loadLiveCatalog();
+  },60000);
   // El navegador consulta la caché de Apps Script; nunca lleva la clave de The Odds API.
   setInterval(()=>{
     if(document.visibilityState!=='visible'||authBusy)return;
     if(activeView==='match')loadCatalog();
-    if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>15*60000)
+    if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>60000)
       loadLiveCatalog();
   },300000);
   const hash=location.hash.slice(1);
@@ -1911,14 +1970,15 @@ function showSportsPlayDialog(r){
     timeZone:'America/Lima',day:'2-digit',month:'short',year:'numeric',
     hour:'numeric',minute:'2-digit',hour12:true
   }).format(d):'Fecha no disponible';
-  const walletLabel=r.walletSource==='bonos'?'Saldo de bonos':(r.walletSource==='creditos'?'Créditos virtuales':'Saldo principal');
+  const walletLabel=r.walletSource==='bonos'?'Saldo de bonos':'Saldo principal';
+  const amountLabel=value=>'S/ '+fmt2(value);
   $('#sportsPlayBody').innerHTML=
     '<div class="sp-row"><span>Código</span><b>'+esc(r.id)+'</b></div>'+
     '<div class="sp-row"><span>Fecha</span><b>'+esc(whenTxt)+'</b></div>'+
-    '<div class="sp-row"><span>Monto apuesta</span><b>PEN '+fmt2(Number(r.stake)||0)+'</b></div>'+
+    '<div class="sp-row"><span>Monto apuesta</span><b>'+amountLabel(Number(r.stake)||0)+'</b></div>'+
     '<div class="sp-row"><span>Pagado con</span><b>'+walletLabel+'</b></div>'+
     '<div class="sp-row"><span>Cuota combinada</span><b>'+fmt2(Number(r.combinedOdds)||1)+'</b></div>'+
-    '<div class="sp-row sp-gain"><span>Posible ganancia</span><b>PEN '+fmt2(Number(r.possibleReturn)||0)+'</b></div>'+
+    '<div class="sp-row sp-gain"><span>Posible ganancia</span><b>'+amountLabel(Number(r.possibleReturn)||0)+'</b></div>'+
     '<div class="sp-legs">'+(Array.isArray(r.selections)?r.selections:[]).map(s=>
       '<div class="sp-leg"><b>'+esc(s.home)+' · '+esc(s.away)+'</b>'+
       '<span>'+esc(s.marketLabel||'Resultado final')+' — '+esc(s.selectionLabel||s.outcome||'')+'</span>'+
@@ -1930,8 +1990,7 @@ function showSportsPlayDetails(id){
   const ticket=playHistory.find(t=>String(t.id)===String(id)&&t.type==='sports');
   if(!ticket){toast('No se encontraron los detalles del cupón.');return;}
   showSportsPlayDialog({id:ticket.id,createdAt:ticket.at,stake:ticket.stake,
-    walletSource:ticket.note.includes('bonos')?'bonos':
-      ticket.note.includes('SIMULACIÓN')?'creditos':'principal',
+    walletSource:ticket.note.includes('bonos')?'bonos':'principal',
     combinedOdds:ticket.combinedOdds,possibleReturn:ticket.potentialReturn,
     selections:(ticket.picks||[]).map(s=>({...s,
       marketLabel:s.marketLabel||s.market,selectionLabel:s.selectionLabel||s.outcome}))});
@@ -1947,59 +2006,5 @@ document.addEventListener('click',e=>{
   const det=e.target.closest('[data-sports-play-details]');
   if(det)showSportsPlayDetails(det.dataset.sportsPlayDetails);
 });  
-/* PremiumGol · logos desde github.com/JoseArroyave/football-logos */
-const FOOTBALL_LOGOS_API='https://api.github.com/repos/JoseArroyave/football-logos/git/trees/HEAD?recursive=1';
-const FOOTBALL_LOGOS_RAW='https://raw.githubusercontent.com/JoseArroyave/football-logos/HEAD/';
-const FOOTBALL_LOGOS_CACHE_KEY='premiumgol_football_logos_index_v1';
-let footballLogosIndexPromise=null;
 
-function normalizeLogoName(v){
-  return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toLowerCase()
-    .replace(/\.(svg|png|webp|jpe?g)$/i,'')
-    .replace(/\b(fc|afc|cf|ac|sc|cd|club|deportivo|de|del|la|el|real|united)\b/g,' ')
-    .replace(/[^a-z0-9]+/g,' ').trim();
-}
-function loadFootballLogosIndex(){
-  if(footballLogosIndexPromise)return footballLogosIndexPromise;
-  footballLogosIndexPromise=(async()=>{
-    try{
-      const cached=JSON.parse(localStorage.getItem(FOOTBALL_LOGOS_CACHE_KEY)||'null');
-      if(cached&&Array.isArray(cached.paths)&&(Date.now()-(cached.at||0))<24*3600*1000)
-        return buildFootballLogosMap(cached.paths);
-      const res=await fetch(FOOTBALL_LOGOS_API);
-      if(!res.ok)throw new Error('logos api');
-      const data=await res.json();
-      const paths=(data.tree||[]).filter(t=>t.type==='blob'&&/\.(svg|png|webp)$/i.test(t.path)).map(t=>t.path);
-      try{localStorage.setItem(FOOTBALL_LOGOS_CACHE_KEY,JSON.stringify({at:Date.now(),paths}));}catch(e){}
-      return buildFootballLogosMap(paths);
-    }catch(e){return new Map();}
-  })();
-  return footballLogosIndexPromise;
-}
-function buildFootballLogosMap(paths){
-  const map=new Map();
-  (paths||[]).forEach(p=>{
-    const base=normalizeLogoName(p.split('/').pop());
-    if(base&&!map.has(base))map.set(base,p);
-  });
-  return map;
-}
-function footballLogoUrl(name){
-  const map=window.__footballLogosIndex;
-  if(!map||!name)return '';
-  const key=normalizeLogoName(name);
-  if(!key)return '';
-  if(map.has(key))return FOOTBALL_LOGOS_RAW+map.get(key);
-  if(key.length>=4){
-    for(const [k,p] of map){
-      if(k.includes(key)||key.includes(k))return FOOTBALL_LOGOS_RAW+p;
-    }
-  }
-  return '';
-}
-loadFootballLogosIndex().then(m=>{
-  window.__footballLogosIndex=m;
-  try{renderMatch();renderLive();}catch(e){}
-});
 })();

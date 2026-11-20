@@ -2117,3 +2117,7 @@ dialog:not([open]){display:none!important;pointer-events:none!important}
 @media(max-width:340px){
   .pg-rich-footer .pg-footer-grid{width:calc(100% - 24px)}
 }
+
+/* Fase monetaria: isotipo único en todo el overlay (PC + móvil). */
+.auth-busy-overlay .auth-busy-icon{display:block!important;width:76px;height:76px;object-fit:contain;animation:pgGooglePulse 1.25s ease-in-out infinite;margin:0 auto 14px}
+@media(prefers-reduced-motion:reduce){.auth-busy-overlay .auth-busy-icon{animation:none}}
