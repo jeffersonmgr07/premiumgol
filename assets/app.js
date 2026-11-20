@@ -37,6 +37,27 @@ const FOOTBALL_LOGOS_PATHS={
   "Real Betis": "logos/spain/Real_Betis.svg",
   "Newcastle United": "logos/england/Newcastle_United.svg",
   "Arsenal": "logos/england/Arsenal.svg",
+  "Manchester City": "logos/england/Manchester_City.svg",
+  "Manchester United": "logos/england/Manchester_United.svg",
+  "Fulham": "logos/england/Fulham.svg",
+  "Aston Villa": "logos/england/Aston_Villa.svg",
+  "Sunderland": "logos/england/Sunderland.svg",
+  "Chelsea": "logos/england/Chelsea.svg",
+  "Tottenham": "logos/england/Tottenham.svg",
+  "Everton": "logos/england/Everton.svg",
+  "Liverpool": "logos/england/Liverpool_FC.svg",
+  "Bournemouth": "logos/england/Bournemouth.svg",
+  "Brentford": "logos/england/Brentford.svg",
+  "Brighton": "logos/england/Brighton.svg",
+  "Burnley": "logos/england/Burnley.svg",
+  "Crystal Palace": "logos/england/Crystal_Palace.svg",
+  "Leeds United": "logos/england/Leeds_United.svg",
+  "Leicester": "logos/england/Leicester.svg",
+  "Nottingham Forest": "logos/england/Nottingham_Forest.svg",
+  "West Ham": "logos/england/West_Ham.svg",
+  "Wolverhampton Wanderers": "logos/england/Wolverhampton_Wanderers.svg",
+  "Ipswich": "logos/england/Ipswich.svg",
+  "Southampton": "logos/england/Southampton.svg",
   "Real Madrid": "logos/spain/Real_Madrid.svg",
   "Celta": "logos/spain/Celta.svg",
   "Alianza Lima": "logos/peru/Alianza_Lima.svg",
@@ -70,6 +91,25 @@ const FOOTBALL_LOGOS_ALIASES={
   "Universitario de Deportes": "Universitario",
   "Racing Club": "Racing Santander",
   "Newcastle": "Newcastle United",
+  "Liverpool FC": "Liverpool",
+  "Tottenham Hotspur": "Tottenham",
+  "Wolverhampton": "Wolverhampton Wanderers",
+  "Wolves": "Wolverhampton Wanderers",
+  "West Ham United": "West Ham",
+  "Brighton and Hove Albion": "Brighton",
+  "Brighton & Hove Albion": "Brighton",
+  "AFC Bournemouth": "Bournemouth",
+  "Nottingham Forest FC": "Nottingham Forest",
+  "Leeds": "Leeds United",
+  "Leicester City": "Leicester",
+  "Ipswich Town": "Ipswich",
+  "Manchester City FC": "Manchester City",
+  "Manchester United FC": "Manchester United",
+  "Chelsea FC": "Chelsea",
+  "Everton FC": "Everton",
+  "Crystal Palace FC": "Crystal Palace",
+  "Burnley FC": "Burnley",
+  "Newcastle Utd": "Newcastle United",
   "FC Barcelona": "Barcelona",
   "SC Cienciano": "Cienciano",
 };
@@ -384,7 +424,7 @@ function footballLogoUrl(name){
     const featured=[...withOdds,...matches.filter(g=>!withOdds.some(x=>x.id===g.id))].slice(0,3);
     const source='Encuentros de fútbol';
     $('#homeFixtures').innerHTML=featured.length?featured.map(g=>`<article class="preview-card featured-clickable" data-featured-match="${esc(g.id)}" role="button" tabindex="0" aria-label="Ver cuotas de ${esc(g.home)} contra ${esc(g.away)}">
-      <div class="preview-card-head"><span>${icon('ball')} ${esc(g.league)}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
+      <div class="preview-card-head"><span>${icon('ball')} ${esc(sportLeagueName(g))}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
       <div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>
       <div class="featured-odds" aria-label="Cuotas local empate visita">${['1','X','2'].map((name,n)=>`<span><small>${name}</small><b>${Number(g.odds?.[n])>1?fmt2(g.odds[n]):'—'}</b></span>`).join('')}</div>
       <div class="preview-bottom"><small>${source}</small><button type="button" class="text-link" data-featured-button="${esc(g.id)}">Ver cuotas →</button></div>
@@ -400,6 +440,25 @@ function footballLogoUrl(name){
     showView('match');
   }
   function completedPicks(slot=activeCard){return golGames.filter(g=>outcomes.includes(draft.golCards[slot]?.[g.id])).length;}
+  // A -> B -> C -> D. A completed or paid previous card is required to unlock the next.
+  function golSlotAccessible(slot){
+    const index=SLOTS.indexOf(slot);
+    return index>=0&&SLOTS.slice(0,index).every(previous=>Boolean(golLocked[previous])||completedPicks(previous)===12);
+  }
+  // One checkout includes only consecutive, fully completed, unpaid cards.
+  function readyGolSlots(){
+    const slots=[];
+    for(const slot of SLOTS){
+      if(golLocked[slot])continue;
+      if(completedPicks(slot)===12){slots.push(slot);continue;}
+      break;
+    }
+    return slots;
+  }
+  function unfinishedGolCards(){
+    const ready=new Set(readyGolSlots());
+    return SLOTS.some(slot=>!golLocked[slot]&&!ready.has(slot)&&completedPicks(slot)>0&&completedPicks(slot)<12);
+  }
   const golClosed=()=>Date.now()>=new Date(golCutoff).getTime();
   function golDateLabel(iso){
     const parsed=new Date(iso);
@@ -419,6 +478,10 @@ function footballLogoUrl(name){
       (image?`<img class="gol-crest-img" src="${esc(image)}" alt="" loading="lazy" decoding="async">`:'')+'</span>';
   }
   function renderGol(){
+    if(!golSlotAccessible(activeCard)){
+      activeCard=SLOTS.find(slot=>golSlotAccessible(slot)&&!golLocked[slot])||'A';
+      draft.activeCard=activeCard;saveDraft();
+    }
     const selections=currentPicks(),locked=Boolean(golLocked[activeCard]),closed=golClosed();
     const deadline=$('#golDeadline');
     deadline.classList.toggle('expired',closed);
@@ -450,15 +513,24 @@ function footballLogoUrl(name){
     $('#golCount').textContent=String(completedPicks());
     $('#golCountSide').textContent=`${completedPicks()} de 12`;
     $('#golProgress').style.width=`${completedPicks()/12*100}%`;
-    $('#submitGol').disabled=closed||locked||completedPicks()!==12;
-    $('#submitGol').innerHTML=closed?'Jornada cerrada':locked?'Jugada registrada ✓':`Colocar jugada ${icon('arrow')}`;
+    const completed=readyGolSlots();
+    const hasUnfinished=unfinishedGolCards();
+    const total=completed.length*5;
+    const label=completed.length===1?'Colocar jugada':`Colocar ${['','', 'dos', 'tres', 'cuatro'][completed.length]||completed.length} jugadas`;
+    $('#submitGol').disabled=closed||sendingPlay||!completed.length||hasUnfinished;
+    $('#submitGol').innerHTML=closed?'Jornada cerrada':`${label} ${icon('arrow')}`;
+    $('#golUnitPrice').textContent='S/ 5.00';
+    $('#golPriceQuantity').textContent=`${completed.length} jugada${completed.length===1?'':'s'} × S/ 5.00`;
+    $('#golPriceTotal').textContent='S/ '+fmt2(total);
     $('#resetGol').hidden=locked||closed;
-    const fullSlots=SLOTS.filter(slot=>completedPicks(slot)===12&&!golLocked[slot]);
-    const batchButton=$('#submitGolBatch');
-    if(batchButton){batchButton.hidden=closed||fullSlots.length<2;batchButton.disabled=closed||fullSlots.length<2||sendingPlay;
-      batchButton.textContent='Comprar '+fullSlots.length+' cartillas · S/ '+fmt2(fullSlots.length*5);}
-    $('#golSlotHint').textContent=closed?'La jornada ha finalizado.':locked?`Jugada ${activeCard} registrada. Elige otra letra para participar de nuevo.`:`Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
-    $('#golTabs').innerHTML=SLOTS.map(slot=>`<button type="button" data-gol-slot="${slot}" class="${activeCard===slot?'active':''} ${golLocked[slot]?'recorded':''}" aria-pressed="${activeCard===slot}" title="Jugada ${slot}${golLocked[slot]?' registrada':''}">${slot}</button>`).join('');
+    $('#golSlotHint').textContent=closed?'La jornada ha finalizado.':locked?
+      `Jugada ${activeCard} registrada. Continúa con la siguiente cartilla.`:
+      hasUnfinished?'Completa la cartilla que empezaste o borra sus selecciones para continuar.':
+      `Jugada ${activeCard} · ${completedPicks()} de 12 selecciones`;
+    $('#golTabs').innerHTML=SLOTS.map(slot=>{
+      const accessible=golSlotAccessible(slot);
+      return `<button type="button" data-gol-slot="${slot}" class="${activeCard===slot?'active':''} ${golLocked[slot]?'recorded':''}" aria-pressed="${activeCard===slot}" aria-label="Jugada ${slot}${!accessible?' bloqueada hasta completar la anterior':golLocked[slot]?' registrada':''}" title="Jugada ${slot}${!accessible?' · Completa la anterior para desbloquear':' '+(golLocked[slot]?'· Registrada':'')}" ${!accessible?'disabled':''}>${slot}</button>`;
+    }).join('');
     const list=golGames.map((g,i)=>({g,i,pick:selections[g.id]})).filter(x=>outcomes.includes(x.pick));
     $('#golSummary').innerHTML=list.length?list.map(({g,i,pick})=>`<div class="gol-summary-row"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="game" title="${esc(g.home)} – ${esc(g.away)}">${esc(g.home)} · ${esc(g.away)}</span><b class="result">${esc(golLabel[outcomes.indexOf(pick)])} · ${esc(outcomeName[outcomes.indexOf(pick)])}</b></div>`).join(''):'<div class="gol-summary-empty">Aquí aparecerán tus pronósticos a medida que selecciones los partidos.</div>';
   }
@@ -489,8 +561,9 @@ function footballLogoUrl(name){
   }
   async function saveGol(walletSource=''){
     if(golClosed()){toast('La cartilla está cerrada para nuevas jugadas.');renderGol();return;}
-    if(golLocked[activeCard]){toast('Esta jugada ya fue registrada. Elige otra letra.');return;}
-    if(completedPicks()!==12){toast(`Completa los 12 partidos. Llevas ${completedPicks()} de 12.`);return;}
+    const slot=readyGolSlots()[0];
+    if(!slot||unfinishedGolCards()){toast('Completa las cartillas en orden A, B, C y D.');return;}
+    if(completedPicks(slot)!==12){toast('Completa los 12 partidos de la cartilla.');return;}
     if(!hasUser()&&sessionToken){
       setAuthBusy(true,'Restaurando tu sesión…','general');
       try{await refreshAccount();}finally{setAuthBusy(false);}
@@ -507,7 +580,6 @@ function footballLogoUrl(name){
     if(sendingPlay)return;
     sendingPlay=true;$('#submitGol').disabled=true;
     setAuthBusy(true,'Guardando tu jugada…','general');
-    const slot=activeCard;
     try{
       const picks=golGames.map(g=>({id:g.id,outcome:draft.golCards[slot][g.id]}));
       draft.golRequestIds[slot]=draft.golRequestIds[slot]||randomId();saveDraft();
@@ -525,7 +597,8 @@ function footballLogoUrl(name){
     finally{sendingPlay=false;setAuthBusy(false);renderGol();}
   }
   async function saveGolBatch(walletSource=''){
-    const slots=SLOTS.filter(slot=>completedPicks(slot)===12&&!golLocked[slot]);
+    const slots=readyGolSlots();
+    if(unfinishedGolCards()){toast('Completa la cartilla empezada antes de comprar.');return;}
     if(golClosed()||slots.length<2){toast('Completa dos o más cartillas antes de comprar juntas.');return;}
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');return;}
     const total=slots.length*5;
@@ -585,23 +658,66 @@ function footballLogoUrl(name){
     return /^https:\/\/(?:www\.|r2\.|thumbs\.)?thesportsdb\.com\//i.test(s)||
       /^https:\/\/media\.api-sports\.io\/football\/(?:leagues|teams)\/[0-9]+\.png$/i.test(s)?s:'';
   }
+  const SPORTS_LEAGUE_NAMES={
+    soccer_epl:'Premier League',soccer_england_league1:'EFL League One',soccer_england_league2:'EFL League Two',
+    soccer_england_efl_champ:'EFL Championship',soccer_spain_la_liga:'LaLiga',
+    soccer_spain_segunda_division:'LaLiga Hypermotion',soccer_italy_serie_a:'Serie A',
+    soccer_italy_serie_b:'Serie B',soccer_germany_bundesliga:'Bundesliga',
+    soccer_germany_bundesliga2:'2. Bundesliga',soccer_france_ligue_one:'Ligue 1',
+    soccer_france_ligue_two:'Ligue 2',soccer_portugal_primeira_liga:'Liga Portugal',
+    soccer_netherlands_eredivisie:'Eredivisie',soccer_usa_mls:'Major League Soccer',
+    soccer_brazil_campeonato:'Brasileirão Série A',soccer_argentina_primera_division:'Liga Profesional Argentina',
+    soccer_uefa_champs_league:'UEFA Champions League',soccer_uefa_europa_league:'UEFA Europa League',
+    soccer_uefa_europa_conference_league:'UEFA Conference League',
+    soccer_mexico_ligamx:'Liga MX',soccer_australia_aleague:'A-League Men'
+  };
+  const SPORT_MONTHS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  function sportLeagueName(game){
+    const key=String(game?.sportKey||'').toLowerCase();
+    const raw=String(game?.league||'').trim();
+    return SPORTS_LEAGUE_NAMES[key]||({EPL:'Premier League',LaLiga:'LaLiga',MLS:'Major League Soccer'}[raw]||raw||'Fútbol');
+  }
+  function sportSchedule(iso){
+    const d=new Date(iso);
+    if(!Number.isFinite(d.getTime()))return {date:'Por confirmar',time:'—'};
+    const p=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
+      timeZone:'America/Lima',day:'2-digit',month:'numeric',hour:'2-digit',minute:'2-digit',hour12:true
+    }).formatToParts(d).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+    const month=SPORT_MONTHS[Number(p.month)-1]||'—';
+    const period=String(p.dayPeriod||'AM').toUpperCase().includes('P')?'p.m.':'a.m.';
+    return {date:`${p.day}-${month}`,time:`${p.hour}:${p.minute} ${period}`};
+  }
   function sportCrest(team,sportKey,serverLogo){
     const art=sportsArtwork.get(sportKey);
     const row=art?.teams?.find(x=>x.name===normalizedSportsName(team));
-    const img=footballLogoUrl(team)||safeSportLogo(serverLogo)||safeSportLogo(row?.url);
+    const primary=footballLogoUrl(team);
+    const secondary=safeSportLogo(serverLogo)||safeSportLogo(row?.url);
+    const img=primary||secondary;
     return '<span class="sport-team-crest" aria-hidden="true"><span>'+
       esc(initials(team))+'</span>'+(img?'<img src="'+esc(img)+
-      '" alt="" loading="lazy" decoding="async">':'')+'</span>';
+      '" data-fallback-url="'+esc(primary?secondary:'')+'" alt="" loading="lazy" decoding="async">':'')+'</span>';
   }
   function sportLeagueBadge(game){
     const art=sportsArtwork.get(game.sportKey);
     const img=safeSportLogo(game.leagueLogo)||safeSportLogo(art?.leagueLogo);
-    return '<span class="sport-league-emblem" aria-hidden="true">'+
-      '<span class="sport-league-fallback">⚽</span>'+
-      (img?'<img class="sport-league-logo" src="'+esc(img)+
-      '" alt="" loading="lazy" decoding="async">':'')+'</span>'+
-      '<span>'+esc(game.league)+'</span>';
+    return (img?'<span class="sport-league-emblem" aria-hidden="true">'+
+      '<img class="sport-league-logo" src="'+esc(img)+'" alt="" loading="lazy" decoding="async"></span>':'')+
+      '<span>'+esc(sportLeagueName(game))+'</span>';
   }
+  document.addEventListener('error',e=>{
+    const img=e.target;
+    if(!(img instanceof HTMLImageElement))return;
+    if(img.matches('.sport-team-crest img')){
+      if(img.dataset.fallbackUrl&&!img.dataset.fallbackUsed){
+        img.dataset.fallbackUsed='true';img.src=img.dataset.fallbackUrl;return;
+      }
+      img.remove();return;
+    }
+    if(img.matches('.sport-league-logo')){
+      img.closest('.sport-league-emblem')?.remove();return;
+    }
+    if(img.matches('.gol-crest-img'))img.remove();
+  },true);
   async function fetchSportsArtwork(){
     const leagues=[...new Set([...matches,...liveGames].map(x=>x.sportKey).filter(Boolean))].slice(0,6);
     for(const key of leagues){
@@ -705,16 +821,12 @@ function footballLogoUrl(name){
 
   function marketCard(g,live){
     const selected=draft.slips.find(s=>s.gameId===g.id);
-    const kickoffValid=g.kickoff&&Number.isFinite(Date.parse(g.kickoff));
-    const kickoffDate=kickoffValid?new Date(g.kickoff).toLocaleDateString('es-PE',{
-      timeZone:'America/Lima',day:'2-digit',month:'2-digit'}):'—';
-    const kickoffHour=kickoffValid?new Date(g.kickoff).toLocaleTimeString('es-PE',{
-      timeZone:'America/Lima',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}):'—';
+    const schedule=sportSchedule(g.kickoff);
     return `<article class="market-card sport-premium-card ${live?'live-card':''}">
       <div class="market-top"><span class="market-league">${sportLeagueBadge(g)}</span>
       <time class="market-kickoff-chip" datetime="${esc(g.kickoff||'')}">
-        <span class="sport-event-date">${live?'EN VIVO':esc(kickoffDate)}</span>
-        <span class="sport-event-time">${esc(kickoffHour)}</span>
+        <span class="sport-event-date">${live?'EN VIVO':esc(schedule.date)}</span>
+        <span class="sport-event-time">${esc(schedule.time)}</span>
       </time></div>
       <div class="market-body sport-match-teams">
         <span class="market-team">${sportCrest(g.home,g.sportKey,g.homeLogo)}<strong>${esc(g.home)}</strong></span>
@@ -774,6 +886,7 @@ function footballLogoUrl(name){
   const isMoneyMode=()=>true;
   const betCap=()=>500;
   const slipMoney=value=>'S/ '+fmt2(value);
+  let sportsWalletMenuOpen=false;
   function renderSlips(){
     const mode=betMode(),money=isMoneyMode(mode),cap=betCap(mode);
     const count=draft.slips.length;
@@ -786,34 +899,38 @@ function footballLogoUrl(name){
       <b>${fmt2(s.odd)}</b>
       <button type="button" data-remove="${esc(s.selectionId)}" data-remove-game="${esc(s.gameId)}"
         aria-label="Quitar selección">${icon('close')}</button></div></div>`).join(''):'';
-    let balance;
-    if(money&&hasUser()){
-      balance=`<div class="sports-private-balance">
-    <span>Saldo principal: <strong>S/ ${fmt2(paidBalancePEN)}</strong></span>
-    <span>Bonos disponibles: <strong>S/ ${fmt2(bonusAvailablePEN)}</strong></span>
-    <span>Bonos pendientes: <strong>S/ ${fmt2(bonusPendingPEN)}</strong></span>
-    </div>
-    <label for="sportsWalletSource">Pagar con</label>
-    <select id="sportsWalletSource" class="sports-wallet-select" aria-label="Origen del saldo">
-      <option value="principal" ${sportsWalletSource==='principal'?'selected':''}>Saldo principal</option>
-      <option value="bonos" ${sportsWalletSource==='bonos'?'selected':''} ${bonusAvailablePEN<=0?'disabled':''}>Saldo de bonos</option>
-    </select>`;
-    }else if(money){
-      balance='<div class="sports-private-balance"><span>Ingresa a tu cuenta para ver tu saldo y apostar.</span></div>';
-    }
+    const walletLabel=sportsWalletSource==='bonos'?'Saldo de bonos':'Saldo principal';
+    const balance=money?`<div class="sports-wallet-picker">
+      <span class="sports-wallet-label">Pagar con</span>
+      <div class="sports-wallet-combobox">
+        <button type="button" class="sports-wallet-trigger" data-wallet-toggle
+          aria-expanded="${sportsWalletMenuOpen}" aria-label="Elegir saldo para pagar">
+          <span>${esc(walletLabel)}</span><span class="sports-wallet-chevron" aria-hidden="true">⌄</span>
+        </button>
+        <div class="sports-wallet-menu" ${sportsWalletMenuOpen?'':'hidden'}>
+          <button type="button" data-wallet-choice="principal" class="${sportsWalletSource==='principal'?'selected':''}">
+            Saldo principal ${sportsWalletSource==='principal'?'✓':''}</button>
+          <button type="button" data-wallet-choice="bonos" class="${sportsWalletSource==='bonos'?'selected':''}"
+            ${hasUser()&&bonusAvailablePEN<=0?'disabled':''}>
+            Saldo de bonos ${sportsWalletSource==='bonos'?'✓':''}</button>
+        </div>
+      </div>
+    </div>`:'';
     const currency='S/';
     const footer=count?`<div class="betslip-footer">
     ${balance}
     <label for="betStake">${money?'Importe de la apuesta (S/)':'Monto (créditos)'}</label>
-    <div class="stake-entry"><input id="betStake" type="number" min="1" max="${cap}"
-      step="1" value="${esc(stake)}" inputmode="numeric"><span>${currency}</span></div>
+    <div class="stake-entry"><input id="betStake" type="text" inputmode="numeric"
+      pattern="[0-9]*" maxlength="4" autocomplete="off" value="${esc(stake)}"
+      aria-label="Importe en soles" aria-describedby="betStakeHelp"><span>${currency}</span></div>
+    <small id="betStakeHelp" class="stake-help">Ingresa el importe con el teclado.</small>
     <div class="slip-total"><span>Cuota combinada</span><b>${fmt2(combinedOdds())}</b></div>
     <div class="slip-total"><span>${money?'Retorno posible':'Posible ganancia'}</span>
       <b id="slipReturn">${slipMoney(total)}</b></div>
-    <button id="refreshSportsQuote" type="button" class="btn btn-outline btn-full">Actualizar cuotas del cupón</button>
     <button id="placeBet" type="button" class="btn btn-gold btn-full"
-      ${!validStake||mode==='preview'?'disabled':''}>${mode==='preview'?'Vista previa: cupones no disponibles':money?'Colocar apuesta':'Colocar jugada'}
-      ${icon('arrow')}</button>
+      ${!validStake||mode==='preview'?'disabled':''}>Colocar apuesta ${icon('arrow')}</button>
+    ${mode==='preview'?'<p class="slip-unavailable" role="status">La confirmación de apuestas aún no está habilitada en el servidor.</p>':''}
+    <button id="refreshSportsQuote" type="button" class="sports-quote-refresh"><span aria-hidden="true">↻</span> Actualizar cuotas</button>
     <p class="slip-note">Las cuotas pueden cambiar mientras se procesa la jugada.</p>
   </div>`:`<div class="betslip-empty">${icon('ticket')}
     <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
@@ -829,8 +946,8 @@ function footballLogoUrl(name){
       .replaceAll('id="placeBet"','id="placeBetLive"')
       .replaceAll('id="refreshSportsQuote"','id="refreshSportsQuoteLive"')
       .replaceAll('id="clearBetslip"','id="clearBetslipLive"')
-      .replaceAll('id="sportsWalletSource"','id="sportsWalletSourceLive"')
-      .replaceAll('for="sportsWalletSource"','for="sportsWalletSourceLive"');
+      .replaceAll('id="betStakeHelp"','id="betStakeHelpLive"')
+      .replaceAll('aria-describedby="betStakeHelp"','aria-describedby="betStakeHelpLive"');
   }
   /** Punto de entrada del botón "Colocar apuesta / jugada". */
   async function placeBet(){
@@ -1707,8 +1824,11 @@ function footballLogoUrl(name){
     finally{btn.disabled=false;setAuthBusy(false);}
   });
   on('#backToEmail','click',()=>{$('#verifyForm').hidden=true;$('#emailForm').hidden=false;});
-  on('#submitGol','click',()=>{golBatchPending=false;saveGol();});
-  on('#submitGolBatch','click',()=>saveGolBatch());
+  on('#submitGol','click',()=>{
+    const count=readyGolSlots().length;
+    if(count>=2){golBatchPending=true;saveGolBatch();}
+    else{golBatchPending=false;saveGol();}
+  });
   on('#walletPayClose','click',()=>{golBatchPending=false;$('#walletPayDialog').close();});
   on('#walletPayConfirm','click',()=>{
     const wallet=document.querySelector('input[name="walletPayment"]:checked')?.value;
@@ -1732,7 +1852,7 @@ function footballLogoUrl(name){
   on('#golRulesDialog','click',e=>{if(e.target===$('#golRulesDialog'))$('#golRulesDialog').close();});
   on('#authBusyOverlay','cancel',e=>e.preventDefault());
   window.addEventListener('resize',()=>{if(accountMenuOpen)closeAccountMenu();if(walletBreakdownOpen)closeWalletBreakdown();});
-  on('#resetGol','click',()=>{if(golLocked[activeCard])return;draft.golCards[activeCard]={};delete draft.golRequestIds[activeCard];saveDraft();renderGol();toast('Se borró la selección de la jugada '+activeCard+'.');});
+  on('#resetGol','click',()=>{if(golLocked[activeCard])return;draft.golCards[activeCard]={};delete draft.golRequestIds[activeCard];delete draft.golBatchRequestId;saveDraft();renderGol();toast('Se borró la selección de la jugada '+activeCard+'.');});
   on('#premiumCoupon','click',claimCouponPrompt);
   on('#closeCoupon','click',()=>$('#couponDialog').close());
   on('#couponDialog','click',e=>{if(e.target===$('#couponDialog'))$('#couponDialog').close();});
@@ -1770,12 +1890,24 @@ function footballLogoUrl(name){
   document.addEventListener('click',e=>{
     if(e.target.closest('#refreshSportsQuote, #refreshSportsQuoteLive')){refreshSportsQuote();}
   });
-  document.addEventListener('change',e=>{
-    if(e.target.matches('[id^="sportsWalletSource"]')){
-      sportsWalletSource=e.target.value==='bonos'?'bonos':'principal';
-      delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
-      renderSlips();
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-wallet-toggle]')){
+      sportsWalletMenuOpen=!sportsWalletMenuOpen;renderSlips();return;
     }
+    const pick=e.target.closest('[data-wallet-choice]');
+    if(pick){
+      if(pick.disabled)return;
+      sportsWalletSource=pick.dataset.walletChoice==='bonos'?'bonos':'principal';
+      sportsWalletMenuOpen=false;
+      delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
+      renderSlips();return;
+    }
+    if(sportsWalletMenuOpen&&!e.target.closest('.sports-wallet-combobox')){
+      sportsWalletMenuOpen=false;renderSlips();
+    }
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&sportsWalletMenuOpen){sportsWalletMenuOpen=false;renderSlips();}
   });
   on('#matchSearch','input',e=>{searchFilter=e.target.value.trim();renderMatch();});
   on('#matchLeague','change',e=>{leagueFilter=e.target.value;renderMatch();});
@@ -1783,11 +1915,15 @@ function footballLogoUrl(name){
   on('#matchSort','change',e=>{sortFilter=e.target.value;renderMatch();});
   document.addEventListener('input',e=>{
     if(e.target.matches('[id^="betStake"]')){
-      const v=Number(e.target.value);stake=Number.isFinite(v)?Math.floor(v):0;
+      // No spin buttons and no mouse-wheel changes: accept only typed digits.
+      const clean=e.target.value.replace(/[^0-9]/g,'').slice(0,4);
+      if(e.target.value!==clean)e.target.value=clean;
+      const v=Number(clean);stake=clean&&Number.isFinite(v)?Math.floor(v):0;
       delete draft.betRequestId;delete draft.sportsDemoRequestId;
       delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
       $$('[id^="slipReturn"]').forEach(el=>el.textContent=slipMoney(stake*combinedOdds()));
+      $$('button[id^="placeBet"]').forEach(btn=>{btn.disabled=!Number.isInteger(stake)||stake<1||stake>betCap()||betMode()==='preview';});
     }
   });
   document.addEventListener('click',e=>{
@@ -1795,8 +1931,11 @@ function footballLogoUrl(name){
     if(walletBreakdownOpen&&!e.target.closest('#walletTop,#walletBreakdown'))closeWalletBreakdown();
     const logout=e.target.closest('[data-account-signout]');
     if(logout){e.preventDefault();closeAccountMenu();signout();return;}
-    const slot=e.target.closest('[data-gol-slot]');if(slot){activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;}
-    const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
+    const slot=e.target.closest('[data-gol-slot]');if(slot){
+      if(!golSlotAccessible(slot.dataset.golSlot)){toast('Primero completa la jugada anterior.');return;}
+      activeCard=slot.dataset.golSlot;draft.activeCard=activeCard;saveDraft();renderGol();return;
+    }
+    const gol=e.target.closest('[data-gol-id]');if(gol){if(golLocked[activeCard])return;delete draft.golRequestIds[activeCard];delete draft.golBatchRequestId;currentPicks()[gol.dataset.golId]=gol.dataset.golOutcome;saveDraft();renderGol();return;}
     const highlighted=e.target.closest('[data-featured-match]');if(highlighted){e.preventDefault();openFeaturedGame(highlighted.dataset.featuredMatch);return;}
     if(e.target.closest('[data-retry-live]')){
       if(!liveCatalogLoading)loadLiveCatalog();

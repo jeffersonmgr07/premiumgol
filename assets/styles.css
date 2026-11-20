@@ -2121,3 +2121,92 @@ dialog:not([open]){display:none!important;pointer-events:none!important}
 /* Fase monetaria: isotipo único en todo el overlay (PC + móvil). */
 .auth-busy-overlay .auth-busy-icon{display:block!important;width:76px;height:76px;object-fit:contain;animation:pgGooglePulse 1.25s ease-in-out infinite;margin:0 auto 14px}
 @media(prefers-reduced-motion:reduce){.auth-busy-overlay .auth-busy-icon{animation:none}}
+
+
+/* PremiumGol · UX refinements Nov 2026 — common for PC and mobile. */
+.gol-card-tabs button:disabled{
+  opacity:.38;cursor:not-allowed;filter:grayscale(1);box-shadow:none;
+}
+.gol-price{margin-bottom:4px}
+.gol-price-total{
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:8px 0 16px;margin-bottom:10px;font-size:12px;color:#bccadd;
+}
+.gol-price-total strong{font:900 16px var(--display);color:#f7c85d}
+.sports-wallet-picker{margin:0 0 14px}
+.sports-wallet-picker .sports-wallet-label{display:block;font-size:11px;font-weight:800;color:#c6d6e8;margin-bottom:7px}
+.sports-wallet-combobox{position:relative;z-index:2}
+.sports-wallet-trigger{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  width:100%;padding:12px 14px;background:linear-gradient(140deg,#192d43,#0b192b);
+  color:#fff;border:1px solid #6684a0;border-radius:11px;
+  font:750 12px var(--font);cursor:pointer;text-align:left;
+}
+.sports-wallet-trigger:focus-visible,.sports-wallet-menu button:focus-visible{outline:2px solid #f7c85d;outline-offset:2px}
+.sports-wallet-chevron{font-size:19px;color:#f7c85d;line-height:12px}
+.sports-wallet-menu{
+  position:absolute;top:calc(100% + 5px);inset-inline:0;z-index:15;
+  padding:5px;background:#13263c;border:1px solid #637e99;
+  border-radius:11px;box-shadow:0 15px 32px #0009
+}
+.sports-wallet-menu[hidden]{display:none!important}
+.sports-wallet-menu button{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;padding:10px 12px;color:#eaf2fa;background:transparent;
+  border:0;border-radius:7px;font:700 12px var(--font);text-align:left;cursor:pointer;
+}
+.sports-wallet-menu button:hover,.sports-wallet-menu button.selected{background:#284059;color:#ffdb7d}
+.sports-wallet-menu button:disabled{opacity:.42;cursor:not-allowed}
+.sports-quote-refresh{
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  padding:8px 6px;margin:6px auto 0;border:0;background:transparent;
+  color:#b8c9dc;font:650 11px var(--font);text-decoration:underline;
+  text-underline-offset:3px;cursor:pointer;
+}
+.sports-quote-refresh:hover{color:#f7c85d}
+.sports-quote-refresh svg{width:13px;height:13px}
+.slip-unavailable{color:#cbd4e2;font-size:11px;line-height:1.45;text-align:center;margin:9px 0 3px}
+.stake-help{display:block;font-size:10px;color:#95aac3;margin:5px 0 11px}
+.stake-entry input{appearance:textfield;-moz-appearance:textfield}
+.stake-entry input::-webkit-inner-spin-button,.stake-entry input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+/* Badge for the league name; omit unknown logos instead of showing unrelated badges. */
+#view-match .sport-premium-card .market-league,
+#view-live .sport-premium-card .market-league{
+  display:inline-flex;max-width:100%;width:max-content;
+  background:#1b334b;border:1px solid #476780;border-radius:9px;
+  padding:5px 9px;color:#f0f6fb;font-size:11px;font-weight:800;
+  white-space:normal;overflow:visible;text-overflow:clip;
+}
+#view-match .sport-premium-card .market-league>span:last-child,
+#view-live .sport-premium-card .market-league>span:last-child{overflow-wrap:anywhere}
+@media(min-width:960px){
+  #view-match .sport-premium-card,#view-live .sport-premium-card{
+    grid-template-columns:minmax(130px,156px) minmax(170px,1fr) minmax(225px,1.15fr) 30px;
+    grid-template-rows:minmax(32px,auto) minmax(30px,auto);
+    min-height:96px;
+  }
+  #view-match .sport-premium-card .market-league,#view-live .sport-premium-card .market-league{
+    grid-column:1;grid-row:1;align-self:end;
+    font-size:10px;line-height:1.25;
+  }
+  #view-match .sport-premium-card .market-kickoff-chip,#view-live .sport-premium-card .market-kickoff-chip{
+    grid-column:1;grid-row:2;display:flex;flex-direction:row;
+    width:100%;height:auto;padding:5px 6px;margin-top:3px;
+    border-radius:8px;font-size:10px;
+  }
+  #view-match .sport-premium-card .sport-match-teams,#view-live .sport-premium-card .sport-match-teams{
+    grid-column:2;grid-row:1/3;
+  }
+}
+@media(max-width:959px){
+  #view-match .sport-premium-card .market-top,#view-live .sport-premium-card .market-top{
+    display:flex;flex-direction:column;align-items:flex-start;gap:6px;
+  }
+  #view-match .sport-premium-card .market-kickoff-chip,#view-live .sport-premium-card .market-kickoff-chip{
+    width:auto;align-self:flex-start;border-radius:8px;
+  }
+}
+@media(max-width:420px){
+  #view-match .sport-premium-card .market-league,#view-live .sport-premium-card .market-league{font-size:10px}
+  .gol-price-total strong{font-size:14px}
+}
