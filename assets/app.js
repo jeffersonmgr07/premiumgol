@@ -8,6 +8,7 @@
   // Los ID OAuth WEB de Google no comienzan por GOCSPX: ese prefijo identifica secretos.
   const validGoogleClientId = /^\d+-[a-z0-9_-]+\.apps\.googleusercontent\.com$/i.test(String(CONFIG.googleClientId||''));
   const DRAFT_KEY = 'premiumgol_draft_20261121';
+  const SPORTS_SLIP_IDLE_MS = 60*60*1000; // Una hora sin interacción con el cupón.
   const LEGACY_DRAFT_KEY = 'premiumgol_draft_v2';
   // Sesión persistente entre actualizaciones del navegador; caduca por inactividad.
   const SESSION_KEY = 'premiumgol_session_v3';
@@ -333,6 +334,28 @@ function footballLogoUrl(name){
     draft.slips.filter(s=>s&&typeof s.gameId==='string'&&typeof s.selectionId==='string'&&
       Number(s.odd)>1) : [];
   const saveDraft = () => {try{localStorage.setItem(DRAFT_KEY,JSON.stringify(draft));}catch{}};
+  // No afectar a las cartillas Premium Gold: la caducidad se aplica SOLO a sports slips.
+  // Una versión antigua sin marca temporal no puede acreditar su antigüedad: se limpia.
+  function expireSportsSlipIfIdle(){
+    if(!draft.slips.length)return false;
+    const last=Number(draft.sportsSlipTouchedAt),now=Date.now();
+    if(Number.isFinite(last)&&last>0&&last<=now&&now-last<SPORTS_SLIP_IDLE_MS)return false;
+    draft.slips=[];
+    delete draft.sportsSlipTouchedAt;
+    delete draft.sportsWalletRequestId;
+    delete draft.sportsPrivateRequestId;
+    delete draft.sportsDemoRequestId;
+    delete draft.betRequestId;
+    saveDraft();
+    return true;
+  }
+  function touchSportsSlip(){
+    if(draft.slips.length)draft.sportsSlipTouchedAt=Date.now();
+    else delete draft.sportsSlipTouchedAt;
+    saveDraft();
+  }
+  // Limpiar el cupón caducado también después de cerrar y volver a abrir el navegador.
+  expireSportsSlipIfIdle();
   function readStoredSession(){
     try{
       const raw=localStorage.getItem(SESSION_KEY);
@@ -1103,6 +1126,7 @@ function footballLogoUrl(name){
       </button>${oddsDetailMarkup(g)}`}</article>`;
   }
   function addSportsSelection(g,selection){
+    expireSportsSlipIfIdle();
     const isSame=draft.slips.some(s=>s.gameId===g.id&&s.selectionId===selection.selectionId);
     draft.slips=draft.slips.filter(s=>s.gameId!==g.id);
     if(!isSame){
@@ -1114,7 +1138,7 @@ function footballLogoUrl(name){
     }
     sportSimReceipt='';
     delete draft.sportsDemoRequestId;delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
-    saveDraft();renderMatch();renderLive();
+    touchSportsSlip();renderMatch();renderLive();
   }
   function changeSelection(id,outcome){
     const g=allGames().find(x=>x.id===id);
@@ -1155,7 +1179,9 @@ function footballLogoUrl(name){
     $('#mobileSlipOpen')?.setAttribute('aria-expanded',String(Boolean(show&&mobileSlipOpen)));
   }
   function openMobileSportsSlip(){
+    if(expireSportsSlipIfIdle()){renderMatch();renderLive();toast('El cupón caducó tras una hora de inactividad.');return;}
     if(!['match','live'].includes(activeView)||!draft.slips.length)return;
+    touchSportsSlip();
     mobileSlipOpen=true;syncMobileSportsSlip();
     const panel=$('#'+(activeView==='match'?'matchBetslip':'liveBetslip'));
     panel?.querySelector('[data-sports-slip-close]')?.focus({preventScroll:true});
@@ -1216,7 +1242,7 @@ function footballLogoUrl(name){
       ${!validStake||mode==='preview'?'disabled':''}>Colocar apuesta ${icon('arrow')}</button>
     ${mode==='preview'?'<p class="slip-unavailable" role="status">La confirmación de apuestas aún no está habilitada en el servidor.</p>':''}
     <button id="refreshSportsQuote" type="button" class="sports-quote-refresh"><span aria-hidden="true">↻</span> Actualizar cuotas</button>
-    <p class="slip-note">Las cuotas pueden cambiar mientras se procesa la jugada.</p>
+    <p class="slip-note">Al colocar la apuesta se aplicará automáticamente la cuota vigente verificada por el servidor. El comprobante mostrará la cuota definitiva.</p>
   </div>`:`<div class="betslip-empty">${icon('ticket')}
     <strong>Tu jugada comienza aquí</strong><p>Elige una cuota para agregarla al cupón.</p></div>`;
     const receipt='';
@@ -1239,6 +1265,7 @@ function footballLogoUrl(name){
   /** Punto de entrada del botón "Colocar apuesta / jugada". */
   async function placeBet(){
     if(sendingPlay)return;
+    if(expireSportsSlipIfIdle()){renderMatch();renderLive();toast('El cupón caducó tras una hora de inactividad.');return;}
     if(!draft.slips.length){toast('Selecciona una cuota.');return;}
     if(!hasUser()&&sessionToken){
       setAuthBusy(true,'Restaurando tu sesión…','general');
@@ -1260,6 +1287,7 @@ function footballLogoUrl(name){
     return placeMoneyBet('wallet');
   }
   async function refreshSportsQuote(){
+    if(expireSportsSlipIfIdle()){renderMatch();renderLive();toast('El cupón caducó tras una hora de inactividad.');return;}
     if(!draft.slips.length||sendingPlay)return;
     setAuthBusy(true,'Actualizando cuotas del cupón…','general');
     try{
@@ -1275,14 +1303,15 @@ function footballLogoUrl(name){
         if(Math.abs(Number(quote.odd)-Number(item.odd))>0.001)changed=true;
         return {...item,odd:Number(quote.odd)};
       });
-      delete draft.sportsWalletRequestId;saveDraft();renderMatch();renderLive();
-      toast(changed?'Las cuotas se actualizaron. Revísalas antes de confirmar.':'Cuotas verificadas.');
+      delete draft.sportsWalletRequestId;touchSportsSlip();renderMatch();renderLive();
+      toast(changed?'Cuotas actualizadas. Al colocar la apuesta se verifican otra vez.':'Cuotas verificadas.');
     }catch(err){toast(err.message||'No se pudo actualizar el cupón.');}
     finally{setAuthBusy(false);}
   }
   /** Apuesta con saldo (principal / bonos): el servidor valida cuotas, descuenta en
    *  Google Sheets, impide saldo negativo y devuelve el saldo oficial. */
   async function placeMoneyBet(mode){
+    if(expireSportsSlipIfIdle()){renderMatch();renderLive();toast('El cupón caducó tras una hora de inactividad.');return;}
     if(mode==='wallet'&&!sportsWalletEnabled){
       toast('Las jugadas con saldo todavía no están habilitadas.');return;
     }
@@ -1317,7 +1346,7 @@ function footballLogoUrl(name){
       const placedLegs=draft.slips.map(leg=>({...leg}));
       const placedOdds=Number(res.walletBetCombinedOdds)||combinedOdds();
       const usedWallet=sportsWalletSource;
-      draft.slips=[];delete draft[requestKey];saveDraft();
+      draft.slips=[];delete draft[requestKey];touchSportsSlip();
       // Saldo OFICIAL devuelto por el servidor (ya descontado en Google Sheets).
       updateAccount(res);
       renderSlips();
@@ -2184,10 +2213,11 @@ function footballLogoUrl(name){
     const pick=e.target.closest('[data-wallet-choice]');
     if(pick){
       if(pick.disabled)return;
+      if(expireSportsSlipIfIdle()){renderMatch();renderLive();toast('El cupón caducó tras una hora de inactividad.');return;}
       sportsWalletSource=pick.dataset.walletChoice==='bonos'?'bonos':'principal';
       sportsWalletMenuOpen=false;
       delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
-      renderSlips();return;
+      touchSportsSlip();renderSlips();return;
     }
     if(sportsWalletMenuOpen&&!e.target.closest('.sports-wallet-combobox')){
       sportsWalletMenuOpen=false;renderSlips();
@@ -2242,12 +2272,14 @@ function footballLogoUrl(name){
   });
   document.addEventListener('input',e=>{
     if(e.target.matches('[id^="betStake"]')){
+      if(expireSportsSlipIfIdle()){renderMatch();renderLive();toast('El cupón caducó tras una hora de inactividad.');return;}
       // No spin buttons and no mouse-wheel changes: accept only typed digits.
       const clean=e.target.value.replace(/[^0-9]/g,'').slice(0,4);
       if(e.target.value!==clean)e.target.value=clean;
       const v=Number(clean);stake=clean&&Number.isFinite(v)?Math.floor(v):0;
       delete draft.betRequestId;delete draft.sportsDemoRequestId;
       delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
+      touchSportsSlip();
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
       $$('[id^="slipReturn"]').forEach(el=>el.textContent=slipMoney(stake*combinedOdds()));
       $$('button[id^="placeBet"]').forEach(btn=>{btn.disabled=!Number.isInteger(stake)||stake<1||stake>betCap()||betMode()==='preview';});
@@ -2305,10 +2337,10 @@ function footballLogoUrl(name){
     const rem=e.target.closest('[data-remove]');if(rem){draft.slips=draft.slips.filter(s=>
       s.gameId!==rem.dataset.removeGame||s.selectionId!==rem.dataset.remove);
       sportSimReceipt='';delete draft.sportsDemoRequestId;delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId;
-      saveDraft();renderMatch();renderLive();return;}
+      touchSportsSlip();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="clearBetslip"]')){draft.slips=[];
       delete draft.betRequestId;delete draft.sportsDemoRequestId;
-      delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId; sportSimReceipt='';saveDraft();renderMatch();renderLive();return;}
+      delete draft.sportsPrivateRequestId;delete draft.sportsWalletRequestId; sportSimReceipt='';touchSportsSlip();renderMatch();renderLive();return;}
     if(e.target.closest('[id^="placeBet"]'))placeBet();
   });
   document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.matches('[data-featured-match]')){e.preventDefault();openFeaturedGame(e.target.dataset.featuredMatch);}});
@@ -2405,6 +2437,19 @@ function footballLogoUrl(name){
       img.src=fallback;
     }else img.remove();
   },true);
+  // Caducidad real aunque la página permanezca abierta; al volver de otra pestaña
+  // se comprueba de inmediato. La sesión y los pronósticos Premium Gold siguen intactos.
+  function checkSportsSlipExpiry(){
+    if(expireSportsSlipIfIdle()){
+      renderMatch();renderLive();
+      toast('El cupón se vació después de una hora sin actividad.');
+    }
+  }
+  setInterval(checkSportsSlipExpiry,30000);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')checkSportsSlipExpiry();
+  });
+  window.addEventListener('focus',checkSportsSlipExpiry);
   setInterval(()=>{if(activeView==='gol')renderGol();},60000);
   // Live real: consultar sólo con pestaña activa; el backend comparte caché del proveedor.
   setInterval(()=>{
