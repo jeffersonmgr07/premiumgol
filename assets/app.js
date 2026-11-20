@@ -303,7 +303,9 @@ function footballLogoUrl(name){
   ];
   let oddsExpandedId='',oddsSelectedGroup='goles',oddsLoading=false,oddsError='';
   const oddsDetailCache=new Map();
-  let leagueFilter='all',dateFilter='all',searchFilter='',sortFilter='date',stake=5;
+  let leagueFilter='all',dateFilter='7',searchFilter='',sortFilter='date',stake=5;
+  let matchVisibleLimit=12;
+  const MATCH_PAGE_SIZE=12;
   let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
   let toastTimer;
   let promoActive=false,promoLastCheck=0;
@@ -439,7 +441,7 @@ function footballLogoUrl(name){
     leagueFilter='all';dateFilter='all';searchFilter=match.home;sortFilter='date';
     $('#matchSearch').value=match.home;
     $('#matchLeague').value='all';
-    $('#matchDate').value='all';
+    dateFilter='7';$('#matchDate').value='7';
     showView('match');
   }
   function completedPicks(slot=activeCard){return golGames.filter(g=>outcomes.includes(draft.golCards[slot]?.[g.id])).length;}
@@ -627,22 +629,72 @@ function footballLogoUrl(name){
     }catch(err){toast(err.message||'No se confirmó la compra de cartillas.');}
     finally{golBatchPending=false;sendingPlay=false;setAuthBusy(false);renderGol();}
   }
+  // Los filtros usan botones HTML propios; los <select> originales mantienen
+  // el estado y el evento change para no duplicar la lógica de filtros.
+  function syncSportFilters(){
+    for(const id of ['matchLeague','matchDate','matchSort']){
+      const original=$('#'+id);
+      if(!original)continue;
+      let control=original.parentNode.querySelector('[data-sports-filter="'+id+'"]');
+      if(!control){
+        control=document.createElement('div');control.className='sports-filter-ui';
+        control.dataset.sportsFilter=id;
+        original.insertAdjacentElement('afterend',control);
+        original.classList.add('sports-filter-native');
+        original.tabIndex=-1;original.setAttribute('aria-hidden','true');
+      }
+      const open=control.classList.contains('open');
+      const selected=original.selectedOptions[0]?.textContent||'Seleccionar';
+      const options=[...original.options].map(opt=>
+        '<button type="button" role="option" class="sports-filter-option'+(original.value===opt.value?' selected':'')+'" '+
+        'data-filter-option="'+esc(id)+'" data-filter-value="'+esc(opt.value)+'" aria-selected="'+(original.value===opt.value)+'">'+
+        esc(opt.textContent)+'</button>').join('');
+      control.innerHTML='<button type="button" class="sports-filter-trigger" data-filter-trigger="'+esc(id)+'" '+
+        'role="combobox" aria-haspopup="listbox" aria-expanded="'+open+'" aria-label="'+
+        esc(original.closest('label')?.querySelector('span')?.textContent||id)+'"><span>'+esc(selected)+
+        '</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>'+
+        '<div class="sports-filter-menu" role="listbox" aria-label="Opciones">'+options+'</div>';
+      control.classList.toggle('open',open);
+    }
+  }
   function filterOptions(){
     const leagueSel=$('#matchLeague'),current=leagueFilter;
     const leagueValues=[...new Set(matches.map(g=>g.league))].sort((a,b)=>a.localeCompare(b,'es'));
     leagueSel.innerHTML='<option value="all">Todas las ligas</option>'+leagueValues.map(l=>`<option value="${esc(l)}">${esc(l)}</option>`).join('');
     if(!leagueValues.includes(current))leagueFilter='all';leagueSel.value=leagueFilter;
+    syncSportFilters();
   }
+  function sportLocalDateNumber(iso){
+    const d=new Date(iso);if(!Number.isFinite(d.getTime()))return NaN;
+    const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
+      timeZone:'America/Lima',day:'2-digit',month:'2-digit',year:'numeric'
+    }).formatToParts(d).filter(p=>p.type!=='literal').map(p=>[p.type,Number(p.value)]));
+    return Date.UTC(parts.year,parts.month-1,parts.day)/86400000;
+  }
+  function sportDayOffset(iso){return sportLocalDateNumber(iso)-sportLocalDateNumber(new Date());}
   function renderMatch(){
-    let games=matches.filter(g=>(leagueFilter==='all'||g.league===leagueFilter) && (dateFilter==='all'||(dateFilter==='2'?Number(g.day)>=2:String(g.day)===dateFilter)) && (`${g.home} ${g.away} ${g.league}`).toLocaleLowerCase('es').includes(searchFilter.toLocaleLowerCase('es')));
+    let games=matches.filter(g=>{
+      const offset=sportDayOffset(g.kickoff);
+      const withinDate=dateFilter==='all'||(dateFilter==='7'&&offset>=0&&offset<7)||
+        (['0','1','2'].includes(dateFilter)&&offset===Number(dateFilter));
+      return (leagueFilter==='all'||g.league===leagueFilter) && withinDate &&
+        (`${g.home} ${g.away} ${g.league}`).toLocaleLowerCase('es').includes(searchFilter.toLocaleLowerCase('es'));
+    });
     if(sortFilter==='league')games.sort((a,b)=>a.league.localeCompare(b.league,'es'));
     else if(sortFilter==='team')games.sort((a,b)=>a.home.localeCompare(b.home,'es'));
-    else games.sort((a,b)=>(Number(a.day)-Number(b.day))||String(a.time).localeCompare(String(b.time)));
+    else games.sort((a,b)=>Date.parse(a.kickoff)-Date.parse(b.kickoff));
     $('#matchSourceLabel').hidden=true;
-    $('#matchResultCount').textContent=`${games.length} encuentro${games.length===1?'':'s'} encontrado${games.length===1?'':'s'}`;
-    $('#matchFixtures').innerHTML=games.length?games.map(g=>marketCard(g,false)).join(''):
-      `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando próximos encuentros…</h3><p>Estamos actualizando los partidos disponibles.</p>':
-      '<h3>Por el momento no hay partidos disponibles</h3><p>Puedes explorar PremiumGol mientras se publica la próxima programación.</p><button type="button" class="btn btn-gold btn-mini" data-nav="gol">Ir a PremiumGol</button>'}</div>`;
+    const total=games.length;
+    $('#matchResultCount').textContent=total+' partido'+(total===1?'':'s')+' disponible'+(total===1?'':'s')+
+      (total>matchVisibleLimit?' · Mostrando '+matchVisibleLimit:'');
+    $('#matchFixtures').innerHTML=total?games.slice(0,matchVisibleLimit).map(g=>marketCard(g,false)).join(''):
+      `<div class="empty-state premium-empty-sports">${catalogLoading?'<span class="sports-loader" aria-hidden="true"></span><h3>Buscando próximos partidos…</h3><p>Consultando los partidos disponibles.</p>':
+      '<h3>No encontramos partidos con estos filtros</h3><p>Prueba otra fecha o liga. La búsqueda solo incluye las competiciones configuradas en el proveedor.</p>'}</div>`;
+    const more=$('#matchLoadMore');if(more){
+      const remaining=Math.max(0,total-matchVisibleLimit);
+      more.hidden=remaining===0;
+      more.querySelector('button').textContent='Ver '+Math.min(MATCH_PAGE_SIZE,remaining)+' partidos más';
+    }
     renderSlips();
   }
   function renderLive(){
@@ -770,7 +822,8 @@ function footballLogoUrl(name){
     if(oddsLoading)output='<div class="market-detail-note"><span class="sports-loader" aria-hidden="true"></span> Consultando cuotas…</div>';
     else if(oddsError)output='<div class="market-detail-note">'+esc(oddsError)+'</div>';
     else if(!data||!data.markets?.length)output='<div class="market-detail-note">'+esc(data?.message||'No hay cuotas verificadas de esta categoría para el encuentro y la casa seleccionados.')+'</div>';
-    else output=data.markets.map((m,mi)=>{
+    else output=(data.markets.some(m=>m.tradable===false||m.outcomes?.some(o=>o.tradable===false))?
+      '<p class="sport-market-info">Algunas cuotas son informativas: no pueden añadirse al cupón hasta contar con liquidación compatible.</p>':'')+data.markets.map((m,mi)=>{
       const rows=(m.outcomes||[]).map((o,oi)=>{
         const n=String(o.name||'');
         const name=/^over$/i.test(n)?'Más':/^under$/i.test(n)?'Menos':
@@ -791,7 +844,7 @@ function footballLogoUrl(name){
         '<div class="market-detail-options">'+rows+'</div></section>';
     }).join('');
     return '<div class="market-detail-panel" role="region" aria-label="Cuotas adicionales del partido">'+
-      '<p class="sport-market-heading">Elige una opción y agrégala a tu cupón.</p>'+
+      '<p class="sport-market-heading">Elige una cuota disponible para añadirla a tu cupón.</p>'+
       '<div class="market-detail-tabs" role="group" aria-label="Categorías de mercados">'+
       oddsGroups.map(([id,title])=>'<button type="button" data-odds-group="'+id+
         '" data-odds-event="'+esc(g.id)+'" class="'+(id===oddsSelectedGroup?'active':'')+'">'+esc(title)+'</button>').join('')+
@@ -845,7 +898,7 @@ function footballLogoUrl(name){
         <span class="market-team">${sportCrest(g.away,g.sportKey,g.awayLogo)}<strong>${esc(g.away)}</strong></span>
       </div>
       <div class="market-choices sport-1x2">
-      ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}"
+      ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}" ${Number(g.odds?.[i])>1?'':'disabled title="Cuota temporalmente no disponible"'}
         data-pick="${esc(g.id)}" data-outcome="${o}"
         aria-label="Elegir ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
@@ -1949,10 +2002,50 @@ function footballLogoUrl(name){
   document.addEventListener('keydown',e=>{
     if(e.key==='Escape'&&sportsWalletMenuOpen){sportsWalletMenuOpen=false;renderSlips();}
   });
-  on('#matchSearch','input',e=>{searchFilter=e.target.value.trim();renderMatch();});
-  on('#matchLeague','change',e=>{leagueFilter=e.target.value;renderMatch();});
-  on('#matchDate','change',e=>{dateFilter=e.target.value;renderMatch();});
-  on('#matchSort','change',e=>{sortFilter=e.target.value;renderMatch();});
+  on('#matchSearch','input',e=>{searchFilter=e.target.value.trim();matchVisibleLimit=MATCH_PAGE_SIZE;renderMatch();});
+  on('#matchLeague','change',e=>{leagueFilter=e.target.value;matchVisibleLimit=MATCH_PAGE_SIZE;syncSportFilters();renderMatch();});
+  on('#matchDate','change',e=>{dateFilter=e.target.value;matchVisibleLimit=MATCH_PAGE_SIZE;syncSportFilters();renderMatch();});
+  on('#matchSort','change',e=>{sortFilter=e.target.value;matchVisibleLimit=MATCH_PAGE_SIZE;syncSportFilters();renderMatch();});
+  on('#matchLoadMore','click',e=>{
+    if(!e.target.closest('[data-match-more]'))return;
+    matchVisibleLimit+=MATCH_PAGE_SIZE;renderMatch();
+  });
+  document.addEventListener('click',e=>{
+    const trig=e.target.closest('[data-filter-trigger]');
+    const option=e.target.closest('[data-filter-option]');
+    if(trig){
+      const wrapper=trig.closest('.sports-filter-ui'),wasOpen=wrapper.classList.contains('open');
+      $$('.sports-filter-ui.open').forEach(el=>el.classList.remove('open'));
+      if(!wasOpen){wrapper.classList.add('open');trig.setAttribute('aria-expanded','true');}
+      else trig.setAttribute('aria-expanded','false');
+      return;
+    }
+    if(option){
+      const el=$('#'+option.dataset.filterOption);
+      if(!el)return;
+      el.value=option.dataset.filterValue;
+      el.dispatchEvent(new Event('change',{bubbles:true}));
+      $$('.sports-filter-ui.open').forEach(el=>el.classList.remove('open'));
+      return;
+    }
+    if(!e.target.closest('.sports-filter-ui')){
+      $$('.sports-filter-ui.open').forEach(el=>{el.classList.remove('open');el.querySelector('.sports-filter-trigger')?.setAttribute('aria-expanded','false');});
+    }
+  });
+  document.addEventListener('keydown',e=>{
+    const control=e.target.closest('.sports-filter-ui');
+    if(!control)return;
+    const opts=[...control.querySelectorAll('[data-filter-option]')],open=control.classList.contains('open');
+    const index=opts.indexOf(document.activeElement);
+    if(e.key==='Escape'){
+      control.classList.remove('open');control.querySelector('.sports-filter-trigger').setAttribute('aria-expanded','false');
+      control.querySelector('.sports-filter-trigger').focus();e.preventDefault();
+    }else if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+      if(!open){control.classList.add('open');control.querySelector('.sports-filter-trigger').setAttribute('aria-expanded','true');}
+      opts[(index<0?e.key==='ArrowDown'?0:opts.length-1:(index+(e.key==='ArrowDown'?1:-1)+opts.length)%opts.length)]?.focus();
+      e.preventDefault();
+    }else if(e.key==='Enter'&&index<0&&open){opts[0]?.focus();e.preventDefault();}
+  });
   document.addEventListener('input',e=>{
     if(e.target.matches('[id^="betStake"]')){
       // No spin buttons and no mouse-wheel changes: accept only typed digits.
