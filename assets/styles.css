@@ -2210,3 +2210,141 @@ dialog:not([open]){display:none!important;pointer-events:none!important}
   #view-match .sport-premium-card .market-league,#view-live .sport-premium-card .market-league{font-size:10px}
   .gol-price-total strong{font-size:14px}
 }
+
+
+/* ========================================================================
+   PremiumGol V4 UI: badge móvil, cartillas y cupón accesible + cards responsive.
+   Se coloca al final para consolidar estilos que habían quedado duplicados.
+   ======================================================================== */
+.gol-info-badges{flex-wrap:nowrap}
+.gol-info-badge{white-space:nowrap;box-sizing:border-box}
+.sport-premium-card .market-detail-option:disabled{cursor:not-allowed;opacity:.68}
+.sport-premium-card .market-detail-option:disabled:hover{background:#102138;outline:0}
+.betslip-head-actions{display:flex;align-items:center;gap:8px}
+.sports-slip-close{display:none}
+.mobile-sports-slip-bar,.mobile-sports-slip-backdrop{display:none}
+.mobile-sports-slip-bar[hidden],.mobile-sports-slip-backdrop[hidden]{display:none!important}
+@media(min-width:960px){
+  #view-match .sport-premium-card,#view-live .sport-premium-card{
+    grid-template-columns:minmax(133px,176px) minmax(180px,1fr) minmax(220px,1.25fr) 30px;
+    grid-template-rows:minmax(38px,auto) minmax(38px,auto);
+    gap:2px 13px;position:relative;align-items:center;
+  }
+  #view-match .sport-premium-card .market-top,#view-live .sport-premium-card .market-top{display:contents}
+  #view-match .sport-premium-card .market-league,#view-live .sport-premium-card .market-league,
+  #view-match .sport-premium-card .market-kickoff-chip,#view-live .sport-premium-card .market-kickoff-chip{
+    grid-column:1;width:100%;max-width:100%;height:30px;min-height:30px;box-sizing:border-box;
+    border-radius:8px;font-size:10.5px;padding:4px 8px;display:flex;justify-content:center;
+    align-items:center;text-align:center;line-height:1.1;overflow:hidden;white-space:nowrap;
+  }
+  #view-match .sport-premium-card .market-league,#view-live .sport-premium-card .market-league{grid-row:1;align-self:center}
+  #view-match .sport-premium-card .market-kickoff-chip,#view-live .sport-premium-card .market-kickoff-chip{
+    grid-row:2;align-self:center;gap:5px;margin:0;flex-direction:row;
+  }
+  #view-match .sport-premium-card .market-league>span:last-child,
+  #view-live .sport-premium-card .market-league>span:last-child{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  #view-match .sport-premium-card .sport-match-teams,#view-live .sport-premium-card .sport-match-teams{display:contents}
+  #view-match .sport-premium-card .market-team,#view-live .sport-premium-card .market-team{
+    grid-column:2;display:flex;align-items:center;justify-content:flex-start;
+    min-height:35px;gap:12px;min-width:0;padding:0 4px;
+  }
+  #view-match .sport-premium-card .market-team:first-child,#view-live .sport-premium-card .market-team:first-child{grid-row:1}
+  #view-match .sport-premium-card .market-team:last-child,#view-live .sport-premium-card .market-team:last-child{grid-row:2}
+  #view-match .sport-premium-card .sport-team-crest,#view-live .sport-premium-card .sport-team-crest{
+    width:31px;height:31px;flex:0 0 31px;border-radius:6px;background:#1b3145;
+  }
+  #view-match .sport-premium-card .sport-team-crest img,#view-live .sport-premium-card .sport-team-crest img{border-radius:6px}
+  #view-match .sport-premium-card .market-team strong,#view-live .sport-premium-card .market-team strong{font-size:12.5px}
+  #view-match .sport-premium-card::before,#view-live .sport-premium-card::before{
+    content:'';grid-column:1;grid-row:1/3;align-self:stretch;justify-self:end;
+    transform:translateX(6px);width:1px;margin:6px 0;background:linear-gradient(transparent,#65809865,transparent);
+    pointer-events:none;
+  }
+  #view-match .sport-premium-card .market-choices,#view-live .sport-premium-card .market-choices{grid-column:3;grid-row:1/3}
+  #view-match .sport-premium-card .market-detail-trigger,#view-live .sport-premium-card .market-detail-trigger{grid-column:4;grid-row:1/3}
+  #view-match .sport-premium-card .market-detail-panel,#view-live .sport-premium-card .market-detail-panel{grid-column:1/-1;grid-row:3}
+}
+@media(max-width:959px){
+  #view-match .sport-premium-card .market-top,#view-live .sport-premium-card .market-top{
+    display:flex;flex-direction:row;align-items:center;justify-content:space-between;
+    gap:6px;padding:8px 10px 5px;flex-wrap:nowrap;
+  }
+  #view-match .sport-premium-card .market-league,#view-live .sport-premium-card .market-league{
+    min-width:0;width:auto;max-width:57%;flex:0 1 auto;
+    font-size:10.5px;line-height:1.15;padding:6px 7px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  #view-match .sport-premium-card .market-league>span:last-child,
+  #view-live .sport-premium-card .market-league>span:last-child{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  #view-match .sport-premium-card .market-kickoff-chip,#view-live .sport-premium-card .market-kickoff-chip{
+    flex:0 0 auto;align-self:center;width:auto;max-width:47%;
+    padding:6px 8px;margin:0;gap:4px;font-size:10px;
+    white-space:nowrap;line-height:1.1;
+  }
+  #view-match .sport-premium-card .sport-match-teams,#view-live .sport-premium-card .sport-match-teams{
+    margin:0;padding:7px 10px 7px;gap:5px;
+  }
+  #view-match .sport-premium-card .market-detail-trigger .sport-more-label,
+  #view-live .sport-premium-card .market-detail-trigger .sport-more-label{display:inline}
+  #view-match .sport-premium-card .market-detail-trigger,#view-live .sport-premium-card .market-detail-trigger{
+    width:calc(100% - 18px);height:auto;min-height:38px;padding:9px;margin:0 9px 10px;
+    font-size:12px;display:flex;gap:10px;justify-content:center;
+  }
+  #view-match .game-layout aside,#view-live .game-layout aside{display:none}
+  body.sports-slip-open #view-match.is-active .game-layout aside,
+  body.sports-slip-open #view-live.is-active .game-layout aside{
+    display:block;position:fixed;z-index:25;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom,0px));
+    margin:0;padding:0;max-height:calc(100dvh - 85px - env(safe-area-inset-bottom,0px));
+    overflow:auto;overscroll-behavior:contain;border-radius:18px 18px 0 0;
+    box-shadow:0 -12px 45px #000b;background:#121f32;
+  }
+  body.sports-slip-open #view-match.is-active .betslip,
+  body.sports-slip-open #view-live.is-active .betslip{position:static;border-radius:18px 18px 0 0}
+  .sports-slip-close{display:block!important;white-space:nowrap;color:#F7C85D!important;font-weight:800!important}
+  .mobile-sports-slip-bar:not([hidden]){
+    position:fixed;z-index:19;bottom:calc(60px + env(safe-area-inset-bottom,0px));
+    left:0;right:0;display:block;padding:5px 10px 7px;
+    background:linear-gradient(0deg,#0b1523,#152b40);border-top:1px solid #608075;
+    box-shadow:0 -5px 22px #000a;
+  }
+  .mobile-sports-slip-action{
+    width:100%;min-height:43px;display:grid;grid-template-columns:minmax(0,1fr) auto auto;
+    align-items:center;gap:10px;border:1px solid #8eaa53;border-radius:10px;
+    padding:7px 12px;color:#fff;background:#1c3040;text-align:left;cursor:pointer;
+  }
+  .mobile-slip-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .mobile-slip-left b{font-size:12px}.mobile-slip-left small{font-size:9px;color:#bed0df}
+  #mobileSlipOdds{font:900 18px var(--display);color:#d7fa64;font-variant-numeric:tabular-nums}
+  .mobile-slip-open-text{font-weight:800;font-size:11px;white-space:nowrap;color:#f7c85d}
+  .mobile-sports-slip-backdrop:not([hidden]){
+    position:fixed;z-index:22;inset:0 0 calc(60px + env(safe-area-inset-bottom,0px));
+    display:block;width:100%;border:0;background:#030c18b8;backdrop-filter:blur(3px);
+  }
+  .gol-info-badges{gap:5px!important;display:flex!important;flex-wrap:nowrap!important;max-width:100%;width:100%}
+  .gol-info-badges .gol-info-badge{
+    flex:1 1 0!important;width:auto!important;min-width:0;min-height:33px;
+    font-size:clamp(9px,2.62vw,11.5px)!important;font-weight:850;
+    padding:7px 3px!important;gap:3px!important;letter-spacing:-.1px;line-height:1.05;
+    white-space:nowrap!important;text-align:center;justify-content:center;
+  }
+  .gol-info-badges .gol-info-badge.gol-info-date{flex:1.12 1 0!important}
+  .gol-info-badges .gol-info-badge.gol-info-pot{flex:1.22 1 0!important}
+  .gol-info-badges .gol-info-badge b{font-size:inherit!important;letter-spacing:inherit}
+  .gol-info-badge .badge-long{display:none!important}
+  .gol-info-badge .badge-short{display:inline!important}
+  .gol-info-badge svg{display:none!important}
+}
+@media(max-width:360px){
+  .gol-info-badges .gol-info-badge{font-size:9px!important;letter-spacing:-.2px;padding:7px 2px!important}
+  #view-match .sport-premium-card .market-kickoff-chip,#view-live .sport-premium-card .market-kickoff-chip{font-size:9px;padding:6px 5px}
+}
+@media(prefers-reduced-motion:reduce){.mobile-sports-slip-bar *{transition:none!important}}
+/* A los 721–959 px no hay navegación fija inferior: mantener el cupón normal. */
+@media(min-width:721px) and (max-width:959px){
+  #view-match .game-layout aside,#view-live .game-layout aside{display:block}
+  .mobile-sports-slip-bar,.mobile-sports-slip-backdrop{display:none!important}
+}

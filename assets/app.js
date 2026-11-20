@@ -294,6 +294,7 @@ function footballLogoUrl(name){
   let sportSimReceipt='';
   let sportsWalletEnabled=false,sportsPolicyRequested=false;
   let sportsWalletSource='principal';
+  let mobileSlipOpen=false;
 
   const oddsGroups=[
     ['goles','Goles +/-'],['ambos','Ambos anotan'],['oportunidades','Doble oportunidad'],
@@ -396,7 +397,9 @@ function footballLogoUrl(name){
       }else{pendingAfterAuth='account';openAuth('login');}
       return;
     }
+    if(name!=='match'&&name!=='live')mobileSlipOpen=false;
     activeView=name;
+    syncMobileSportsSlip();
     $$('.view').forEach(e=>e.classList.toggle('is-active',e.id===`view-${name}`));
     $$('[data-nav]').forEach(e=>e.classList.toggle('active',e.dataset.nav===name));
     if(!skipHash)history.replaceState(null,'',name==='home'?'#inicio':`#${name}`);
@@ -492,9 +495,14 @@ function footballLogoUrl(name){
     deadline.title=closed?'Jornada cerrada':'Cierre de jugadas: '+cutoffText;
     const long=deadline.querySelector('.gol-info-date .badge-long');
     const short=deadline.querySelector('.gol-info-date .badge-short');
-    const pool=deadline.querySelector('.gol-info-time b');
+    const pool=deadline.querySelector('.gol-info-pot b');
     if(long)long.textContent='Cierre: '+cutoffText;
-    if(short)short.textContent='Cierre: '+new Date(golCutoff).toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'short'});
+    if(short){
+      const d=new Date(golCutoff);
+      const parts=Object.fromEntries(new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',day:'numeric',month:'short'})
+        .formatToParts(d).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+      short.textContent='Cierre: '+parts.day+'-'+(parts.month||'Nov').replace('.','').replace(/^./,c=>c.toUpperCase());
+    }
     if(pool)pool.textContent=poolText;
     $('#golFixtures').innerHTML=golGames.map((g,i)=>`<article class="gol-fixture ${outcomes.includes(selections[g.id])?'filled':''}">
       <span class="fixture-number">${String(i+1).padStart(2,'0')}</span>
@@ -761,18 +769,21 @@ function footballLogoUrl(name){
     let output='';
     if(oddsLoading)output='<div class="market-detail-note"><span class="sports-loader" aria-hidden="true"></span> Consultando cuotas…</div>';
     else if(oddsError)output='<div class="market-detail-note">'+esc(oddsError)+'</div>';
-    else if(!data||!data.markets?.length)output='<div class="market-detail-note">'+esc(data?.message||'Selecciona una categoría para consultar sus mercados.')+'</div>';
+    else if(!data||!data.markets?.length)output='<div class="market-detail-note">'+esc(data?.message||'No hay cuotas verificadas de esta categoría para el encuentro y la casa seleccionados.')+'</div>';
     else output=data.markets.map((m,mi)=>{
-      const rows=m.outcomes.map((o,oi)=>{
+      const rows=(m.outcomes||[]).map((o,oi)=>{
         const n=String(o.name||'');
         const name=/^over$/i.test(n)?'Más':/^under$/i.test(n)?'Menos':
           /^yes$/i.test(n)?'Sí':/^no$/i.test(n)?'No':/^draw$/i.test(n)?'Empate':n;
         const label=esc(name)+(o.point!==null&&o.point!==undefined?' '+esc(o.point):'');
+        const canBet=o.tradable!==false && m.tradable!==false;
         const desc=o.description?'<small>'+esc(o.description)+'</small>':'';
         return '<button type="button" class="market-detail-option" data-market-pick="'+
           esc(g.id)+'" data-market-group="'+esc(oddsSelectedGroup)+
           '" data-market-index="'+mi+'" data-market-outcome="'+oi+
-          '"><div><span>'+label+'</span>'+desc+
+          '" data-market-bookmaker="'+esc(o.bookmakerKey||data.bookmakerKey||g.bookmakerKey||'')+'" '+
+          (canBet?'':'disabled title="Cuota informativa: liquidación de este mercado no integrada"')+
+          '><div><span>'+label+'</span>'+desc+
           '</div><strong>'+fmt2(o.price)+'</strong></button>';
       }).join('');
       return '<section class="market-detail-market"><header><strong>'+
@@ -840,7 +851,7 @@ function footballLogoUrl(name){
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
       ${`<button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
         aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
-        <span class="sport-more-label">${oddsExpandedId===g.id?'Ocultar mercados':'Más mercados'}</span>
+        <span class="sport-more-label">${oddsExpandedId===g.id?'Ocultar':'Ver más'}</span>
         ${icon('arrow')}
       </button>${oddsDetailMarkup(g)}`}</article>`;
   }
@@ -851,7 +862,7 @@ function footballLogoUrl(name){
       draft.slips.push({gameId:g.id,selectionId:selection.selectionId,
         outcome:selection.outcome,odd:selection.odd,
         marketLabel:selection.marketLabel,selectionLabel:selection.selectionLabel,
-        sportKey:g.sportKey,bookmakerKey:g.bookmakerKey||'',group:selection.group||'',
+        sportKey:g.sportKey,bookmakerKey:selection.bookmakerKey||g.bookmakerKey||'',group:selection.group||'',
         home:g.home,away:g.away,isLive:liveGames.some(x=>x.id===g.id)});
     }
     sportSimReceipt='';
@@ -870,15 +881,42 @@ function footballLogoUrl(name){
     const g=allGames().find(x=>x.id===gameId);
     const data=oddsDetailCache.get(gameId+'|'+group);
     const market=data?.markets?.[marketIndex],choice=market?.outcomes?.[outcomeIndex];
-    if(!g||!market||!choice||!Number.isFinite(Number(choice.price)))return;
+    if(!g||!market||!choice||choice.tradable===false||market.tradable===false||
+       !Number.isFinite(Number(choice.price)))return;
     const label=String(choice.name||'')+
       (choice.point!==null&&choice.point!==undefined?' '+choice.point:'')+
       (choice.description?' · '+choice.description:'');
-    addSportsSelection(g,{selectionId:market.key+'|'+label,
+    addSportsSelection(g,{selectionId:choice.selectionId||market.key+'|'+label,
       outcome:market.key,odd:Number(choice.price),
-      marketLabel:market.label,selectionLabel:label,group});
+      marketLabel:market.label,selectionLabel:label,group,
+      bookmakerKey:choice.bookmakerKey||data.bookmakerKey||g.bookmakerKey||''});
   }
   const combinedOdds=()=>draft.slips.reduce((p,s)=>p*Number(s.odd||1),1);
+  function syncMobileSportsSlip(){
+    const count=draft.slips.length,active=['match','live'].includes(activeView);
+    const bar=$('#mobileSlipBar'),backdrop=$('#mobileSlipBackdrop');
+    if(!bar||!backdrop)return;
+    const show=active&&count>0;
+    if(!show)mobileSlipOpen=false;
+    bar.hidden=!show||mobileSlipOpen;
+    backdrop.hidden=!show||!mobileSlipOpen;
+    document.body.classList.toggle('sports-slip-open',Boolean(show&&mobileSlipOpen));
+    const title=$('#mobileSlipCount'),odd=$('#mobileSlipOdds'),detail=$('#mobileSlipDetail');
+    if(title)title.textContent=count+' '+(count===1?'selección':'selecciones');
+    if(odd)odd.textContent=fmt2(combinedOdds());
+    if(detail)detail.textContent='Cuota combinada';
+    $('#mobileSlipOpen')?.setAttribute('aria-expanded',String(Boolean(show&&mobileSlipOpen)));
+  }
+  function openMobileSportsSlip(){
+    if(!['match','live'].includes(activeView)||!draft.slips.length)return;
+    mobileSlipOpen=true;syncMobileSportsSlip();
+    const panel=$('#'+(activeView==='match'?'matchBetslip':'liveBetslip'));
+    panel?.querySelector('[data-sports-slip-close]')?.focus({preventScroll:true});
+  }
+  function closeMobileSportsSlip(){
+    mobileSlipOpen=false;syncMobileSportsSlip();
+    if(window.matchMedia('(max-width:959px)').matches)$('#mobileSlipOpen')?.focus({preventScroll:true});
+  }
   /* Premium Live: la cotización, aceptación, débito y liquidación se calculan
    * en el backend. El navegador presenta sólo los saldos PEN confirmados.
    */
@@ -937,7 +975,8 @@ function footballLogoUrl(name){
     const receipt='';
     const content=`<div class="betslip">
     <div class="betslip-head"><h3>Mi cupón <span>${count}</span></h3>
-      ${count?'<button id="clearBetslip" type="button">Vaciar cupón</button>':''}</div>
+      <div class="betslip-head-actions">${count?'<button id="clearBetslip" type="button">Vaciar cupón</button>':''}
+      <button type="button" class="sports-slip-close" data-sports-slip-close aria-label="Cerrar cupón">Cerrar ×</button></div></div>
     ${items}${footer}${receipt}</div>`;
     $('#matchBetslip').innerHTML=content;
     $('#liveBetslip').innerHTML=content.replaceAll('id="betStake"','id="betStakeLive"')
@@ -948,6 +987,7 @@ function footballLogoUrl(name){
       .replaceAll('id="clearBetslip"','id="clearBetslipLive"')
       .replaceAll('id="betStakeHelp"','id="betStakeHelpLive"')
       .replaceAll('aria-describedby="betStakeHelp"','aria-describedby="betStakeHelpLive"');
+    syncMobileSportsSlip();
   }
   /** Punto de entrada del botón "Colocar apuesta / jugada". */
   async function placeBet(){
@@ -1925,6 +1965,14 @@ function footballLogoUrl(name){
       $$('[id^="slipReturn"]').forEach(el=>el.textContent=slipMoney(stake*combinedOdds()));
       $$('button[id^="placeBet"]').forEach(btn=>{btn.disabled=!Number.isInteger(stake)||stake<1||stake>betCap()||betMode()==='preview';});
     }
+  });
+  on('#mobileSlipOpen','click',openMobileSportsSlip);
+  on('#mobileSlipBackdrop','click',closeMobileSportsSlip);
+  document.addEventListener('click',e=>{
+    if(e.target.closest('[data-sports-slip-close]')){closeMobileSportsSlip();return;}
+  });
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'&&mobileSlipOpen){closeMobileSportsSlip();e.preventDefault();}
   });
   document.addEventListener('click',e=>{
     if(accountMenuOpen&&!e.target.closest('#accountMenu,#loginTop,[data-nav="account"]'))closeAccountMenu();

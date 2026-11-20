@@ -28,11 +28,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=52">
+  <link rel="stylesheet" href="assets/styles.css?v=53">
   <script defer src="assets/config.js?v=23"></script>
   <script defer src="assets/measurement-config.js?v=1"></script>
   <script defer src="assets/measurement.js?v=1"></script>
-  <script defer src="assets/app.js?v=52"></script>
+  <script defer src="assets/app.js?v=53"></script>
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -270,6 +270,13 @@
   </div>
 </footer>
 
+  <div id="mobileSlipBar" class="mobile-sports-slip-bar" hidden>
+    <button type="button" id="mobileSlipOpen" class="mobile-sports-slip-action" aria-label="Abrir mi cupón de apuestas" aria-expanded="false" aria-controls="matchBetslip liveBetslip">
+      <span class="mobile-slip-left"><b id="mobileSlipCount">1 selección</b><small id="mobileSlipDetail">Cuota combinada</small></span>
+      <strong id="mobileSlipOdds">1.00</strong><span class="mobile-slip-open-text">Ver cupón <span aria-hidden="true">▴</span></span>
+    </button>
+  </div>
+  <button type="button" id="mobileSlipBackdrop" class="mobile-sports-slip-backdrop" aria-label="Cerrar el cupón" hidden></button>
   <nav class="mobile-nav" aria-label="Menú inferior"><button data-nav="home" class="active"><svg><use href="#i-ball"></use></svg><span>Inicio</span></button><button data-nav="gol"><svg><use href="#i-trophy"></use></svg><span>PremiumGol</span></button><button data-nav="match"><svg><use href="#i-ticket"></use></svg><span>Apuestas</span></button><button data-nav="live"><svg><use href="#i-pulse"></use></svg><span>Live</span></button><button data-nav="account"><svg><use href="#i-user"></use></svg><span>Cuenta</span></button></nav>
 
   <dialog class="auth-dialog" id="authDialog" data-clarity-mask="true" aria-labelledby="authTitle"><div class="auth-box">
