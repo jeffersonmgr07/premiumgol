@@ -622,7 +622,7 @@ function footballLogoUrl(name){
     liveCatalogLoading=true;liveCatalogRequestedAt=Date.now();renderLive();
     try{
       const data=await remote('liveCatalog',{});
-      if(data?.source==='API-Football'&&data?.mode==='API_PREVIEW')
+      if(['API-Football','The Odds API','Multi-API'].includes(data?.source)&&data?.mode==='API_PREVIEW')
         liveGames=Array.isArray(data.live)?data.live:[];
     }catch(e){liveGames=[];}
     finally{
@@ -677,8 +677,8 @@ function footballLogoUrl(name){
     if(saved){oddsLoading=false;renderMatch();renderLive();return;}
     oddsLoading=true;renderMatch();renderLive();
     try{
-      const data=await remote('eventMarkets',{eventId:id,sportKey:game.sportKey,group});
-      if(data?.source!=='API-Football'||data?.mode!=='API_PREVIEW'||data?.eventId!==id||data?.group!==group)
+      const data=await remote('eventMarkets',{eventId:id,sportKey:game.sportKey,group,bookmakerKey:game.bookmakerKey||''});
+      if(!['API-Football','The Odds API','Multi-API'].includes(data?.source)||data?.mode!=='API_PREVIEW'||data?.eventId!==id||data?.group!==group)
         throw new Error('La respuesta del proveedor no coincide con el partido.');
       oddsDetailCache.set(key,data);
     }catch(e){
@@ -739,7 +739,7 @@ function footballLogoUrl(name){
       draft.slips.push({gameId:g.id,selectionId:selection.selectionId,
         outcome:selection.outcome,odd:selection.odd,
         marketLabel:selection.marketLabel,selectionLabel:selection.selectionLabel,
-        sportKey:g.sportKey,group:selection.group||'',
+        sportKey:g.sportKey,bookmakerKey:g.bookmakerKey||'',group:selection.group||'',
         home:g.home,away:g.away,isLive:liveGames.some(x=>x.id===g.id)});
     }
     sportSimReceipt='';
@@ -860,7 +860,7 @@ function footballLogoUrl(name){
     setAuthBusy(true,'Actualizando cuotas del cupón…','general');
     try{
       const result=await remote('sportsQuote',{selections:draft.slips.map(s=>({
-        gameId:s.gameId,sportKey:s.sportKey,selectionId:s.selectionId}))});
+        gameId:s.gameId,sportKey:s.sportKey,selectionId:s.selectionId,bookmakerKey:s.bookmakerKey||''}))});
       if(!result?.ok||!Array.isArray(result.picks)||result.picks.length!==draft.slips.length)
         throw new Error('No se pudo verificar todo el cupón.');
       let changed=false;
@@ -902,7 +902,7 @@ function footballLogoUrl(name){
         sessionToken,stake,walletSource:sportsWalletSource,
         clientRequestId:draft[requestKey],
         selections:draft.slips.map(leg=>({
-          gameId:leg.gameId,sportKey:leg.sportKey,selectionId:leg.selectionId,
+          gameId:leg.gameId,sportKey:leg.sportKey,selectionId:leg.selectionId,bookmakerKey:leg.bookmakerKey||'',
           group:leg.group,expectedOdd:Number(leg.odd)
         }))
       });
@@ -1614,7 +1614,7 @@ function footballLogoUrl(name){
       const data=await remote('catalog',{});
       catalogLoading=false;
       catalogMode='API_PREVIEW';
-      const verified=data.mode==='API_PREVIEW'&&data.source==='API-Football';
+      const verified=data.mode==='API_PREVIEW'&&['API-Football','The Odds API','Multi-API'].includes(data.source);
       catalogUpdatedAt=verified&&data.updatedAt?String(data.updatedAt):null;
       catalogWarning=verified?(data.warning||''):'Datos deportivos todavía no disponibles.';
       matches=verified&&Array.isArray(data.games?.match)?data.games.match:[];
@@ -1622,9 +1622,9 @@ function footballLogoUrl(name){
       if(!liveCatalogRequestedAt)
         liveGames=verified&&Array.isArray(data.games?.live)?data.games.live:[];
       if(oddsExpandedId&&!allGames().some(g=>g.id===oddsExpandedId))oddsExpandedId='';
-      // Una actualización del catálogo invalida selecciones cuyo mercado ya no está disponible.
-      const ids=new Set(allGames().map(g=>g.id));
-      draft.slips=draft.slips.filter(s=>ids.has(s.gameId)&&s.selectionId);saveDraft();
+      // Una recarga del catálogo no equivale a invalidar un cupón: la fuente podría
+      // haber cambiado de liga, agotado créditos o estar en caché. El servidor
+      // revalida cada selección y bookmaker al confirmar; no borrar pronósticos aquí.
       renderAll();fetchSportsArtwork();
     }catch(e){
       catalogLoading=false;
