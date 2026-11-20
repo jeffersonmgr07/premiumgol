@@ -796,6 +796,7 @@ function footballLogoUrl(name){
       try{await refreshAccount();}finally{setAuthBusy(false);}
     }
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');toast('Ingresa o regístrate para colocar tu jugada.');return;}
+    if(!await pgRequireAgeDeclaration_())return;
     if(!walletSource){openWalletPayment();return;}
     if(!walletWagersEnabled){toast('Las jugadas con saldo todavía no están habilitadas.');return;}
     if(walletSource==='bonos'&&bonusAvailablePEN<5){
@@ -828,6 +829,7 @@ function footballLogoUrl(name){
     if(unfinishedGolCards()){toast('Completa la cartilla empezada antes de comprar.');return;}
     if(golClosed()||slots.length<2){toast('Completa dos o más cartillas antes de comprar juntas.');return;}
     if(!hasUser()){pendingAfterAuth='gol';openAuth('login');return;}
+    if(!await pgRequireAgeDeclaration_())return;
     const total=slots.length*5;
     if(!walletSource){golBatchPending=true;openWalletPayment(total);return;}
     if(!walletWagersEnabled){toast('Las compras con saldo aún no están habilitadas.');return;}
@@ -1239,8 +1241,8 @@ function footballLogoUrl(name){
     <div class="slip-total"><span>${money?'Retorno posible':'Posible ganancia'}</span>
       <b id="slipReturn">${slipMoney(total)}</b></div>
     <button id="placeBet" type="button" class="btn btn-gold btn-full"
-      ${!validStake||mode==='preview'?'disabled':''}>Colocar apuesta ${icon('arrow')}</button>
-    ${mode==='preview'?'<p class="slip-unavailable" role="status">La confirmación de apuestas aún no está habilitada en el servidor.</p>':''}
+      ${!validStake?'disabled':''}>Colocar apuesta ${icon('arrow')}</button>
+    ${mode==='preview'?'<p class="slip-unavailable" role="status">'+(!hasUser()?'Inicia sesión para continuar con el cupón.':'La aceptación monetaria está pendiente de habilitación en el servidor.')+'</p>':''}
     <button id="refreshSportsQuote" type="button" class="sports-quote-refresh"><span aria-hidden="true">↻</span> Actualizar cuotas</button>
     <p class="slip-note">Al colocar la apuesta se aplicará automáticamente la cuota vigente verificada por el servidor. El comprobante mostrará la cuota definitiva.</p>
   </div>`:`<div class="betslip-empty">${icon('ticket')}
@@ -1262,6 +1264,78 @@ function footballLogoUrl(name){
       .replaceAll('aria-describedby="betStakeHelp"','aria-describedby="betStakeHelpLive"');
     syncMobileSportsSlip();
   }
+
+  // Declaración 18+: aceptación expresa de la cuenta autenticada; NO es verificación KYC.
+  let pgAgeDeclarationState='UNKNOWN',pgAgePending=null;
+  function pgAgeDialog_(){
+    let dialog=$('#pgAgeAttestationDialog');
+    if(dialog)return dialog;
+    dialog=document.createElement('dialog');
+    dialog.id='pgAgeAttestationDialog';dialog.className='pg-age-attestation';
+    dialog.setAttribute('aria-labelledby','pgAgeAttestTitle');
+    dialog.innerHTML=`<div class="pg-age-attestation-body">
+      <div class="pg-age-attestation-symbol" aria-hidden="true">18+</div>
+      <h2 id="pgAgeAttestTitle">Declaración de mayoría de edad</h2>
+      <p>Para continuar, declara que tienes 18 años cumplidos o más y que la información de tu cuenta es verdadera.</p>
+      <p class="pg-age-attestation-footnote">Tu decisión se registrará con fecha y hora en tu cuenta. Esta declaración no sustituye la verificación de identidad.</p>
+      <button type="button" id="pgAgeAttestYes" class="pg-age-attestation-yes">Declaro que soy mayor de 18 años</button>
+      <button type="button" id="pgAgeAttestNo" class="pg-age-attestation-no">No acepto / Soy menor de edad</button>
+    </div>`;
+    const css=document.createElement('style');css.textContent=`
+      .pg-age-attestation{border:1px solid #a58535;border-radius:18px;background:#101923;color:#fff;
+        max-width:min(92vw,450px);width:100%;padding:0;box-shadow:0 22px 65px #000b}
+      .pg-age-attestation::backdrop{background:rgba(0,0,0,.75);backdrop-filter:blur(4px)}
+      .pg-age-attestation-body{padding:28px 25px;text-align:center;display:flex;flex-direction:column;gap:13px}
+      .pg-age-attestation-symbol{width:58px;height:58px;border:2px solid #F7C85D;border-radius:100px;
+        color:#F7C85D;display:grid;place-items:center;font-weight:900;margin:auto;font-size:22px}
+      .pg-age-attestation h2{font:800 23px/1.2 'Outfit',sans-serif;margin:0}
+      .pg-age-attestation p{font-size:14px;line-height:1.55;margin:0;color:#e3e9ee}
+      .pg-age-attestation .pg-age-attestation-footnote{font-size:12px;color:#a7b3c3}
+      .pg-age-attestation button{width:100%;padding:13px 15px;border-radius:10px;font-weight:800;cursor:pointer}
+      .pg-age-attestation-yes{color:#141414;background:#F7C85D;border:1px solid #F7C85D}
+      .pg-age-attestation-no{color:#fff;background:transparent;border:1px solid #59687a}
+      .pg-age-attestation button:focus-visible{outline:3px solid #fff;outline-offset:2px}
+    `;
+    document.head.appendChild(css);document.body.appendChild(dialog);
+    return dialog;
+  }
+  function pgAskAgeDeclaration_(){
+    return new Promise(resolve=>{
+      const dialog=pgAgeDialog_();let choice=null;
+      const yes=$('#pgAgeAttestYes'),no=$('#pgAgeAttestNo');
+      const onYes=()=>{choice='ACCEPTED';dialog.close();};
+      const onNo=()=>{choice='DECLINED';dialog.close();};
+      const onClose=()=>{
+        yes.removeEventListener('click',onYes);no.removeEventListener('click',onNo);
+        resolve(choice);
+      };
+      yes.addEventListener('click',onYes);no.addEventListener('click',onNo);
+      dialog.addEventListener('close',onClose,{once:true});
+      dialog.showModal();
+    });
+  }
+  async function pgRequireAgeDeclaration_(){
+    if(!hasUser())return false;
+    if(pgAgeDeclarationState==='ACCEPTED')return true;
+    if(pgAgePending)return pgAgePending;
+    pgAgePending=(async()=>{
+      let current;
+      try{current=await remote('ageDeclarationStatus',{sessionToken});}
+      catch(err){toast('No se pudo consultar la declaración de edad. Revisa Apps Script.');return false;}
+      pgAgeDeclarationState=String(current?.decision||'PENDING');
+      if(pgAgeDeclarationState==='ACCEPTED')return true;
+      const choice=await pgAskAgeDeclaration_();
+      if(!choice)return false;
+      try{
+        const saved=await remote('saveAgeDeclaration',{sessionToken,decision:choice});
+        pgAgeDeclarationState=String(saved?.decision||'PENDING');
+        if(pgAgeDeclarationState!=='ACCEPTED')toast('No puedes acceder a las funciones de apuestas.');
+        return pgAgeDeclarationState==='ACCEPTED';
+      }catch(err){toast(err?.message||'No se pudo guardar la declaración de edad.');return false;}
+    })();
+    try{return await pgAgePending;}finally{pgAgePending=null;}
+  }
+
   /** Punto de entrada del botón "Colocar apuesta / jugada". */
   async function placeBet(){
     if(sendingPlay)return;
@@ -1275,6 +1349,7 @@ function footballLogoUrl(name){
       pendingAfterAuth='bet';openAuth('login');
       toast('Ingresa o regístrate para colocar tu apuesta.');return;
     }
+    if(!await pgRequireAgeDeclaration_())return;
     // El servidor decide si existe autorización para aceptar saldos monetarios.
     await loadSportsWagerPolicy();
     const mode=betMode(),cap=betCap(mode);
@@ -1812,14 +1887,19 @@ function footballLogoUrl(name){
     loadSportsWagerPolicy();
     const next=pendingAfterAuth;pendingAfterAuth=null;
     accountTab='overview';
+    pgAgeDeclarationState='UNKNOWN';
     try{
-      if(next==='gol')saveGol();
-      else if(next==='bet')loadSportsWagerPolicy().then(()=>placeBet());
-      else if(next==='coupon')claimCouponPrompt();
-      else showView('account');
-      checkMpReturn();
-      toast('¡Bienvenido a PremiumGol!');
-      if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
+      // Primera sesión: declaración para cuentas nuevas y anteriores, sin aprobar KYC automáticamente.
+      Promise.resolve().then(async()=>{
+        const declared=await pgRequireAgeDeclaration_();
+        if(next==='gol')showView('gol');
+        else if(next==='bet')showView('match');
+        else if(next==='coupon'&&declared)claimCouponPrompt();
+        else showView('account');
+        checkMpReturn();
+        if(declared)toast('¡Bienvenido! Tu selección se conserva. Pulsa Colocar apuesta cuando quieras confirmar.');
+        if(!String(result.user.phone||'').trim())toast('Puedes completar tu WhatsApp en Mi perfil.');
+      }).catch(err=>toast(err?.message||'No se pudo comprobar la declaración de edad.'));
     }catch(err){
       // La sesión se conserva: ante un fallo de interfaz, recuperar el
       // dashboard automáticamente, sin pedir al usuario cerrar la pestaña.
@@ -1837,7 +1917,7 @@ function footballLogoUrl(name){
     clearSavedSession();lastSessionInteraction=0;sessionCreatedAt=0;lastSessionVerification=0;
     closeAccountMenu();closeWalletBreakdown();referralsJoined=0;
     bonusStatement=[];walletWagersEnabled=false;
-    sportsWalletEnabled=false;sportsPolicyRequested=false;
+    sportsWalletEnabled=false;sportsPolicyRequested=false;pgAgeDeclarationState='UNKNOWN';
     renderAll();showView('home');
     toast(reason==='idle'?'Tu sesión terminó tras una hora de inactividad.':'Has cerrado sesión.');
     if(old)remote('signout',{sessionToken:old}).catch(()=>{});
@@ -2282,7 +2362,7 @@ function footballLogoUrl(name){
       touchSportsSlip();
       $$('input[id^="betStake"]').forEach(el=>{if(el!==e.target)el.value=e.target.value;});
       $$('[id^="slipReturn"]').forEach(el=>el.textContent=slipMoney(stake*combinedOdds()));
-      $$('button[id^="placeBet"]').forEach(btn=>{btn.disabled=!Number.isInteger(stake)||stake<1||stake>betCap()||betMode()==='preview';});
+      $$('button[id^="placeBet"]').forEach(btn=>{btn.disabled=!Number.isInteger(stake)||stake<1||stake>betCap();});
     }
   });
   on('#mobileSlipOpen','click',openMobileSportsSlip);
