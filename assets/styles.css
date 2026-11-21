@@ -2402,3 +2402,13 @@ dialog:not([open]){display:none!important;pointer-events:none!important}
   #view-match .sport-premium-card .market-detail-panel,#view-live .sport-premium-card .market-detail-panel{margin:3px 9px 10px!important}
   .sports-filter-menu{min-width:100%}
 }
+
+
+/* PremiumGol — brillo discreto SOLO en el texto de bonos disponibles. */
+.recharge-amount[hidden]{display:none!important}
+.pg-bonus-text-glow{animation:pgBonusTextGlow 1.2s ease-out 1}
+@keyframes pgBonusTextGlow{
+  0%,100%{text-shadow:none}
+  38%{text-shadow:0 0 5px rgba(247,200,93,.80),0 0 11px rgba(247,200,93,.48)}
+}
+@media(prefers-reduced-motion:reduce){.pg-bonus-text-glow{animation:none}}

@@ -468,6 +468,16 @@ function footballLogoUrl(name){
     walletBreakdownOpen=!walletBreakdownOpen;
     $('#walletBreakdown').hidden=!walletBreakdownOpen;
     $('#walletTop').setAttribute('aria-expanded',String(walletBreakdownOpen));
+    // Brillo SOLO en los caracteres: ninguna caja, borde o fondo.
+    if(walletBreakdownOpen&&bonusAvailablePEN>0){
+      const row=$('#walletBonusAvailable')?.parentElement;
+      [row?.querySelector('span'),$('#walletBonusAvailable')].forEach(el=>{
+        if(!el)return;
+        el.classList.remove('pg-bonus-text-glow');
+        void el.offsetWidth; // Permite repetir el efecto al abrir el menú otra vez.
+        el.classList.add('pg-bonus-text-glow');
+      });
+    }
   }
   function toggleAccountMenu(source){
     if(!hasUser()){openAuth('login');return;}
@@ -523,7 +533,8 @@ function footballLogoUrl(name){
   let leagueFilter='all',dateFilter='7',searchFilter='',sortFilter='date',stake=5;
   let matchVisibleLimit=12;
   const MATCH_PAGE_SIZE=12;
-  let topupSelection='5',topupCustom='',topupBusy=false,topupRequestId=null;
+  let topupSelection='min',topupCustom='',topupBusy=false,topupRequestId=null;
+  let topupMinimumPEN=5,bonusUnlockMinimumPEN=5;
   let toastTimer;
   let promoActive=false,promoLastCheck=0;
   const couponTime=()=>promoActive;
@@ -1452,6 +1463,15 @@ function footballLogoUrl(name){
     if(typeof result.bonusUnlocked==='boolean')bonusUnlocked=result.bonusUnlocked;
     if(Array.isArray(result.bonusStatement))bonusStatement=result.bonusStatement;
     if(typeof result.walletWagersEnabled==='boolean')walletWagersEnabled=result.walletWagersEnabled;
+    // Valores oficiales del servidor, enviados junto a la sesión; nunca confiar en el navegador para el mínimo.
+    const minTopup=Number(result.topupMinimumPEN);
+    if(result.topupMinimumPEN!==undefined&&Number.isFinite(minTopup)&&minTopup>=1&&minTopup<=10000){
+      topupMinimumPEN=minTopup;
+      if(topupSelection!=='custom'&&topupSelection!=='min'&&Number(topupSelection)<minTopup)topupSelection='min';
+    }
+    const minBonus=Number(result.bonusUnlockMinimumPEN);
+    if(result.bonusUnlockMinimumPEN!==undefined&&Number.isFinite(minBonus)&&minBonus>=1&&minBonus<=10000)
+      bonusUnlockMinimumPEN=minBonus;
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Number.isFinite(Number(result.paidBalancePEN)))paidBalancePEN=Number(result.paidBalancePEN);
     if(Array.isArray(result.history))playHistory=result.history;
@@ -1481,7 +1501,7 @@ function footballLogoUrl(name){
     $('#walletBonusAvailable').textContent='S/ '+fmt2(bonusAvailablePEN);
     $('#walletBonusPending').textContent='S/ '+fmt2(bonusPendingPEN);
     $('#walletBonusCondition').hidden=bonusPendingPEN<=0;
-    $('#walletBonusCondition').textContent='S/ '+fmt2(bonusPendingPEN)+' en bonos pendientes: se activan con tu próxima recarga aprobada.';
+    $('#walletBonusCondition').textContent='S/ '+fmt2(bonusPendingPEN)+' en bonos pendientes: se activan con tu próxima recarga aprobada de S/ '+fmt2(bonusUnlockMinimumPEN)+' o más.';
     $('#walletTotalBalance').textContent='S/ '+fmt2(paidBalancePEN+bonusBalancePEN);
     $('#loginTopLabel').textContent=restoring?'Cargando…':
       reconnect?'Reconectar':hasUser()?'Mi cuenta':'Ingresar';
@@ -1491,16 +1511,29 @@ function footballLogoUrl(name){
     $('#registerTop').hidden=hasUser()||restoring||reconnect;
   }
   function chosenTopup(){
-    const n=topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
-    return Number.isFinite(n)&&n>=5&&n<=10000&&Math.round(n*100)===n*100?n:null;
+    const n=topupSelection==='min'?topupMinimumPEN:
+      topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
+    return Number.isFinite(n)&&n>=topupMinimumPEN&&n<=10000&&
+      Math.abs(Math.round(n*100)-n*100)<0.00001?n:null;
   }
   function renderTopup(){
+    const minLabel='S/ '+fmt2(topupMinimumPEN);
+    const presetMin=$('[data-topup-amount="min"]');
+    if(presetMin)presetMin.textContent='Mínimo · '+minLabel;
+    const info=$('#topupMinDescription');
+    if(info)info.textContent='Selecciona un monto predeterminado o elige «Otro monto». El mínimo es '+minLabel+'. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.';
+    const other=$('#rechargeOther');
+    if(other)other.min=String(topupMinimumPEN);
+    const otherLabel=$('#topupOtherMinLabel');
+    if(otherLabel)otherLabel.textContent='Ingresa el importe (mínimo '+minLabel+')';
     document.querySelectorAll('[data-topup-amount]').forEach(el=>{
-      const active=el.dataset.topupAmount===topupSelection;
+      const choice=el.dataset.topupAmount;
+      el.hidden=choice!=='min'&&choice!=='custom'&&Number(choice)<topupMinimumPEN;
+      const active=choice===topupSelection;
       el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
     });
     $('#rechargeOtherWrap').hidden=topupSelection!=='custom';
-    if(document.activeElement!==$('#rechargeOther'))$('#rechargeOther').value=topupCustom;
+    if(document.activeElement!==other)other.value=topupCustom;
     const amount=chosenTopup();
     $('#rechargeSelected').textContent=amount===null?'Importe no válido':'S/ '+fmt2(amount);
     $('#rechargeGenerate').disabled=amount===null||topupBusy;
@@ -1664,7 +1697,7 @@ function footballLogoUrl(name){
   async function createTopupRequest(){
     if(!hasUser()){openAuth('login');return;}
     const amount=chosenTopup();
-    if(amount===null){toast('Ingresa un importe válido entre S/ 5 y S/ 10,000.');return;}
+    if(amount===null){toast('Ingresa un importe válido entre S/ '+fmt2(topupMinimumPEN)+' y S/ 10,000.');return;}
     if(topupBusy)return;
     topupBusy=true;renderTopup();
     setAuthBusy(true,'Preparando tu orden…','general');
