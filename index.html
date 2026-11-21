@@ -150,7 +150,7 @@
   <button type="button" data-account-signout="1" title="Cerrar sesión" aria-label="Cerrar sesión"><svg><use href="#i-arrow"></use></svg></button>
 </div><div class="account-main"><div id="accountOverview" class="account-content is-active"><div class="account-welcome"><div><span class="overline">BIENVENIDO</span><h2 id="welcomeName">¡El partido te espera!</h2><p>Consulta tus saldos y tu actividad reciente.</p></div><svg><use href="#i-ball"></use></svg></div><div class="stats-grid"><div class="stat-card"><span>Saldo principal</span><b id="accountBalance">S/ 0.00</b><small>Recargas verificadas</small></div><div class="stat-card"><span>Jugadas guardadas</span><b id="totalPlays">0</b><small>Tu actividad</small></div><div class="stat-card"><span>Jugadas PremiumGol</span><b id="totalGolPlays">0</b><small>PremiumGol</small></div></div><button type="button" class="account-view-plays" data-account-tab="history">Ver mis jugadas <svg><use href="#i-arrow"></use></svg></button>
 <div class="wallet-note"><svg><use href="#i-wallet"></use></svg><div><b>Tu saldo</b><span>Consulta el saldo principal y recarga tu cuenta.</span></div><button type="button" class="btn btn-outline btn-mini" data-account-tab="wallet">Recargar</button></div><div class="account-panel referral-panel"><div class="panel-head"><h3>Invita a tus amigos</h3></div>
-  <p class="referral-description">Comparte tu enlace. Recibe S/ 10 cuando un amigo se registre y S/ 5 adicionales cuando realice su primera recarga aprobada. Los nuevos bonos se activan con tu próxima recarga.</p>
+  <p class="referral-description">Comparte tu enlace. Recibe S/ 5 en bonos cuando tu amigo invitado complete su primera recarga aprobada. Para utilizar los bonos, realiza una recarga propia posterior.</p>
   <div class="referral-link"><input id="referralLink" type="text" value="Tu enlace de invitación" readonly aria-label="Mi enlace de invitación"><button id="copyReferral" type="button" class="btn btn-outline btn-mini">Copiar enlace</button></div>
   <p class="referral-detail" id="referralCount">Invitaciones pendientes de activación</p>
   <div class="referral-wallet-summary">
@@ -165,9 +165,7 @@
   
   <div class="wallet-recharge-panel">
     <div class="recharge-grid" id="rechargeAmounts" role="group" aria-label="Seleccionar importe">
-      <button type="button" data-topup-amount="min" class="recharge-amount active" aria-pressed="true">Mínimo · S/ 5.00</button>
-      <button type="button" data-topup-amount="5" class="recharge-amount" aria-pressed="false">S/ 5</button>
-      <button type="button" data-topup-amount="10" class="recharge-amount" aria-pressed="false">S/ 10</button>
+      <button type="button" data-topup-amount="10" class="recharge-amount active" aria-pressed="true">S/ 10</button>
       <button type="button" data-topup-amount="20" class="recharge-amount" aria-pressed="false">S/ 20</button>
       <button type="button" data-topup-amount="30" class="recharge-amount" aria-pressed="false">S/ 30</button>
       <button type="button" data-topup-amount="50" class="recharge-amount" aria-pressed="false">S/ 50</button>

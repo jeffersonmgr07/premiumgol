@@ -533,7 +533,7 @@ function footballLogoUrl(name){
   let leagueFilter='all',dateFilter='7',searchFilter='',sortFilter='date',stake=5;
   let matchVisibleLimit=12;
   const MATCH_PAGE_SIZE=12;
-  let topupSelection='min',topupCustom='',topupBusy=false,topupRequestId=null;
+  let topupSelection='10',topupCustom='',topupBusy=false,topupRequestId=null;
   let topupMinimumPEN=5,bonusUnlockMinimumPEN=5;
   let toastTimer;
   let promoActive=false,promoLastCheck=0;
@@ -1467,7 +1467,11 @@ function footballLogoUrl(name){
     const minTopup=Number(result.topupMinimumPEN);
     if(result.topupMinimumPEN!==undefined&&Number.isFinite(minTopup)&&minTopup>=1&&minTopup<=10000){
       topupMinimumPEN=minTopup;
-      if(topupSelection!=='custom'&&topupSelection!=='min'&&Number(topupSelection)<minTopup)topupSelection='min';
+      if(topupSelection!=='custom'&&Number(topupSelection)<minTopup){
+        const nextPreset=[10,20,30,50,100,200,500,1000].find(value=>value>=minTopup);
+        topupSelection=nextPreset===undefined?'custom':String(nextPreset);
+        if(nextPreset===undefined&&!topupCustom)topupCustom=String(minTopup);
+      }
     }
     const minBonus=Number(result.bonusUnlockMinimumPEN);
     if(result.bonusUnlockMinimumPEN!==undefined&&Number.isFinite(minBonus)&&minBonus>=1&&minBonus<=10000)
@@ -1511,15 +1515,12 @@ function footballLogoUrl(name){
     $('#registerTop').hidden=hasUser()||restoring||reconnect;
   }
   function chosenTopup(){
-    const n=topupSelection==='min'?topupMinimumPEN:
-      topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
+    const n=topupSelection==='custom'?Number(topupCustom):Number(topupSelection);
     return Number.isFinite(n)&&n>=topupMinimumPEN&&n<=10000&&
       Math.abs(Math.round(n*100)-n*100)<0.00001?n:null;
   }
   function renderTopup(){
     const minLabel='S/ '+fmt2(topupMinimumPEN);
-    const presetMin=$('[data-topup-amount="min"]');
-    if(presetMin)presetMin.textContent='Mínimo · '+minLabel;
     const info=$('#topupMinDescription');
     if(info)info.textContent='Selecciona un monto predeterminado o elige «Otro monto». El mínimo es '+minLabel+'. Continúa a Mercado Pago para conocer los medios de pago disponibles. El saldo se confirma al verificar la operación.';
     const other=$('#rechargeOther');
@@ -1528,7 +1529,7 @@ function footballLogoUrl(name){
     if(otherLabel)otherLabel.textContent='Ingresa el importe (mínimo '+minLabel+')';
     document.querySelectorAll('[data-topup-amount]').forEach(el=>{
       const choice=el.dataset.topupAmount;
-      el.hidden=choice!=='min'&&choice!=='custom'&&Number(choice)<topupMinimumPEN;
+      el.hidden=choice!=='custom'&&Number(choice)<topupMinimumPEN;
       const active=choice===topupSelection;
       el.classList.toggle('active',active);el.setAttribute('aria-pressed',String(active));
     });
