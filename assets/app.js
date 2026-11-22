@@ -573,6 +573,9 @@ function footballLogoUrl(name){
   const golLabel=['L','E','V'];
   // Jornada 21–22 Nov 2026. Horas en America/Lima. El backend es la autoridad.
   let golCutoff='2026-11-21T09:15:00-05:00';
+  let golRoundId=String(draft.golRoundId||'');
+  let golProgramLoading=false,golProgramLastCheck=0;
+  let golResultsOpen=false;
   let golJackpotPEN=0;
   let golGames=[
     ["Borussia Mönchengladbach","Borussia Dortmund","Bundesliga · Alemania","2026-11-21T09:30:00-05:00"],
@@ -649,7 +652,9 @@ function footballLogoUrl(name){
           Date.now()-liveCatalogRequestedAt>15*60000)loadLiveCatalog();
       }
     }
-    if(name==='gol'&&!golProgramRequested){golProgramRequested=true;loadGolProgram();}
+    if(name==='gol'&&(!golProgramRequested||Date.now()-golProgramLastCheck>120000)){
+      golProgramRequested=true;loadGolProgram();
+    }
     window.scrollTo({top:0,behavior:'smooth'});
   }
   function renderHome(){
@@ -718,8 +723,8 @@ function footballLogoUrl(name){
     const selections=currentPicks(),locked=Boolean(golLocked[activeCard]),closed=golClosed();
     const deadline=$('#golDeadline');
     deadline.classList.toggle('expired',closed);
-    const cutoffText=new Date(golCutoff).toLocaleString('es-PE',{timeZone:'America/Lima',
-      weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'});
+    const cutoffText=golGames.length?new Date(golCutoff).toLocaleString('es-PE',{timeZone:'America/Lima',
+      weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'próxima jornada en preparación';
     const poolText=golJackpotPEN>0?'S/ '+fmt(golJackpotPEN):'Por anunciar';
     deadline.setAttribute('aria-label',(closed?'Jornada cerrada. ':'Cierre: ')+cutoffText+'. Pozo mayor '+poolText);
     deadline.title=closed?'Jornada cerrada':'Cierre de jugadas: '+cutoffText;
@@ -1116,27 +1121,32 @@ function footballLogoUrl(name){
   function marketCard(g,live){
     const selected=draft.slips.find(s=>s.gameId===g.id);
     const schedule=sportSchedule(g.kickoff);
+    const liveLabel=g.status==='HT'?'Descanso':g.status==='SUSP'?'Suspendido':
+      Number.isFinite(Number(g.minute))?Number(g.minute)+'′':String(g.statusLabel||g.status||'En juego');
+    const marketAvailable=!live||g.bettable===true;
     return `<article class="market-card sport-premium-card ${live?'live-card':''}">
       <div class="market-top"><span class="market-league">${sportLeagueBadge(g)}</span>
       <time class="market-kickoff-chip" datetime="${esc(g.kickoff||'')}">
         <span class="sport-event-date">${live?'EN VIVO':esc(schedule.date)}</span>
-        <span class="sport-event-time">${esc(schedule.time)}</span>
+        <span class="sport-event-time">${live?esc(liveLabel):esc(schedule.time)}</span>
       </time></div>
       <div class="market-body sport-match-teams">
         <span class="market-team">${sportCrest(g.home,g.sportKey,g.homeLogo)}<strong>${esc(g.home)}</strong></span>
-        <span class="market-middle">VS</span>
+        <span class="market-middle">${live&&Array.isArray(g.score)?esc(g.score.map(x=>x===null||x===undefined?'–':String(x)).join(' : ')):'VS'}</span>
         <span class="market-team">${sportCrest(g.away,g.sportKey,g.awayLogo)}<strong>${esc(g.away)}</strong></span>
       </div>
+      ${live?`<div class="pg-live-inline"><span>${esc(g.statusLabel||"Partido en curso")}</span><button type="button" data-live-center="${esc(g.fixtureId||"")}">Match Center</button></div>`:""}
       <div class="market-choices sport-1x2">
-      ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}" ${Number(g.odds?.[i])>1?'':'disabled title="Cuota temporalmente no disponible"'}
+      ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}" ${marketAvailable&&Number(g.odds?.[i])>1?'':'disabled title="Mercado cerrado o sin cuota verificable"'}
         data-pick="${esc(g.id)}" data-outcome="${o}"
         aria-label="Elegir ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
-      ${`<button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
+      ${live&&g.marketsSuspended?'<p class="pg-live-unavailable">Mercados suspendidos o sin cuotas verificadas.</p>':''}
+      ${(!live||marketAvailable)?`<button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
         aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
         <span class="sport-more-label">${oddsExpandedId===g.id?'Ocultar':'Ver más'}</span>
         ${icon('arrow')}
-      </button>${oddsDetailMarkup(g)}`}</article>`;
+      </button>${oddsDetailMarkup(g)}`:""}</article>`;
   }
   function addSportsSelection(g,selection){
     expireSportsSlipIfIdle();
@@ -2141,20 +2151,105 @@ function footballLogoUrl(name){
     try{await accountRefreshPromise;}finally{accountRefreshPromise=null;}
   }
   async function loadGolProgram(){
-    if(!CONFIG.appsScriptUrl)return;
+    if(!CONFIG.appsScriptUrl||golProgramLoading)return;
+    golProgramLoading=true;golProgramLastCheck=Date.now();
     try{
       const data=await remote('golProgram',{});
-      if(data?.roundId!=='premiumgol12-jornada-20261121'||!Array.isArray(data.games)||data.games.length!==12)return;
-      if(!data.games.every((g,i)=>String(g.id)===`gol${i+1}`))return;
-      golGames=data.games;
-      if(Number.isFinite(Date.parse(data.cutoff)))golCutoff=data.cutoff;
+      if(!data?.ok||!Array.isArray(data.games))return;
+      if(data.games.length===0){
+        golGames=[];golCutoff='2000-01-01T00:00:00-05:00';golRoundId='';
+        const heading=$('#golRoundTitle');if(heading)heading.textContent='Próximo programa en preparación';
+        renderGol();return;
+      }
+      if(data.games.length!==12||!data.games.every((g,i)=>String(g.id)===`gol${i+1}`)||
+        !Number.isFinite(Date.parse(data.cutoff))||!String(data.roundId||''))return;
+      if(golRoundId!==String(data.roundId)){
+        // Los borradores son específicos por jornada: NO reutilizar gol1..gol12 al rotar.
+        draft.golCards={A:{},B:{},C:{},D:{}};
+        draft.golRequestIds={};delete draft.golBatchRequestId;
+        activeCard='A';draft.activeCard='A';golLocked={};
+        golRoundId=String(data.roundId);draft.golRoundId=golRoundId;saveDraft();
+      }
+      golGames=data.games;golCutoff=data.cutoff;
       golJackpotPEN=Number(data.jackpotPEN)>0?Number(data.jackpotPEN):0;
+      const heading=$('#golRoundTitle');
+      if(heading){
+        const first=new Date(golGames[0].kickoff),last=new Date(golGames[11].kickoff);
+        const label=x=>x.toLocaleDateString('es-PE',{timeZone:'America/Lima',day:'numeric',month:'long'});
+        heading.textContent='Jornada '+label(first)+' al '+label(last);
+      }
       renderGol();
-    }catch(e){
-      // La cartilla con jornadas, ligas y horarios funciona aunque la API aún no entregue escudos.
-      console.warn('El proveedor no entregó todas las insignias de la cartilla.');
-    }
+    }catch(e){console.warn('No se pudo actualizar la jornada de PremiumGol.');}
+    finally{golProgramLoading=false;}
   }
+  async function loadGolResults(roundId=''){
+    const body=$('#golResultsBody'),select=$('#golResultSelect');
+    if(!body||!select)return;
+    body.innerHTML='<p class="pg-results-loading">Consultando resultados verificados…</p>';
+    try{
+      const data=await remote('golResults',roundId?{roundId}:{});
+      if(!data?.ok)throw Error('Los resultados no están disponibles.');
+      const rounds=Array.isArray(data.rounds)?data.rounds:[];
+      select.innerHTML=rounds.map(r=>'<option value="'+esc(r.roundId)+'">'+
+        esc((r.kind==='MID'?'Entre semana':'Fin de semana')+' · '+r.windowStart.slice(0,10))+'</option>').join('');
+      const selected=data.selected;
+      if(!selected){body.textContent='Todavía no hay programas anteriores en el historial automatizado.';return;}
+      select.value=selected.roundId;
+      const labels={PENDING:'No iniciado · 0-0 provisional',IN_PROGRESS:'En curso',
+        FINISHED:'Terminado',REVIEW:'En revisión'};
+      const fmtScore=v=>v===null||v===undefined?'–':String(v);
+      body.innerHTML='<div class="pg-results-fixtures">'+(selected.fixtures||[]).map((g,i)=>
+        '<div class="pg-results-game"><span class="pg-results-index">'+String(i+1).padStart(2,'0')+'</span>'+
+        '<span class="pg-results-teams">'+esc(g.home)+' — '+esc(g.away)+'</span>'+
+        '<strong>'+esc(fmtScore(g.score?.[0])+' : '+fmtScore(g.score?.[1]))+'</strong>'+
+        '<small>'+esc(labels[g.status]||g.status)+
+          (g.minute!==null&&g.minute!==undefined&&g.status==='IN_PROGRESS'?' · '+g.minute+'′':'')+
+          (g.outcome?' · '+({1:'L',X:'E',2:'V'}[g.outcome]||''):'')+
+          (g.status==='FINISHED'&&!g.verified?' · Por confirmar':'')+'</small></div>').join('')+
+        '</div>'+(selected.winners?.definitive?
+          '<p class="pg-winners">Ganadores definitivos: 12 aciertos: <b>'+Number(selected.winners.twelve)+
+          '</b> · 11 aciertos: <b>'+Number(selected.winners.eleven)+
+          '</b> · 10 aciertos: <b>'+Number(selected.winners.ten)+'</b></p>':
+          '<p class="pg-results-note">Los ganadores se publicarán tras verificar los 12 resultados.</p>');
+    }catch(e){body.textContent='No se pudieron consultar los resultados. Intenta nuevamente.';}
+  }
+  async function openLiveMatchCenter(fixtureId){
+    if(!/^\d{1,12}$/.test(String(fixtureId||'')))return;
+    const dlg=$('#liveMatchCenterDialog'),body=$('#liveMatchCenterBody');
+    if(!dlg||!body)return;
+    body.textContent='Consultando cronología y estadísticas…';
+    if(!dlg.open)dlg.showModal();
+    try{
+      const data=await remote('liveMatchCenter',{fixtureId});
+      if(!data?.ok)throw Error('Sin datos disponibles');
+      body.innerHTML='<p class="pg-center-score">'+esc((data.score||[]).map(v=>v??'–').join(' : '))+
+        ' · '+esc(data.status?.long||'En juego')+'</p>'+
+        '<h4>Cronología del partido</h4>'+
+        ((data.events||[]).length?(data.events||[]).map(e=>'<p><b>'+esc(e.minute??'–')+'′</b> '+
+          esc(e.team)+' · '+esc(e.type)+' · '+esc(e.detail||'')+' '+esc(e.player||'')+'</p>').join(''):
+          '<p>No hay eventos disponibles.</p>')+
+        '<h4>Estadísticas</h4>'+
+        ((data.statistics||[]).length?(data.statistics||[]).map(team=>'<section><b>'+esc(team.team)+
+          '</b>'+((team.items||[]).slice(0,12).map(x=>'<p>'+esc(x.type)+': '+esc(x.value??'–')+'</p>').join(''))+
+          '</section>').join(''):'<p>Estadísticas no disponibles.</p>');
+    }catch(e){body.textContent='No se pudieron obtener los eventos del partido.';}
+  }
+  document.addEventListener('click',event=>{
+    if(event.target.closest('#golResultsButton')){
+      golResultsOpen=!golResultsOpen;
+      const panel=$('#golResultsPanel');if(panel)panel.hidden=!golResultsOpen;
+      if(golResultsOpen)loadGolResults();return;
+    }
+    if(event.target.closest('#golResultsClose')){
+      golResultsOpen=false;const panel=$('#golResultsPanel');if(panel)panel.hidden=true;return;
+    }
+    const live=event.target.closest('[data-live-center]');
+    if(live){openLiveMatchCenter(live.dataset.liveCenter);return;}
+    if(event.target.closest('#liveMatchCenterClose')){
+      const dlg=$('#liveMatchCenterDialog');if(dlg?.open)dlg.close();
+    }
+  });
+  on('#golResultSelect','change',e=>loadGolResults(e.target.value));
   async function loadCatalog(){
     if(!CONFIG.appsScriptUrl){catalogLoading=false;catalogWarning='Encuentros temporalmente no disponibles.';renderAll();return;}
     try{
@@ -2577,6 +2672,10 @@ function footballLogoUrl(name){
     if(activeView==='live'&&!liveCatalogLoading&&Date.now()-liveCatalogRequestedAt>60000)
       loadLiveCatalog();
   },300000);
+  setInterval(()=>{
+    if(document.visibilityState==='visible'&&activeView==='gol'&&!golProgramLoading&&
+      Date.now()-golProgramLastCheck>120000)loadGolProgram();
+  },60000);
   const hash=location.hash.slice(1);
   const view=hash==='inicio'?'home':hash;
   const returnFromCheckout=new URLSearchParams(location.search).get('mp_return')==='1'||
