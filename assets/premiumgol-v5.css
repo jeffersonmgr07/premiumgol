@@ -1,0 +1,27 @@
+/* PremiumGol V5: solo estilos adicionales para Live y resultados. */
+.pg-gol-results-entry{margin:14px 0 18px;display:flex;justify-content:flex-start}
+.pg-results-panel{margin:0 0 22px;padding:18px;border:1px solid rgba(247,200,93,.42);border-radius:14px;background:rgba(7,17,31,.76);color:#fff}
+.pg-results-panel[hidden]{display:none!important}
+.pg-results-head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.pg-results-head label{font-weight:700;color:#fff}
+.pg-results-head select{background:#101b2a;color:#fff;border:1px solid rgba(247,200,93,.5);border-radius:8px;padding:9px;max-width:100%;min-width:210px}
+.pg-results-fixtures{display:grid;gap:8px}
+.pg-results-game{display:grid;grid-template-columns:34px minmax(0,1fr) auto minmax(130px,auto);align-items:center;gap:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.1);border-radius:10px}
+.pg-results-index{color:#F7C85D;font-weight:800}
+.pg-results-teams{overflow-wrap:anywhere}
+.pg-results-game strong{color:#fff;white-space:nowrap}
+.pg-results-game small{color:#cdd5e2;text-align:right}
+.pg-results-note,.pg-winners,.pg-results-loading{margin:16px 0 0;color:#cdd5e2}
+.pg-winners b{color:#F7C85D}
+.pg-live-inline{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 16px 12px;color:#fff;font-size:.8rem}
+.pg-live-inline button{border:1px solid #F7C85D;color:#F7C85D;border-radius:9px;background:transparent;padding:6px 10px;cursor:pointer}
+.pg-live-unavailable{color:#cdd5e2;font-size:.78rem;padding:0 16px 10px;margin:0}
+.pg-center-dialog{background:#0b1423;color:#fff;width:min(620px,calc(100% - 26px));max-height:85vh;overflow:auto;border:1px solid #F7C85D;border-radius:16px;padding:20px}
+.pg-center-dialog::backdrop{background:rgba(0,0,0,.7)}
+.pg-center-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:1px solid rgba(247,200,93,.3)}
+.pg-center-head h3,.pg-center-body h4{color:#F7C85D;margin:0}
+.pg-center-body{line-height:1.6;padding-top:12px}
+.pg-center-body h4{margin-top:18px}
+.pg-center-body p{border-bottom:1px solid rgba(255,255,255,.09);padding:7px 0;margin:0}
+.pg-center-score{font-size:1.25rem;font-weight:800}
+@media(max-width:700px){.pg-results-game{grid-template-columns:26px 1fr auto;gap:7px}.pg-results-game small{grid-column:2/4;text-align:left}.pg-gol-results-entry .btn{width:100%;white-space:normal}}
