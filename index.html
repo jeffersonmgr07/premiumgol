@@ -32,8 +32,9 @@
   <script defer src="assets/config.js?v=23"></script>
   <script defer src="assets/measurement-config.js?v=1"></script>
   <script defer src="assets/measurement.js?v=1"></script>
-  <script defer src="assets/app.js?v=54"></script>
+  <script defer src="assets/app.js?v=55"></script>
   <link rel="stylesheet" href="assets/premiumgol-v5.css?v=1">
+  <link rel="stylesheet" href="assets/premiumgol-v6.css?v=1">
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -115,13 +116,13 @@
     </section>
 
     <section id="view-gol" class="view" aria-label="PremiumGol">
-      
-      <div class="container page-body"><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p><div id="golDeadline" class="gol-info-badges" role="status" aria-label="Fecha límite y pozo acumulado"><span class="gol-info-badge gol-info-date"><svg aria-hidden="true"><use href="#i-ticket"></use></svg><span class="badge-long">Cierre: sábado 21 de noviembre</span><span class="badge-short">Cierre: sáb 21 nov</span></span><span class="gol-info-badge gol-info-time"><svg aria-hidden="true"><use href="#i-clock"></use></svg><span class="badge-long">Hasta las 6:30 p. m.</span><span class="badge-short">6:30 p. m.</span></span><span class="gol-info-badge gol-info-pot"><svg aria-hidden="true"><use href="#i-trophy"></use></svg><span class="badge-long">Pozo mayor</span><span class="badge-short">Pozo</span><b>Por anunciar</b></span></div></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="pg-gol-results-entry"><button id="golResultsButton" type="button" class="btn btn-outline btn-mini">Ver resultados de programas anteriores</button></div>
-      <section id="golResultsPanel" class="pg-results-panel" aria-label="Historial de jornadas PremiumGol" hidden>
-        <div class="pg-results-head"><label for="golResultSelect">Programa</label><select id="golResultSelect" aria-label="Seleccionar programa anterior"></select>
-        <button id="golResultsClose" type="button" class="btn btn-outline btn-mini">Cerrar</button></div>
-        <div id="golResultsBody" aria-live="polite"></div>
-      </section><div class="gol-layout"><div><div class="content-tag" id="golRoundTitle"><svg><use href="#i-clock"></use></svg> Jornada 21–22 de noviembre <span class="separator-bullet">•</span> <span>12 partidos seleccionados</span></div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
+      <div id="golProgramLoader" class="pg-program-loader" role="status" aria-live="polite">
+        <div class="pg-program-loader-seal" aria-hidden="true"><img src="assets/favicon-96.png" alt="" width="96" height="96"></div>
+        <h2>Preparando tu cartilla PremiumGol</h2>
+        <p id="golLoadingDescription">Consultando la jornada oficial…</p>
+        <button type="button" id="golProgramRetry" class="btn btn-outline" hidden>Reintentar consulta</button>
+      </div>
+      <div class="container page-body" id="golProgramContent" hidden><div class="game-toolbar"><div><h2>Tu cartilla de 12 partidos</h2><p>Marca una sola opción por partido: <b>L</b> Local, <b>E</b> Empate o <b>V</b> Visita.</p><div id="golDeadline" class="gol-info-badges" role="status" aria-label="Fecha límite y pozo acumulado"><span class="gol-info-badge gol-info-date"><svg aria-hidden="true"><use href="#i-ticket"></use></svg><span class="badge-long">Cierre: por confirmar</span><span class="badge-short">Cierre: —</span></span><span class="gol-info-badge gol-info-time"><svg aria-hidden="true"><use href="#i-clock"></use></svg><span class="badge-long">Consultando horario…</span><span class="badge-short">—</span></span><span class="gol-info-badge gol-info-pot"><svg aria-hidden="true"><use href="#i-trophy"></use></svg><span class="badge-long">Pozo mayor</span><span class="badge-short">Pozo</span><b>S/ 10,000</b></span><button id="golResultsButton" type="button" class="btn btn-outline btn-mini pg-history-open">Ver resultados anteriores <svg aria-hidden="true"><use href="#i-chevron"></use></svg></button></div></div><div class="progress-box"><div><b id="golCount">0</b><span> / 12 COMPLETADOS</span></div><div class="progress-track"><i id="golProgress"></i></div></div></div><div class="gol-layout"><div><div class="content-tag" id="golRoundTitle"><svg><use href="#i-clock"></use></svg> Cargando jornada oficial…</div><div id="golFixtures" class="gol-fixtures"></div></div><aside class="gol-side"><div class="panel premium-panel">
   <span class="overline">TUS JUGADAS</span><h3>Resumen de tu jugada</h3>
   <div id="golTabs" class="gol-card-tabs" role="group" aria-label="Seleccionar jugada"><button type="button" data-gol-slot="A" class="active">A</button><button type="button" data-gol-slot="B">B</button><button type="button" data-gol-slot="C">C</button><button type="button" data-gol-slot="D">D</button></div>
   <p class="slot-help" id="golSlotHint">Jugada A · marca local, empate o visita.</p>
@@ -133,6 +134,32 @@
   <button class="text-link centered" id="resetGol">Borrar selección</button>
   <button class="gol-rules-link" type="button" id="openGolRules"><svg aria-hidden="true"><use href="#i-shield"></use></svg> Ver reglas y condiciones</button>
 </div></aside></div></div>
+    </section>
+
+    <section id="view-gol-results" class="view" aria-label="Resultados de programas PremiumGol">
+      <div class="container page-body pg-history-page">
+        <button type="button" id="golResultsBack" class="pg-history-back"><svg aria-hidden="true"><use href="#i-chevron"></use></svg> Volver a mi cartilla</button>
+        <div class="pg-history-heading"><div>
+          <span class="overline">HISTORIAL PREMIUMGOL</span>
+          <h2>Resultados de programas</h2>
+          <p>Revisa los últimos programas, sus partidos y marcadores. Los resultados pendientes no son definitivos.</p>
+        </div><span class="pg-history-heading-icon" aria-hidden="true">⚽</span></div>
+        <div class="pg-history-filters">
+          <label>Buscar programa<input id="golResultsSearch" type="search" autocomplete="off" placeholder="Ej. 001"></label>
+          <label>Tipo<select id="golResultsKind"><option value="ALL">Todos</option><option value="MID">Entre semana</option><option value="WEEKEND">Fin de semana</option></select></label>
+          <label>Estado<select id="golResultsState"><option value="ALL">Todos</option><option value="PUBLISHED">Publicado</option><option value="IN_PROGRESS">En desarrollo</option><option value="CONCLUDED">Concluido</option><option value="ARCHIVED">Archivado</option></select></label>
+          <label>Desde<input type="date" id="golResultsFrom"></label>
+          <label>Hasta<input type="date" id="golResultsTo"></label>
+          <button id="golResultsReset" type="button" class="btn btn-outline btn-mini">Limpiar filtros</button>
+        </div>
+        <div id="golResultsStatus" class="pg-history-meta" role="status"></div>
+        <div id="golResultsList" class="pg-history-list" aria-live="polite"></div>
+        <nav class="pg-history-pages" aria-label="Paginación de programas">
+          <button id="golHistoryPrev" type="button" class="btn btn-outline btn-mini">Anterior</button>
+          <span id="golHistoryCurrentPage">Página 1</span>
+          <button id="golHistoryNext" type="button" class="btn btn-outline btn-mini">Siguiente</button>
+        </nav>
+      </div>
     </section>
 
     <section id="view-match" class="view" aria-label="Apuestas deportivas">
