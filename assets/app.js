@@ -683,7 +683,7 @@ function footballLogoUrl(name){
     const ready=new Set(readyGolSlots());
     return SLOTS.some(slot=>!golLocked[slot]&&!ready.has(slot)&&completedPicks(slot)>0&&completedPicks(slot)<12);
   }
-  const golClosed=()=>Date.now()>=new Date(golCutoff).getTime();
+  const golClosed=()=>golGames.length!==12||Date.now()>=new Date(golCutoff).getTime();
   function golDateLabel(iso){
     const parsed=new Date(iso);
     if(!Number.isFinite(parsed.getTime()))return 'Horario por confirmar';
@@ -702,6 +702,8 @@ function footballLogoUrl(name){
       (image?`<img class="gol-crest-img" src="${esc(image)}" alt="" loading="lazy" decoding="async">`:'')+'</span>';
   }
   function renderGol(){
+    // La cartilla sólo se construye cuando el servidor devuelve 12 partidos válidos.
+    if(golGames.length!==12){$('#golFixtures')?.replaceChildren();return;}
     if(!golSlotAccessible(activeCard)){
       activeCard=SLOTS.find(slot=>golSlotAccessible(slot)&&!golLocked[slot])||'A';
       draft.activeCard=activeCard;saveDraft();
