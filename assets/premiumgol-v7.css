@@ -1,0 +1,85 @@
+/* PremiumGol V7 — mejoras de interfaz; no modifica mercados, saldos ni autenticación. */
+
+/* Partidos destacados: logos reales verificados, cabeceras y fechas alineadas. */
+#homeFixtures .preview-card-head{display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:8px;min-height:35px}
+#homeFixtures .pg-featured-league,#homeFixtures .pg-featured-date{display:inline-flex;
+  align-items:center;gap:6px;min-height:29px;border:1px solid #5d6b64;
+  padding:5px 9px;border-radius:999px;background:#14273b;
+  color:#f7c85d;font-size:10px;font-weight:800;line-height:1.15;box-sizing:border-box}
+#homeFixtures .pg-featured-league{min-width:0;max-width:100%;justify-self:start}
+#homeFixtures .pg-featured-league>span:last-child{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#homeFixtures .pg-featured-date{justify-self:end;white-space:nowrap;border-color:#c7a44b73;color:#fff}
+#homeFixtures .pg-featured-league .sport-league-emblem,
+#homeFixtures .pg-featured-league .sport-league-logo{width:19px;height:19px;flex:0 0 19px;object-fit:contain}
+#homeFixtures .preview-team{min-width:0;gap:7px}
+#homeFixtures .preview-team .sport-team-crest{width:32px;height:32px;flex:0 0 32px;border-radius:9px}
+#homeFixtures .preview-team .sport-team-crest>span{font-size:10px}
+#homeFixtures .preview-team .sport-team-crest img{inset:2px;width:calc(100% - 4px);
+  height:calc(100% - 4px);background:transparent;object-fit:contain}
+#homeFixtures .preview-team>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+
+/* Tickets: el UUID no se imprime; está codificado localmente en QR. */
+.pg-receipt-qr{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:9px;margin:16px auto 8px;padding:14px;width:max-content;max-width:100%;
+  border:1px solid #f7c85d59;border-radius:13px;background:#fff;color:#1b2e3d}
+.pg-receipt-qr svg{display:block;width:154px;height:154px;max-width:100%;background:#fff}
+.pg-receipt-qr small{font-size:10px;color:#334963;text-align:center;font-weight:700}
+#sportsPlayDialog .sp-row b,.history-row-main b{overflow-wrap:anywhere}
+#sportsPlayDialog .sp-row b{font-variant-numeric:tabular-nums;letter-spacing:.35px}
+
+/* El icono de expansión se centra con el texto, sin caracteres de texto variables. */
+.pg-history-toggle .pg-history-chevron{width:16px;height:16px;flex:0 0 16px;fill:none;
+  stroke:currentColor;stroke-width:2;transform:rotate(90deg);transition:transform .2s ease}
+.pg-history-toggle[aria-expanded="true"] .pg-history-chevron{transform:rotate(-90deg)}
+.pg-history-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.pg-mobile-filter-toggle{display:none}
+
+/* Móvil: eliminar superposición de insignias y plegar filtros sin alterar sus valores. */
+@media(max-width:720px){
+  #view-gol #golDeadline.gol-info-badges{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    align-items:stretch;gap:7px!important;width:100%!important;max-width:100%;
+    flex-wrap:wrap!important}
+  #view-gol #golDeadline>.gol-info-badge{flex:none!important;display:flex!important;min-width:0;
+    width:100%!important;box-sizing:border-box;min-height:39px;padding:8px 10px!important;
+    font-size:clamp(10px,2.55vw,12px)!important;line-height:1.25;letter-spacing:0!important;
+    white-space:normal!important;text-align:center;gap:5px!important}
+  #view-gol #golDeadline>.gol-info-date{grid-column:1 / -1}
+  #view-gol #golDeadline>.gol-info-time{grid-column:1}
+  #view-gol #golDeadline>.gol-info-pot{grid-column:2;display:flex!important;flex-wrap:wrap}
+  #view-gol #golDeadline .gol-info-badge b{white-space:nowrap;font-size:11px!important;line-height:1.2}
+  #view-gol #golDeadline>.pg-history-open{grid-column:1/-1;width:100%;flex-basis:auto;min-height:38px}
+  .pg-mobile-filter-toggle{display:inline-flex;align-items:center;justify-content:center;
+    gap:8px;min-height:39px;padding:9px 13px;border:1px solid #e0b7598f;
+    border-radius:10px;background:#18283d;color:#f7c85d;
+    font-size:12px;font-weight:800;cursor:pointer}
+  .pg-mobile-filter-toggle svg{width:16px;height:16px;flex:0 0 16px}
+  .pg-mobile-filter-toggle[aria-expanded="true"]{background:#3c3322;border-color:#f7c85d}
+  #view-match .pg-match-toolbar{display:grid;grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;gap:8px;padding-bottom:10px}
+  #view-match .pg-match-toolbar>div{grid-column:1;min-width:0}
+  #view-match .pg-match-toolbar h2{margin:0;line-height:1.15}
+  #view-match .pg-match-toolbar .pg-match-filter-toggle{grid-column:2;grid-row:1}
+  #view-match .pg-match-toolbar #matchSourceLabel{grid-column:1/-1;grid-row:2;
+    justify-self:start;max-width:100%}
+  #view-match #matchFilterToolbar:not(.pg-filters-open){display:none!important}
+  #view-match #matchFilterToolbar.pg-filters-open{display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:11px;
+    border:1px solid #42566b;background:#111f31;border-radius:12px;margin-bottom:11px}
+  #view-match #matchFilterToolbar.pg-filters-open .field-inline:first-child{grid-column:1/-1}
+  #view-gol-results #golHistoryFilterToggle{width:100%;justify-content:space-between;margin:0 0 12px}
+  #view-gol-results #golHistoryFilterToggle .pg-filter-chevron{width:14px;height:14px;
+    margin-left:auto;transform:rotate(90deg)}
+  #view-gol-results #golHistoryFilterToggle[aria-expanded=true] .pg-filter-chevron{transform:rotate(-90deg)}
+  #view-gol-results #golHistoryFilters:not(.pg-filters-open){display:none!important}
+  #view-gol-results #golHistoryFilters.pg-filters-open{display:grid!important}
+  .pg-history-toggle .pg-history-chevron{width:15px;height:15px}
+  #homeFixtures .preview-card-head{gap:6px}
+  #homeFixtures .pg-featured-league,#homeFixtures .pg-featured-date{padding:5px 7px;font-size:9px;min-height:28px}
+  #homeFixtures .preview-team .sport-team-crest{width:28px;height:28px;flex-basis:28px}
+}
+@media(max-width:380px){
+  #view-gol #golDeadline>.gol-info-badge{font-size:10px!important;padding:8px 6px!important}
+  #view-gol #golDeadline .gol-info-badge b{font-size:10px!important}
+  #homeFixtures .pg-featured-league>span:last-child{max-width:112px}
+}
