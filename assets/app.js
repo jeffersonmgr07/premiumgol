@@ -1470,8 +1470,10 @@ function footballLogoUrl(name){
       // Saldo OFICIAL devuelto por el servidor (ya descontado en Google Sheets).
       updateAccount(res);
       renderSlips();
+      const serverCreatedAt=playHistory.find(h=>String(h.id)===ticket)?.at||res.walletBetCreatedAt;
       showSportsPlayDialog({
-        id:ticket,createdAt:new Date().toISOString(),stake:amount,
+        id:ticket,createdAt:serverCreatedAt||new Date().toISOString(),stake:amount,
+        isLive:isLiveSportsTicket({selections:placedLegs}),
         walletSource:usedWallet,combinedOdds:placedOdds,
         possibleReturn:Number(res.walletBetPotentialReturnPEN)||Math.round(amount*placedOdds*100)/100,
         selections:Array.isArray(res.walletBetPicks)?res.walletBetPicks.map(p=>({home:p.home,away:p.away,odd:p.odd,marketLabel:p.market,selectionLabel:p.outcome})):placedLegs
