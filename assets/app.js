@@ -674,8 +674,8 @@ function footballLogoUrl(name){
     const featured=[...withOdds,...matches.filter(g=>!withOdds.some(x=>x.id===g.id))].slice(0,3);
     const source='Encuentros de fútbol';
     $('#homeFixtures').innerHTML=featured.length?featured.map(g=>`<article class="preview-card featured-clickable" data-featured-match="${esc(g.id)}" role="button" tabindex="0" aria-label="Ver cuotas de ${esc(g.home)} contra ${esc(g.away)}">
-      <div class="preview-card-head"><span>${icon('ball')} ${esc(sportLeagueName(g))}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
-      <div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>
+      <div class="preview-card-head"><span class="pg-featured-league">${sportLeagueBadge(g)}</span><span class="game-date pg-featured-date">${esc(visibleDate(g))}</span></div>
+      <div class="preview-teams"><span class="preview-team">${sportCrest(g.home,g.sportKey,g.homeLogo)}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${sportCrest(g.away,g.sportKey,g.awayLogo)}<span>${esc(g.away)}</span></span></div>
       <div class="featured-odds" aria-label="Cuotas local empate visita">${['1','X','2'].map((name,n)=>`<span><small>${name}</small><b>${Number(g.odds?.[n])>1?fmt2(g.odds[n]):'—'}</b></span>`).join('')}</div>
       <div class="preview-bottom"><small>${source}</small><button type="button" class="text-link" data-featured-button="${esc(g.id)}">Ver cuotas →</button></div>
     </article>`).join(''):`<div class="empty-state featured-empty">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay cuotas disponibles para los próximos encuentros.')}</div>`;
@@ -1043,7 +1043,7 @@ function footballLogoUrl(name){
         const data=await remote('artwork',{sportKey:key});
         if(data?.ok&&data?.sportKey===key&&Array.isArray(data.teams)){
           sportsArtwork.set(key,data);
-          renderMatch();renderLive();
+          renderMatch();renderLive();renderHome();
         }
       }catch(e){ /* Si la base de insignias no responde, se mantienen las iniciales. */ }
       finally{artworkPending.delete(key);}
@@ -2276,7 +2276,7 @@ function footballLogoUrl(name){
           <h3>${r.kind==='MID'?'Jornada entre semana':'Jornada de fin de semana'}</h3>
           <span class="pg-history-state">${esc(pgHistoryStatus_(r.status))}</span></div>
           <button type="button" class="pg-history-toggle" data-history-toggle="${esc(r.roundId)}"
-            aria-expanded="false">Ver resultados <span aria-hidden="true" class="pg-history-chevron">⌄</span></button></div>
+            aria-expanded="false">Ver resultados <svg class="pg-history-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button></div>
         <div class="pg-history-dates"><span><small>Inicio</small>${esc(pgHistoryDate_(r.windowStart))}</span>
           <span><small>Fin</small>${esc(pgHistoryDate_(r.windowEnd))}</span>
           <span><small>Partidos</small>${Number(r.fixtureCount)||12}</span></div>
@@ -2383,6 +2383,16 @@ function footballLogoUrl(name){
     if(golHistorySearchTimer)clearTimeout(golHistorySearchTimer);
     golHistorySearchTimer=setTimeout(()=>loadGolResults(1),320);
   });
+  function toggleMobileFilters(buttonId,panelId){
+    const btn=$('#'+buttonId),panel=$('#'+panelId);
+    if(!btn||!panel)return;
+    const opened=btn.getAttribute('aria-expanded')==='true';
+    btn.setAttribute('aria-expanded',String(!opened));
+    btn.setAttribute('aria-label',opened?'Mostrar filtros':'Ocultar filtros');
+    panel.classList.toggle('pg-filters-open',!opened);
+  }
+  on('#matchFilterToggle','click',()=>toggleMobileFilters('matchFilterToggle','matchFilterToolbar'));
+  on('#golHistoryFilterToggle','click',()=>toggleMobileFilters('golHistoryFilterToggle','golHistoryFilters'));
   async function loadCatalog(){
     if(!CONFIG.appsScriptUrl){catalogLoading=false;catalogWarning='Encuentros temporalmente no disponibles.';renderAll();return;}
     try{
@@ -2838,7 +2848,7 @@ function showSportsPlayDialog(r){
   const walletLabel=r.walletSource==='bonos'?'Saldo de bonos':'Saldo principal';
   const amountLabel=value=>'S/ '+fmt2(value);
   $('#sportsPlayBody').innerHTML=
-    '<div class="sp-row"><span>Código</span><b>'+esc(r.id)+'</b></div>'+
+    '<div class="sp-row"><span>Código</span><b>'+esc(publicReceiptCode(r.id,r.createdAt,isLiveSportsTicket(r)?'live':'sports'))+'</b></div>'+
     '<div class="sp-row"><span>Fecha</span><b>'+esc(whenTxt)+'</b></div>'+
     '<div class="sp-row"><span>Monto apuesta</span><b>'+amountLabel(Number(r.stake)||0)+'</b></div>'+
     '<div class="sp-row"><span>Pagado con</span><b>'+walletLabel+'</b></div>'+
@@ -2848,15 +2858,16 @@ function showSportsPlayDialog(r){
       '<div class="sp-leg"><b>'+esc(s.home)+' · '+esc(s.away)+'</b>'+
       '<span>'+esc(s.marketLabel||'Resultado final')+' — '+esc(s.selectionLabel||s.outcome||'')+'</span>'+
       '<b class="sp-odd">Cuota '+fmt2(Number(s.odd)||1)+'</b></div>'
-    ).join('')+'</div>';
+    ).join('')+'</div>'+receiptQrMarkup(r.id);
   dlg.showModal();
 }
 function showSportsPlayDetails(id){
   const ticket=playHistory.find(t=>String(t.id)===String(id)&&t.type==='sports');
   if(!ticket){toast('No se encontraron los detalles del cupón.');return;}
   showSportsPlayDialog({id:ticket.id,createdAt:ticket.at,stake:ticket.stake,
-    walletSource:ticket.note.includes('bonos')?'bonos':'principal',
+    walletSource:String(ticket.note||'').includes('bonos')?'bonos':'principal',
     combinedOdds:ticket.combinedOdds,possibleReturn:ticket.potentialReturn,
+    isLive:isLiveSportsTicket(ticket),
     selections:(ticket.picks||[]).map(s=>({...s,
       marketLabel:s.marketLabel||s.market,selectionLabel:s.selectionLabel||s.outcome}))});
 }
