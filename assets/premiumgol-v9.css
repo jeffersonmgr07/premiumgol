@@ -1,0 +1,126 @@
+/* PremiumGol V9 — únicamente historial público y ventana de comprobante. */
+
+/* Menos filtros y nada de categorías internas de jornada. */
+#view-gol-results .pg-history-filters{
+  grid-template-columns:minmax(160px,1.65fr) repeat(3,minmax(125px,1fr)) auto;
+  align-items:end;gap:10px;overflow:visible;
+}
+#view-gol-results .pg-history-field{
+  min-width:0;display:flex;flex-direction:column;gap:7px;
+  font-size:11px;font-weight:800;color:#d3dde8;
+}
+#view-gol-results .pg-history-popover-wrap{position:relative;min-width:0}
+#view-gol-results .pg-history-field-button{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;width:100%;min-width:0;min-height:41px;box-sizing:border-box;
+  padding:9px 11px;border-radius:9px;border:1px solid #506982;
+  background:linear-gradient(180deg,#1a2c43,#122237);
+  color:#eaf3ff;font:700 12px inherit;cursor:pointer;text-align:left;
+  transition:border-color .16s,background .16s;
+}
+#view-gol-results .pg-history-field-button:hover,
+#view-gol-results .pg-history-field-button[aria-expanded="true"]{
+  border-color:#f7c85d;background:#223047;color:#f7c85d;
+}
+#view-gol-results .pg-history-field-button:focus-visible,
+#view-gol-results .pg-history-options button:focus-visible,
+#view-gol-results .pg-history-calendar button:focus-visible{
+  outline:2px solid #f7c85d;outline-offset:2px;
+}
+#view-gol-results .pg-history-field-button>span{
+  min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+#view-gol-results .pg-history-field-button svg{
+  width:16px;height:16px;flex:none;color:#f7c85d;
+}
+#view-gol-results .pg-history-options,
+#view-gol-results .pg-history-calendar{
+  position:absolute;right:0;top:calc(100% + 7px);z-index:80;
+  box-sizing:border-box;min-width:100%;width:max-content;
+  max-width:min(320px,calc(100vw - 38px));
+  border:1px solid #a08443;border-radius:12px;
+  background:#101e30;color:#fff;
+  box-shadow:0 15px 38px #000a;padding:8px;
+}
+#view-gol-results .pg-history-options[hidden],
+#view-gol-results .pg-history-calendar[hidden]{display:none!important}
+#view-gol-results .pg-history-options{
+  display:flex;flex-direction:column;gap:3px;min-width:max(180px,100%);
+}
+#view-gol-results .pg-history-options button{
+  border:0;background:transparent;color:#dbe7f4;
+  text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;
+  font:700 12px inherit;
+}
+#view-gol-results .pg-history-options button:hover,
+#view-gol-results .pg-history-options button[aria-selected="true"]{
+  color:#f7c85d;background:#29364a;
+}
+#view-gol-results .pg-history-calendar{width:294px;max-width:min(294px,calc(100vw - 38px));padding:12px}
+#view-gol-results .pg-v9-month-header{
+  display:flex;align-items:center;justify-content:space-between;gap:7px;
+  margin-bottom:12px;color:#f7c85d;font-size:13px;text-transform:capitalize;
+}
+#view-gol-results .pg-v9-month-header span{display:flex;align-items:center;gap:3px}
+#view-gol-results .pg-v9-month-header button{
+  display:grid;place-items:center;min-width:30px;min-height:30px;
+  background:#1c3048;border:1px solid #354f66;border-radius:7px;
+  color:#f7c85d;font-size:24px;line-height:1;cursor:pointer;
+}
+#view-gol-results .pg-v9-days{
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  gap:3px;align-items:center;text-align:center;
+}
+#view-gol-results .pg-v9-days b{
+  font-size:10px;color:#9dadbf;padding:6px 0;font-weight:800;
+}
+#view-gol-results .pg-v9-day{
+  display:grid;place-items:center;min-height:33px;padding:0;border-radius:7px;
+  border:1px solid transparent;background:transparent;color:#e9f1fa;
+  font-size:11px;font-weight:700;cursor:pointer;
+}
+#view-gol-results .pg-v9-day:hover{background:#2b3b51;border-color:#5b6e81}
+#view-gol-results .pg-v9-day.today{border-color:#8f7d4f}
+#view-gol-results .pg-v9-day.chosen{
+  background:#f7c85d;color:#0b1624;border-color:#f7c85d;
+}
+#view-gol-results .pg-v9-date-actions{
+  margin-top:11px;padding-top:10px;border-top:1px solid #2b435a;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+#view-gol-results .pg-v9-date-actions button{
+  border:1px solid #42576c;border-radius:7px;background:#1d3046;
+  color:#dce9f4;min-height:32px;padding:6px 11px;
+  cursor:pointer;font-size:11px;font-weight:800;
+}
+#view-gol-results .pg-v9-date-actions button:hover{border-color:#f7c85d;color:#f7c85d}
+/* Programa 001 + estado + fechas, sin líneas de categoría interna. */
+#view-gol-results .pg-history-number{display:block}
+#view-gol-results .pg-history-state{margin-top:9px}
+
+/* Mis jugadas: comprobante deportivo con el ancho del ticket PremiumGol. */
+dialog#sportsPlayDialog{
+  width:min(530px,calc(100vw - 26px));
+  max-width:min(530px,calc(100vw - 26px));
+  max-height:calc(100dvh - 36px);
+  box-sizing:border-box;overflow-y:auto;
+}
+#sportsPlayDialog .sports-play-box{width:100%;box-sizing:border-box}
+#sportsPlayDialog .sp-legs{max-height:none;overflow:visible}
+#sportsPlayDialog .sp-row{min-height:31px}
+
+@media(max-width:1130px){
+  #view-gol-results .pg-history-filters{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #view-gol-results .pg-history-filters>.pg-history-field{grid-column:auto}
+}
+@media(max-width:700px){
+  #view-gol-results .pg-history-filters{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  #view-gol-results .pg-history-filters>label:first-child{grid-column:1/-1}
+  #view-gol-results .pg-history-filters>.pg-history-field:nth-child(2){grid-column:1/-1}
+  #view-gol-results .pg-history-filters>.pg-history-field:nth-child(3){grid-column:1}
+  #view-gol-results .pg-history-filters>.pg-history-field:nth-child(4){grid-column:2}
+  #view-gol-results .pg-history-filters>.btn{grid-column:1/-1}
+  #view-gol-results .pg-history-calendar{width:min(294px,calc(100vw - 38px))}
+  dialog#sportsPlayDialog{width:calc(100vw - 26px);max-width:530px}
+  #sportsPlayDialog .sports-play-box{padding:22px 17px 18px}
+}
