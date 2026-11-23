@@ -619,7 +619,7 @@ function footballLogoUrl(name){
     activeView=name;
     syncMobileSportsSlip();
     $$('.view').forEach(e=>e.classList.toggle('is-active',e.id===`view-${name}`));
-    $('[data-nav]').forEach(e=>e.classList.toggle('active',e.dataset.nav===(name==='gol-results'?'gol':name)));
+    $$('[data-nav]').forEach(e=>e.classList.toggle('active',e.dataset.nav===(name==='gol-results'?'gol':name)));
     if(!skipHash)history.replaceState(null,'',name==='home'?'#inicio':`#${name}`);
     window.PremiumGolMeasurement?.pageView(name);
     if(name==='account')renderAccount();
