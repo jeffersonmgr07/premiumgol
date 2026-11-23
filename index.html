@@ -33,10 +33,11 @@
   <script defer src="assets/measurement-config.js?v=1"></script>
   <script defer src="assets/measurement.js?v=1"></script>
   <script defer src="assets/vendor/qrcode-generator.js?v=1"></script>
-  <script defer src="assets/app.js?v=57"></script>
+  <script defer src="assets/app.js?v=58"></script>
   <link rel="stylesheet" href="assets/premiumgol-v5.css?v=1">
   <link rel="stylesheet" href="assets/premiumgol-v6.css?v=1">
   <link rel="stylesheet" href="assets/premiumgol-v7.css?v=1">
+  <link rel="stylesheet" href="assets/premiumgol-v8.css?v=1">
 </head>
 <body>
   <svg class="svg-defs" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
@@ -168,7 +169,7 @@
 
     <section id="view-match" class="view" aria-label="Apuestas deportivas">
       
-      <div class="container page-body"><div class="game-toolbar pg-match-toolbar"><div><h2>Próximos encuentros</h2></div><button id="matchFilterToggle" class="pg-mobile-filter-toggle pg-match-filter-toggle" type="button" aria-controls="matchFilterToolbar" aria-expanded="false" aria-label="Mostrar filtros de partidos"><svg aria-hidden="true"><use href="#i-filter"></use></svg><span>Filtrar</span></button><span class="demo-label" id="matchSourceLabel"><svg><use href="#i-shield"></use></svg> Cargando encuentros…</span></div><div class="game-layout"><div><div class="match-filter-toolbar" id="matchFilterToolbar"><label class="field-inline"><span>Buscar partido</span><input id="matchSearch" type="search" placeholder="Equipo o partido…" autocomplete="off"></label><label class="field-inline"><span>Liga</span><select id="matchLeague"><option value="all">Todas las ligas</option></select></label><label class="field-inline"><span>Fecha</span><select id="matchDate"><option value="7" selected>Próximos 7 días</option><option value="0">Hoy</option><option value="1">Mañana</option><option value="2">Pasado mañana</option><option value="all">Todas las fechas</option></select></label><label class="field-inline"><span>Ordenar</span><select id="matchSort"><option value="date">Fecha más próxima</option><option value="league">Liga</option><option value="team">Equipo local</option></select></label></div><p id="matchResultCount" class="filter-result-count" aria-live="polite"></p><div id="matchFixtures" class="market-list"></div><div id="matchLoadMore" class="match-load-more" hidden><button type="button" class="btn btn-outline" data-match-more>Ver más partidos</button></div></div><aside id="matchBetslip"></aside></div></div>
+      <div class="container page-body"><div class="game-toolbar pg-match-toolbar"><div class="pg-match-heading"><h2>Próximos encuentros</h2><p id="matchResultCount" class="filter-result-count" aria-live="polite"></p></div><button id="matchFilterToggle" class="pg-mobile-filter-toggle pg-match-filter-toggle" type="button" aria-controls="matchFilterToolbar" aria-expanded="false" aria-label="Mostrar filtros de partidos"><svg aria-hidden="true"><use href="#i-filter"></use></svg><span>Filtrar</span></button><span class="demo-label" id="matchSourceLabel"><svg><use href="#i-shield"></use></svg> Cargando encuentros…</span></div><div class="game-layout"><div><div class="match-filter-toolbar" id="matchFilterToolbar"><label class="field-inline"><span>Buscar partido</span><input id="matchSearch" type="search" placeholder="Equipo o partido…" autocomplete="off"></label><label class="field-inline"><span>Liga</span><select id="matchLeague"><option value="all">Todas las ligas</option></select></label><label class="field-inline"><span>Fecha</span><select id="matchDate"><option value="7" selected>Próximos 7 días</option><option value="0">Hoy</option><option value="1">Mañana</option><option value="2">Pasado mañana</option><option value="all">Todas las fechas</option></select></label><label class="field-inline"><span>Ordenar</span><select id="matchSort"><option value="date">Fecha más próxima</option><option value="league">Liga</option><option value="team">Equipo local</option></select></label></div><div id="matchFixtures" class="market-list"></div><div id="matchLoadMore" class="match-load-more" hidden><button type="button" class="btn btn-outline" data-match-more>Ver más partidos</button></div></div><aside id="matchBetslip"></aside></div></div>
     </section>
 
     <section id="view-live" class="view" aria-label="Premium Live">

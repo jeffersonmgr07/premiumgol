@@ -1,0 +1,134 @@
+/* PremiumGol V8 — refinamientos visuales. Mantener la misma card deportiva. */
+
+/* Premium Live comparte la estructura de Apuestas deportivas.
+   Solo distingue el marco y las etiquetas de estado en naranja tenue. */
+#view-live .market-card.sport-premium-card.live-card{
+  border:1px solid rgba(242,155,61,.62);
+  background:#101f32;
+  border-radius:12px;
+  box-shadow:0 4px 16px #0000002b;
+  overflow:hidden;
+}
+#view-live .market-card.sport-premium-card.live-card:hover{
+  border-color:rgba(255,178,87,.83);box-shadow:0 5px 22px #0006;
+}
+#view-live .market-card.sport-premium-card.live-card .market-kickoff-chip{
+  border-color:#d99b5688;background:#332a24;color:#ffd3a5;
+}
+#view-live .market-card.sport-premium-card.live-card .sport-event-date{color:#ffbd75}
+#view-live .market-card.sport-premium-card.live-card .market-middle{display:none}
+/* Colocada al final para no introducir columnas adicionales en el grid de cuotas. */
+#view-live .market-card.sport-premium-card.live-card .pg-live-footer{
+  grid-column:1/-1;grid-row:auto;min-width:0;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;column-gap:18px;row-gap:6px;
+  margin:9px 0 0;padding:10px 6px 3px;
+  border-top:1px solid rgba(242,155,61,.24);
+  background:transparent;
+}
+#view-live .market-card.sport-premium-card.live-card .pg-live-inline{
+  display:flex;align-items:center;gap:10px;min-width:0;
+  padding:0;margin:0;color:#e8ba8e;font-size:11px;
+}
+#view-live .market-card.sport-premium-card.live-card .pg-live-inline button{
+  white-space:nowrap;color:#ffd093;cursor:pointer;
+}
+#view-live .market-card.sport-premium-card.live-card .pg-live-market-state{
+  display:flex;align-items:center;gap:7px;padding:0;margin:0;
+  border:0;font-size:10.5px;line-height:1.35;
+  color:#afbfd1;min-width:0;
+}
+#view-live .market-card.sport-premium-card.live-card .pg-live-market-state.is-available{
+  color:#ace2cd;
+}
+@media(min-width:960px){
+  #view-live .market-card.sport-premium-card.live-card{
+    padding:9px 13px 9px 12px;
+    grid-template-columns:minmax(132px,144px) minmax(185px,1fr) minmax(218px,1.18fr) 30px;
+    gap:2px 17px;
+  }
+  #view-live .market-card.sport-premium-card.live-card .market-choices{
+    padding:0;margin:0;grid-column:3;grid-row:1/3;
+  }
+  #view-live .market-card.sport-premium-card.live-card .sport-match-teams{padding:0;margin:0}
+}
+/* Contador de partidos discreto bajo el título, tanto PC como móvil. */
+#view-match .pg-match-heading{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+#view-match .pg-match-heading .filter-result-count{
+  margin:4px 0 0;color:#849ab3;text-align:left;font-size:11px;
+  font-weight:500;line-height:1.35;letter-spacing:.1px;
+}
+
+/* QR invertido, transparente, blanco y marco lima: identificador interno intacto. */
+.pg-receipt-qr{
+  background:radial-gradient(circle at 50% 0%,#18332c 0%,#081525 72%);
+  border:1.5px solid #b5f747;
+  color:#fff;
+  border-radius:14px;
+  padding:16px;
+  box-shadow:inset 0 0 0 1px #b5f74729,0 0 18px #b5f74712;
+}
+.pg-receipt-qr svg{background:transparent!important;width:158px;height:158px}
+.pg-receipt-qr svg path{fill:#fff}
+.pg-receipt-qr small{color:#d2dee9;font-size:10px;letter-spacing:.1px}
+
+@media(max-width:959px){
+  #view-live .market-card.sport-premium-card.live-card{padding:0!important}
+  #view-live .market-card.sport-premium-card.live-card .market-top{
+    padding:5px 9px 3px!important;margin:0!important;
+  }
+  #view-live .market-card.sport-premium-card.live-card .sport-match-teams{
+    padding:4px 9px 5px!important;margin:0!important;
+  }
+  #view-live .market-card.sport-premium-card.live-card .market-choices{
+    padding:0!important;margin:4px 9px!important;
+  }
+  #view-live .market-card.sport-premium-card.live-card .pg-live-footer{
+    margin:3px 10px 0;padding:9px 0 12px;
+  }
+}
+/* Tres badges alineados en una sola fila, botón de resultados en la siguiente. */
+@media(max-width:720px){
+  #view-gol #golDeadline.gol-info-badges{
+    display:grid!important;
+    grid-template-columns:minmax(0,1.20fr) minmax(0,1.00fr) minmax(0,1.12fr)!important;
+    align-items:stretch;gap:5px!important;
+    max-width:100%;width:100%;
+  }
+  #view-gol #golDeadline>.gol-info-badge{
+    grid-column:auto!important;grid-row:1;
+    display:flex!important;flex:1 1 0!important;
+    width:100%!important;max-width:100%;
+    min-width:0;min-height:38px;
+    padding:7px 4px!important;gap:3px!important;
+    justify-content:center;align-items:center;
+    font-size:clamp(8px,2.23vw,10px)!important;
+    white-space:nowrap!important;
+    letter-spacing:-.18px!important;line-height:1.12;
+  }
+  #view-gol #golDeadline>.gol-info-date{grid-column:1!important}
+  #view-gol #golDeadline>.gol-info-time{grid-column:2!important}
+  #view-gol #golDeadline>.gol-info-pot{
+    grid-column:3!important;flex-wrap:nowrap!important;
+  }
+  #view-gol #golDeadline .gol-info-pot b{
+    white-space:nowrap;font-size:clamp(9px,2.4vw,11px)!important;
+  }
+  #view-gol #golDeadline>.pg-history-open{
+    grid-column:1/-1!important;grid-row:2;
+    margin-top:3px;width:100%;min-height:37px;
+  }
+  #view-match .pg-match-heading .filter-result-count{font-size:10px;color:#8195ab}
+  #view-live .market-card.sport-premium-card.live-card .pg-live-footer{
+    display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+  }
+  .pg-receipt-qr{padding:13px}
+  .pg-receipt-qr svg{width:146px;height:146px}
+}
+@media(max-width:365px){
+  #view-gol #golDeadline.gol-info-badges{gap:3px!important}
+  #view-gol #golDeadline>.gol-info-badge{
+    padding:6px 2px!important;font-size:8px!important;
+  }
+  #view-gol #golDeadline .gol-info-pot b{font-size:9px!important}
+}

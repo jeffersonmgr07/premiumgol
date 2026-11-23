@@ -315,16 +315,18 @@ function footballLogoUrl(name){
 }
   const randomId = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   // Referencia visual derivada de UUID y fecha. No reemplaza al identificador interno.
+  // Código público visual de 6 hex; ID real permanece intacto en Google Sheets.
+  // Derivado SOLO del identificador estable: comprobante e historial coinciden aun
+  // si el servidor devuelve un formato de fecha distinto. 24 bits pueden colisionar.
   function publicReceiptCode(id,at,kind='sports'){
     const source=String(id||'').trim();
     if(!source)return '—';
-    const stamp=Number.isFinite(Date.parse(at))?new Date(at).toISOString():String(at||'');
+    const prefix=kind==='live'?'PL':kind==='gol'?'PG':'AD';
+    const seed=prefix+'|'+source.toLowerCase();
     let hash=0xcbf29ce484222325n;
-    const seed=kind+'|'+stamp+'|'+source; // ID, fecha y prefijo son ASCII.
     for(let i=0;i<seed.length;i++)
       hash=((hash^BigInt(seed.charCodeAt(i)))*0x100000001b3n)&0xffffffffffffffffn;
-    return (kind==='live'?'PL-':kind==='gol'?'PG-':'AD-')+
-      hash.toString(16).toUpperCase().padStart(16,'0');
+    return prefix+'-'+(hash&0xffffffn).toString(16).toUpperCase().padStart(6,'0');
   }
   function isLiveSportsTicket(record){
     if(record?.isLive===true||record?.mode==='live')return true;
@@ -337,8 +339,13 @@ function footballLogoUrl(name){
     if(!id||typeof window.qrcode!=='function')return '';
     try{
       const qr=window.qrcode(0,'M');qr.addData(id);qr.make();
+      // QR negativo: módulos blancos y fondo transparente sobre marco oscuro.
+      // Mantener quiet zone de cuatro módulos para facilitar la lectura.
+      const svg=qr.createSvgTag(4,4)
+        .replace(/fill="white"/g,'fill="transparent"')
+        .replace(/fill="black"/g,'fill="#FFFFFF"');
       return '<div class="pg-receipt-qr" aria-label="QR del identificador interno del ticket">'+
-        qr.createSvgTag(4,4)+'<small>QR de verificación del identificador original</small></div>';
+        svg+'<small>Escanea para identificar el ticket</small></div>';
     }catch(e){console.warn('No se pudo generar el QR local.');return '';}
   }
   const fixtureDays = n => {const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace('.','');};
@@ -1160,18 +1167,23 @@ function footballLogoUrl(name){
         <span class="market-middle">${live&&Array.isArray(g.score)?esc(g.score.map(x=>x===null||x===undefined?'–':String(x)).join(' : ')):'VS'}</span>
         <span class="market-team">${sportCrest(g.away,g.sportKey,g.awayLogo)}<strong>${esc(g.away)}</strong></span>
       </div>
-      ${live?`<div class="pg-live-inline"><span>${esc(g.statusLabel||"Partido en curso")}</span><button type="button" data-live-center="${esc(g.fixtureId||"")}">Match Center</button></div>`:""}
       <div class="market-choices sport-1x2">
       ${outcomes.map((o,i)=>`<button type="button" class="choice ${selected?.outcome===o?'selected':''}" ${marketAvailable&&Number(g.odds?.[i])>1?'':'disabled title="Mercado cerrado o sin cuota verificable"'}
         data-pick="${esc(g.id)}" data-outcome="${o}"
         aria-label="Elegir ${esc(outcomeName[i])} para ${esc(g.home)} contra ${esc(g.away)}">
         <small>${o}</small><b>${Number(g.odds?.[i])>1?fmt2(g.odds[i]):'—'}</b></button>`).join('')}</div>
-      ${live?`<div class="pg-live-market-state ${marketAvailable?'is-available':'is-paused'}"><span class="pg-live-state-dot" aria-hidden="true"></span><span>${esc(g.oddsMessage||(marketAvailable?'Cuotas verificadas (se revalidan al apostar).':'Sin cuotas Live verificadas para este partido.'))}</span></div>`:''}
       ${(!live||marketAvailable)?`<button type="button" class="market-detail-trigger" data-odds-details="${esc(g.id)}"
         aria-expanded="${oddsExpandedId===g.id?'true':'false'}">
         <span class="sport-more-label">${oddsExpandedId===g.id?'Ocultar':'Ver más'}</span>
         ${icon('arrow')}
-      </button>${oddsDetailMarkup(g)}`:""}</article>`;
+      </button>${oddsDetailMarkup(g)}`:""}
+      ${live?`<footer class="pg-live-footer"><div class="pg-live-inline">
+        <span>${esc(g.statusLabel||"Partido en curso")}</span>
+        <button type="button" data-live-center="${esc(g.fixtureId||"")}">Match Center</button>
+      </div><div class="pg-live-market-state ${marketAvailable?'is-available':'is-paused'}">
+        <span class="pg-live-state-dot" aria-hidden="true"></span>
+        <span>${esc(g.oddsMessage||(marketAvailable?'Cuotas verificadas (se revalidan al apostar).':'Sin cuotas Live verificadas para este partido.'))}</span>
+      </div></footer>`:''}</article>`;
   }
   function addSportsSelection(g,selection){
     expireSportsSlipIfIdle();
@@ -1782,7 +1794,7 @@ function footballLogoUrl(name){
       new Intl.DateTimeFormat('es-PE',{timeZone:'America/Lima',day:'2-digit',
         month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true})
         .format(created):'Fecha no disponible';
-    const code=String(ticket.code||('PG-'+String(ticket.id).slice(-10).toUpperCase()));
+    const code=publicReceiptCode(ticket.id,ticket.at,'gol');
     const byId=new Map(golGames.map((g,i)=>[g.id,{...g,idx:i+1}]));
     const rows=(Array.isArray(ticket.picks)?ticket.picks:[]).map((p,i)=>{
       const game=byId.get(p.id),resultIndex=outcomes.indexOf(p.outcome);
@@ -1839,8 +1851,7 @@ function footballLogoUrl(name){
       const isGol=h.type==='gol';
       const isSports=h.type==='sports';
       const kind=isGol?'gol':isLiveSportsTicket(h)?'live':'sports';
-      const code=isGol?String(h.code||('PG-'+String(h.id||'').slice(-10).toUpperCase())):
-        publicReceiptCode(h.id,h.at,kind);
+      const code=publicReceiptCode(h.id,h.at,kind);
       const title=isGol?'PremiumGol · '+code:(isSports?
         (kind==='live'?'Premium Live · ':'Apuesta deportiva · ')+code:String(h.title||'Jugada'));
       const detailsBtn=isGol
