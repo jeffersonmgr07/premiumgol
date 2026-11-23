@@ -314,6 +314,33 @@ function footballLogoUrl(name){
   return path?FOOTBALL_LOGOS_RAW+path.split('/').map(encodeURIComponent).join('/'):'';
 }
   const randomId = () => window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  // Referencia visual derivada de UUID y fecha. No reemplaza al identificador interno.
+  function publicReceiptCode(id,at,kind='sports'){
+    const source=String(id||'').trim();
+    if(!source)return '—';
+    const stamp=Number.isFinite(Date.parse(at))?new Date(at).toISOString():String(at||'');
+    let hash=0xcbf29ce484222325n;
+    const seed=kind+'|'+stamp+'|'+source; // ID, fecha y prefijo son ASCII.
+    for(let i=0;i<seed.length;i++)
+      hash=((hash^BigInt(seed.charCodeAt(i)))*0x100000001b3n)&0xffffffffffffffffn;
+    return (kind==='live'?'PL-':kind==='gol'?'PG-':'AD-')+
+      hash.toString(16).toUpperCase().padStart(16,'0');
+  }
+  function isLiveSportsTicket(record){
+    if(record?.isLive===true||record?.mode==='live')return true;
+    const picks=Array.isArray(record?.selections)?record.selections:
+      Array.isArray(record?.picks)?record.picks:[];
+    return picks.some(p=>p?.live===true||/^(?:api-live-|odds-live-)/i.test(String(p.gameId||p.eventId||'')));
+  }
+  function receiptQrMarkup(internalId){
+    const id=String(internalId||'').trim();
+    if(!id||typeof window.qrcode!=='function')return '';
+    try{
+      const qr=window.qrcode(0,'M');qr.addData(id);qr.make();
+      return '<div class="pg-receipt-qr" aria-label="QR del identificador interno del ticket">'+
+        qr.createSvgTag(4,4)+'<small>QR de verificación del identificador original</small></div>';
+    }catch(e){console.warn('No se pudo generar el QR local.');return '';}
+  }
   const fixtureDays = n => {const d=new Date();d.setDate(d.getDate()+n);return d.toLocaleDateString('es-PE',{day:'2-digit',month:'short'}).replace('.','');};
   // El saldo y las jugadas viven SOLO en Google Sheets. Se eliminan los restos de la
   // antigua billetera simulada del navegador (S/ 1000 ficticios) y de sus recibos locales.
@@ -648,8 +675,8 @@ function footballLogoUrl(name){
     const featured=[...withOdds,...matches.filter(g=>!withOdds.some(x=>x.id===g.id))].slice(0,3);
     const source='Encuentros de fútbol';
     $('#homeFixtures').innerHTML=featured.length?featured.map(g=>`<article class="preview-card featured-clickable" data-featured-match="${esc(g.id)}" role="button" tabindex="0" aria-label="Ver cuotas de ${esc(g.home)} contra ${esc(g.away)}">
-      <div class="preview-card-head"><span>${icon('ball')} ${esc(sportLeagueName(g))}</span><span class="game-date">${esc(visibleDate(g))}</span></div>
-      <div class="preview-teams"><span class="preview-team">${badge(g.home,g.colors?.[0])}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${badge(g.away,g.colors?.[1])}<span>${esc(g.away)}</span></span></div>
+      <div class="preview-card-head"><span class="pg-featured-league">${sportLeagueBadge(g)}</span><span class="game-date pg-featured-date">${esc(visibleDate(g))}</span></div>
+      <div class="preview-teams"><span class="preview-team">${sportCrest(g.home,g.sportKey,g.homeLogo)}<span>${esc(g.home)}</span></span><span class="preview-versus">VS</span><span class="preview-team">${sportCrest(g.away,g.sportKey,g.awayLogo)}<span>${esc(g.away)}</span></span></div>
       <div class="featured-odds" aria-label="Cuotas local empate visita">${['1','X','2'].map((name,n)=>`<span><small>${name}</small><b>${Number(g.odds?.[n])>1?fmt2(g.odds[n]):'—'}</b></span>`).join('')}</div>
       <div class="preview-bottom"><small>${source}</small><button type="button" class="text-link" data-featured-button="${esc(g.id)}">Ver cuotas →</button></div>
     </article>`).join(''):`<div class="empty-state featured-empty">${catalogLoading?'Consultando próximos partidos…':(catalogWarning||'No hay cuotas disponibles para los próximos encuentros.')}</div>`;
@@ -828,7 +855,7 @@ function footballLogoUrl(name){
       // ticket. Limpiar solo el borrador enviado, no los otros tres.
       draft.golCards[slot]={};
       delete draft.golRequestIds[slot];
-      activeCard=slot;draft.activeCard=slot;
+      golLocked={};activeCard='A';draft.activeCard='A';
       saveDraft();
       renderGol();toast('¡Ticket PremiumGol registrado! Costo: S/ 5.00.');
     }catch(e){if(/saldo (principal|de bonos) insuficiente/i.test(String(e.message||'')))showInsufficientFunds();else toast(e.message||'No se pudo guardar la jugada.');}
@@ -853,6 +880,7 @@ function footballLogoUrl(name){
         walletSource,cards});
       updateAccount(res);
       for(const slot of slots){draft.golCards[slot]={};delete draft.golRequestIds[slot];}
+      golLocked={};activeCard='A';draft.activeCard='A';
       delete draft.golBatchRequestId;saveDraft();
       renderGol();toast('Se registraron '+slots.length+' tickets · S/ '+fmt2(total)+'.');
     }catch(err){toast(err.message||'No se confirmó la compra de cartillas.');}
@@ -1016,7 +1044,7 @@ function footballLogoUrl(name){
         const data=await remote('artwork',{sportKey:key});
         if(data?.ok&&data?.sportKey===key&&Array.isArray(data.teams)){
           sportsArtwork.set(key,data);
-          renderMatch();renderLive();
+          renderMatch();renderLive();renderHome();
         }
       }catch(e){ /* Si la base de insignias no responde, se mantienen las iniciales. */ }
       finally{artworkPending.delete(key);}
@@ -1443,8 +1471,10 @@ function footballLogoUrl(name){
       // Saldo OFICIAL devuelto por el servidor (ya descontado en Google Sheets).
       updateAccount(res);
       renderSlips();
+      const serverCreatedAt=playHistory.find(h=>String(h.id)===ticket)?.at||res.walletBetCreatedAt;
       showSportsPlayDialog({
-        id:ticket,createdAt:new Date().toISOString(),stake:amount,
+        id:ticket,createdAt:serverCreatedAt||new Date().toISOString(),stake:amount,
+        isLive:isLiveSportsTicket({selections:placedLegs}),
         walletSource:usedWallet,combinedOdds:placedOdds,
         possibleReturn:Number(res.walletBetPotentialReturnPEN)||Math.round(amount*placedOdds*100)/100,
         selections:Array.isArray(res.walletBetPicks)?res.walletBetPicks.map(p=>({home:p.home,away:p.away,odd:p.odd,marketLabel:p.market,selectionLabel:p.outcome})):placedLegs
@@ -1485,8 +1515,23 @@ function footballLogoUrl(name){
       bonusUnlockMinimumPEN=minBonus;
     if(Number.isFinite(Number(result.balance)))accountBalance=Number(result.balance);
     if(Number.isFinite(Number(result.paidBalancePEN)))paidBalancePEN=Number(result.paidBalancePEN);
-    if(Array.isArray(result.history))playHistory=result.history;
-    if(result.golSlots&&typeof result.golSlots==='object'){golLocked=result.golSlots;for(const slot of SLOTS){if(golLocked[slot]?.picks){draft.golCards[slot]=Object.fromEntries(golLocked[slot].picks.map(p=>[p.id,p.outcome]));}}saveDraft();}
+    if(Array.isArray(result.history)){
+      playHistory=result.history;
+      // No restaurar una jugada ya comprada como borrador editable.
+      let cleaned=false;
+      for(const ticket of playHistory){
+        if(ticket?.type!=='gol'||String(ticket.roundId||'')!==String(golRoundId))continue;
+        const slot=String(ticket.slot||'');
+        if(!SLOTS.includes(slot)||!Array.isArray(ticket.picks)||ticket.picks.length!==12)continue;
+        const local=draft.golCards[slot]||{};
+        if(Object.keys(local).length===12&&ticket.picks.every(p=>local[p.id]===p.outcome)){
+          draft.golCards[slot]={};delete draft.golRequestIds[slot];cleaned=true;
+        }
+      }
+      if(cleaned)saveDraft();
+    }
+    // En V5 A-D son borradores reutilizables; lo pagado vive en history.
+    if(result.golSlots&&typeof result.golSlots==='object')golLocked={};
     if(typeof result.couponClaimed==='boolean')couponClaimed=result.couponClaimed;
     renderAll();
   }
@@ -1759,7 +1804,8 @@ function footballLogoUrl(name){
       (ticket.prizeCredited?'<div><span>Premio acreditado</span><b>S/ '+fmt2(ticket.prizePEN)+'</b></div>':'')+
       '</div>'+
       '<h3 class="play-ticket-subtitle">Pronósticos seleccionados</h3>'+
-      (rows||'<p class="profile-info">Pronósticos no disponibles.</p>');
+      (rows||'<p class="profile-info">Pronósticos no disponibles.</p>')+
+      receiptQrMarkup(ticket.id);
     if(!dlg.open)dlg.showModal();
   }
   function renderAccount(){
@@ -1792,8 +1838,11 @@ function footballLogoUrl(name){
     const one=h=>{
       const isGol=h.type==='gol';
       const isSports=h.type==='sports';
-      const code=isGol?String(h.code||('PG-'+String(h.id||'').slice(-10).toUpperCase())):String(h.id||'');
-      const title=isGol?'PremiumGol · '+code:(isSports?'Apuesta deportiva · '+code:String(h.title||'Jugada'));
+      const kind=isGol?'gol':isLiveSportsTicket(h)?'live':'sports';
+      const code=isGol?String(h.code||('PG-'+String(h.id||'').slice(-10).toUpperCase())):
+        publicReceiptCode(h.id,h.at,kind);
+      const title=isGol?'PremiumGol · '+code:(isSports?
+        (kind==='live'?'Premium Live · ':'Apuesta deportiva · ')+code:String(h.title||'Jugada'));
       const detailsBtn=isGol
         ?'<button type="button" class="btn btn-outline btn-mini" data-play-details="'+esc(h.id)+'">Ver detalles</button>'
         :(isSports?'<button type="button" class="btn btn-outline btn-mini" data-sports-play-details="'+esc(h.id)+'">Ver detalles</button>':'');
@@ -2230,7 +2279,7 @@ function footballLogoUrl(name){
           <h3>${r.kind==='MID'?'Jornada entre semana':'Jornada de fin de semana'}</h3>
           <span class="pg-history-state">${esc(pgHistoryStatus_(r.status))}</span></div>
           <button type="button" class="pg-history-toggle" data-history-toggle="${esc(r.roundId)}"
-            aria-expanded="false">Ver resultados <span aria-hidden="true" class="pg-history-chevron">⌄</span></button></div>
+            aria-expanded="false">Ver resultados <svg class="pg-history-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button></div>
         <div class="pg-history-dates"><span><small>Inicio</small>${esc(pgHistoryDate_(r.windowStart))}</span>
           <span><small>Fin</small>${esc(pgHistoryDate_(r.windowEnd))}</span>
           <span><small>Partidos</small>${Number(r.fixtureCount)||12}</span></div>
@@ -2337,6 +2386,16 @@ function footballLogoUrl(name){
     if(golHistorySearchTimer)clearTimeout(golHistorySearchTimer);
     golHistorySearchTimer=setTimeout(()=>loadGolResults(1),320);
   });
+  function toggleMobileFilters(buttonId,panelId){
+    const btn=$('#'+buttonId),panel=$('#'+panelId);
+    if(!btn||!panel)return;
+    const opened=btn.getAttribute('aria-expanded')==='true';
+    btn.setAttribute('aria-expanded',String(!opened));
+    btn.setAttribute('aria-label',opened?'Mostrar filtros':'Ocultar filtros');
+    panel.classList.toggle('pg-filters-open',!opened);
+  }
+  on('#matchFilterToggle','click',()=>toggleMobileFilters('matchFilterToggle','matchFilterToolbar'));
+  on('#golHistoryFilterToggle','click',()=>toggleMobileFilters('golHistoryFilterToggle','golHistoryFilters'));
   async function loadCatalog(){
     if(!CONFIG.appsScriptUrl){catalogLoading=false;catalogWarning='Encuentros temporalmente no disponibles.';renderAll();return;}
     try{
@@ -2792,7 +2851,7 @@ function showSportsPlayDialog(r){
   const walletLabel=r.walletSource==='bonos'?'Saldo de bonos':'Saldo principal';
   const amountLabel=value=>'S/ '+fmt2(value);
   $('#sportsPlayBody').innerHTML=
-    '<div class="sp-row"><span>Código</span><b>'+esc(r.id)+'</b></div>'+
+    '<div class="sp-row"><span>Código</span><b>'+esc(publicReceiptCode(r.id,r.createdAt,isLiveSportsTicket(r)?'live':'sports'))+'</b></div>'+
     '<div class="sp-row"><span>Fecha</span><b>'+esc(whenTxt)+'</b></div>'+
     '<div class="sp-row"><span>Monto apuesta</span><b>'+amountLabel(Number(r.stake)||0)+'</b></div>'+
     '<div class="sp-row"><span>Pagado con</span><b>'+walletLabel+'</b></div>'+
@@ -2802,15 +2861,16 @@ function showSportsPlayDialog(r){
       '<div class="sp-leg"><b>'+esc(s.home)+' · '+esc(s.away)+'</b>'+
       '<span>'+esc(s.marketLabel||'Resultado final')+' — '+esc(s.selectionLabel||s.outcome||'')+'</span>'+
       '<b class="sp-odd">Cuota '+fmt2(Number(s.odd)||1)+'</b></div>'
-    ).join('')+'</div>';
+    ).join('')+'</div>'+receiptQrMarkup(r.id);
   dlg.showModal();
 }
 function showSportsPlayDetails(id){
   const ticket=playHistory.find(t=>String(t.id)===String(id)&&t.type==='sports');
   if(!ticket){toast('No se encontraron los detalles del cupón.');return;}
   showSportsPlayDialog({id:ticket.id,createdAt:ticket.at,stake:ticket.stake,
-    walletSource:ticket.note.includes('bonos')?'bonos':'principal',
+    walletSource:String(ticket.note||'').includes('bonos')?'bonos':'principal',
     combinedOdds:ticket.combinedOdds,possibleReturn:ticket.potentialReturn,
+    isLive:isLiveSportsTicket(ticket),
     selections:(ticket.picks||[]).map(s=>({...s,
       marketLabel:s.marketLabel||s.market,selectionLabel:s.selectionLabel||s.outcome}))});
 }
