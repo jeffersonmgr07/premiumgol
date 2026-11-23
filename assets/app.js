@@ -2276,18 +2276,16 @@ function footballLogoUrl(name){
     if(status)status.textContent='';
     try{
       const query=String($('#golResultsSearch')?.value||'').trim().slice(0,60);
-      const kind=String($('#golResultsKind')?.value||'ALL');
       const state=String($('#golResultsState')?.value||'ALL');
       const from=String($('#golResultsFrom')?.value||'');
       const to=String($('#golResultsTo')?.value||'');
-      const data=await remote('golResults',{page,pageSize:10,query,kind,status:state,from,to});
+      const data=await remote('golResults',{page,pageSize:10,query,kind:'ALL',status:state,from,to});
       if(!data?.ok||!Array.isArray(data.rounds))throw Error('No se recibieron los programas');
       const pages=Number(data.totalPages)||Math.max(1,Math.ceil(data.rounds.length/10));
       golHistoryPage=Math.max(1,Math.min(Number(data.page)||page,pages));
       const rows=data.rounds.slice(0,10);
       list.innerHTML=rows.length?rows.map(r=>`<article class="pg-history-card">
         <div class="pg-history-card-top"><div><span class="pg-history-number">Programa ${esc(r.programNumber||'—')}</span>
-          <h3>${r.kind==='MID'?'Jornada entre semana':'Jornada de fin de semana'}</h3>
           <span class="pg-history-state">${esc(pgHistoryStatus_(r.status))}</span></div>
           <button type="button" class="pg-history-toggle" data-history-toggle="${esc(r.roundId)}"
             aria-expanded="false">Ver resultados <svg class="pg-history-chevron" aria-hidden="true"><use href="#i-chevron"></use></svg></button></div>
@@ -2323,18 +2321,18 @@ function footballLogoUrl(name){
       const data=await remote('golResults',{roundId:id});
       if(!data?.ok||data.selected?.roundId!==id)throw Error('Datos no disponibles');
       const selected=data.selected;
-      const fmtScore=g=>g.provisional?'0 : 0 (provisional)':
-        Array.isArray(g.score)?g.score.map(n=>n==null?'–':String(n)).join(' : '):'—';
+      const fmtScore=g=>g.provisional?'0-0':
+        Array.isArray(g.score)?g.score.map(n=>n==null?'–':String(n)).join('-'):'—';
       const labels={PENDING:'Pendiente',IN_PROGRESS:'En curso',FINISHED:'Finalizado',REVIEW:'Revisión'};
       container.innerHTML='<div class="pg-history-matches">'+(selected.fixtures||[]).map((g,i)=>
         '<div class="pg-history-match"><span class="pg-history-index">'+String(i+1).padStart(2,'0')+'</span>'+
         '<div><b>'+esc(g.home)+' – '+esc(g.away)+'</b><small>'+esc(g.league||'Fútbol')+
         ' · '+esc(pgHistoryDate_(g.kickoff))+'</small></div><strong>'+esc(fmtScore(g))+'</strong>'+
-        '<span class="pg-history-result-status">'+esc(labels[g.status]||g.status)+
-          (g.verified?' ✓':'')+'</span></div>').join('')+'</div>'+
+        '<span class="pg-history-result-status">'+esc(g.provisional?'Pendiente':(labels[g.status]||g.status))+
+          (!g.provisional&&g.verified?' ✓':'')+'</span></div>').join('')+'</div>'+
         (selected.winners?.definitive?'<div class="pg-history-winners">12 aciertos: '+Number(selected.winners.twelve)+
           ' · 11: '+Number(selected.winners.eleven)+' · 10: '+Number(selected.winners.ten)+'</div>':
-          '<p class="pg-history-note">Resultados y ganadores pendientes de verificación. Los 0:0 provisionales no son marcadores definitivos.</p>');
+          '<p class="pg-history-note">Resultados y ganadores pendientes de verificación. Los partidos pendientes no tienen un marcador confirmado.</p>');
     }catch(e){
       container.textContent='No fue posible consultar los resultados. Intenta de nuevo.';
     }
@@ -2371,10 +2369,11 @@ function footballLogoUrl(name){
       loadGolProgram();return;
     }
     if(event.target.closest('#golResultsReset')){
-      const q=$('#golResultsSearch'),kind=$('#golResultsKind'),state=$('#golResultsState'),
+      const q=$('#golResultsSearch'),state=$('#golResultsState'),
         from=$('#golResultsFrom'),to=$('#golResultsTo');
-      if(q)q.value='';if(kind)kind.value='ALL';if(state)state.value='ALL';
+      if(q)q.value='';if(state)state.value='ALL';
       if(from)from.value='';if(to)to.value='';
+      document.dispatchEvent(new Event('pg-history-reset'));
       loadGolResults(1);return;
     }
     if(event.target.closest('#golHistoryPrev')){
@@ -2391,7 +2390,7 @@ function footballLogoUrl(name){
       const dlg=$('#liveMatchCenterDialog');if(dlg?.open)dlg.close();
     }
   });
-  ['#golResultsKind','#golResultsState','#golResultsFrom','#golResultsTo'].forEach(selector=>
+  ['#golResultsState','#golResultsFrom','#golResultsTo'].forEach(selector=>
     on(selector,'change',()=>loadGolResults(1)));
   on('#golResultsSearch','input',()=>{
     if(golHistorySearchTimer)clearTimeout(golHistorySearchTimer);
