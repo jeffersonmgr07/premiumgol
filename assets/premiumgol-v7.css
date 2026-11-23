@@ -83,3 +83,8 @@
   #view-gol #golDeadline .gol-info-badge b{font-size:10px!important}
   #homeFixtures .pg-featured-league>span:last-child{max-width:112px}
 }
+
+/* Comprobantes con QR: en pantallas bajas permitir desplazamiento dentro del diálogo. */
+#sportsPlayDialog,#playDetailsDialog{max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+#sportsPlayDialog .sports-play-box{box-sizing:border-box}
+#homeFixtures .preview-team .sport-team-crest>span{overflow:visible;text-overflow:clip;white-space:normal}
