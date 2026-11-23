@@ -731,6 +731,12 @@ function footballLogoUrl(name){
     const long=deadline.querySelector('.gol-info-date .badge-long');
     const short=deadline.querySelector('.gol-info-date .badge-short');
     const pool=deadline.querySelector('.gol-info-pot b');
+    const hour=golGames.length&&Number.isFinite(Date.parse(golCutoff))
+      ?new Date(golCutoff).toLocaleTimeString('es-PE',{
+        timeZone:'America/Lima',hour:'numeric',minute:'2-digit',hour12:true
+      }):'';
+    deadline.querySelectorAll('.gol-info-time .badge-long, .gol-info-time .badge-short')
+      .forEach(el=>{el.textContent=hour?'Hasta las '+hour:'Horario por confirmar';});
     if(long)long.textContent='Cierre: '+cutoffText;
     if(short){
       const d=new Date(golCutoff);
