@@ -320,8 +320,9 @@ function footballLogoUrl(name){
     if(!source)return '—';
     const stamp=Number.isFinite(Date.parse(at))?new Date(at).toISOString():String(at||'');
     let hash=0xcbf29ce484222325n;
-    for(const b of new TextEncoder().encode(kind+'|'+stamp+'|'+source))
-      hash=((hash^BigInt(b))*0x100000001b3n)&0xffffffffffffffffn;
+    const seed=kind+'|'+stamp+'|'+source; // ID, fecha y prefijo son ASCII.
+    for(let i=0;i<seed.length;i++)
+      hash=((hash^BigInt(seed.charCodeAt(i)))*0x100000001b3n)&0xffffffffffffffffn;
     return (kind==='live'?'PL-':kind==='gol'?'PG-':'AD-')+
       hash.toString(16).toUpperCase().padStart(16,'0');
   }
