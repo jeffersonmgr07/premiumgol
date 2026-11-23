@@ -1,0 +1,112 @@
+/* PremiumGol V6: estilos aislados de cartilla, historial y Premium Live. */
+#golProgramLoader[hidden],#golProgramContent[hidden],
+.pg-history-details[hidden]{display:none!important}
+.pg-program-loader{min-height:min(75vh,650px);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:12px;padding:48px 18px;text-align:center;color:#fff}
+.pg-program-loader-seal{width:105px;height:105px;display:grid;place-items:center;
+  border-radius:50%;background:radial-gradient(circle,#f7c85d28 6%,#f7c85d08 68%,transparent 70%);
+  animation:pg-program-pulse 1.65s ease-in-out infinite}
+.pg-program-loader-seal img{width:82px;height:82px;object-fit:contain;filter:drop-shadow(0 0 19px #f7c85d6a)}
+.pg-program-loader h2{margin:0;font-size:clamp(19px,3vw,27px);font-weight:850}
+.pg-program-loader p{margin:0 0 8px;color:#aebed1}
+@keyframes pg-program-pulse{0%,100%{transform:scale(.93);opacity:.72}50%{transform:scale(1.07);opacity:1}}
+@media(prefers-reduced-motion:reduce){.pg-program-loader-seal{animation:none}}
+
+/* El botón de resultados forma parte de la misma fila de insignias en PC. */
+#golDeadline .pg-history-open{min-height:34px;display:inline-flex;align-items:center;gap:6px;
+  background:#132238;color:#f7c85d;border:1px solid #f7c85d7e;font-size:11px;font-weight:800;
+  padding:8px 11px;line-height:1.25;white-space:normal}
+#golDeadline .pg-history-open:hover{background:#302c20;border-color:#f7c85d}
+#golDeadline .pg-history-open svg{width:13px;height:13px;transform:rotate(0)}
+#golDeadline .gol-info-date{max-width:none}
+
+/* Historial independiente: cards horizontales expansibles. */
+.pg-history-page{padding-top:28px;padding-bottom:60px}
+.pg-history-back{border:0;background:none;color:#f7c85d;display:inline-flex;align-items:center;
+  gap:8px;padding:6px 0;margin:0 0 21px;font-weight:700;cursor:pointer}
+.pg-history-back svg{width:16px;height:16px;transform:rotate(180deg)}
+.pg-history-heading{display:flex;align-items:center;justify-content:space-between;gap:25px;
+  padding:26px 30px;margin-bottom:21px;border:1px solid #354b63;border-radius:17px;
+  background:linear-gradient(120deg,#192c42 0%,#0c1625 70%)}
+.pg-history-heading h2{color:#fff;font-size:clamp(24px,4vw,35px);margin:5px 0 9px}
+.pg-history-heading p{color:#b6c4d3;margin:0;max-width:720px}
+.pg-history-heading-icon{font-size:45px;opacity:.67}
+.pg-history-filters{display:grid;grid-template-columns:minmax(160px,1.4fr) repeat(2,minmax(130px,1fr))
+  repeat(2,minmax(120px,1fr)) auto;gap:10px;align-items:end;margin-bottom:19px}
+.pg-history-filters label{display:flex;flex-direction:column;gap:7px;min-width:0;color:#d3dde8;font-size:11px;font-weight:800}
+.pg-history-filters input,.pg-history-filters select{width:100%;min-height:41px;box-sizing:border-box;
+  background:#112137;border:1px solid #40536a;border-radius:9px;color:#fff;padding:9px 10px;
+  font:600 12px inherit;color-scheme:dark}
+.pg-history-filters .btn{min-height:41px;white-space:nowrap}
+.pg-history-meta{color:#b8c8d7;font-size:12px;min-height:18px;margin-bottom:12px}
+.pg-history-list{display:flex;flex-direction:column;gap:12px}
+.pg-history-card{background:linear-gradient(100deg,#122239,#0d1929);border:1px solid #30465d;
+  border-radius:14px;overflow:hidden;transition:border-color .2s}
+.pg-history-card:hover{border-color:#78693c}
+.pg-history-card-top{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:19px 22px 10px}
+.pg-history-number{color:#f7c85d;font-size:13px;font-weight:850;letter-spacing:.7px}
+.pg-history-card h3{color:#fff;font-size:18px;margin:4px 0 7px}
+.pg-history-state{font-size:10px;border:1px solid #5a624f;background:#2b3129;color:#d7e49f;
+  border-radius:50px;padding:4px 8px;display:inline-block}
+.pg-history-toggle{display:inline-flex;align-items:center;justify-content:center;gap:10px;
+  border:1px solid #bea056;background:#f7c85d0e;color:#f7c85d;
+  border-radius:9px;min-height:38px;padding:8px 13px;font-weight:800;white-space:nowrap;cursor:pointer}
+.pg-history-toggle:hover{background:#f7c85d26}
+.pg-history-chevron{font-size:21px;line-height:1;transition:transform .2s}
+.pg-history-toggle[aria-expanded=true] .pg-history-chevron{transform:rotate(180deg)}
+.pg-history-dates{display:flex;align-items:center;gap:26px;padding:0 22px 17px;color:#fff;font-size:13px;flex-wrap:wrap}
+.pg-history-dates>span{display:flex;gap:6px;align-items:baseline}
+.pg-history-dates small{font-size:11px;color:#9caec4}
+.pg-history-details{border-top:1px solid #33475d;background:#0c1726;padding:14px 18px}
+.pg-history-matches{display:flex;flex-direction:column;gap:0}
+.pg-history-match{display:grid;grid-template-columns:28px minmax(0,1fr) 140px 115px;
+  align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #2c3f54;color:#e8eff7;font-size:12px}
+.pg-history-match:last-child{border-bottom:0}
+.pg-history-index{color:#f7c85d;font-weight:900}
+.pg-history-match b{display:block;font-size:12px}
+.pg-history-match small{display:block;color:#8fa4bc;font-size:10px;margin-top:3px}
+.pg-history-match strong{text-align:right;white-space:nowrap}
+.pg-history-result-status{text-align:right;color:#c0ccd9;font-size:11px}
+.pg-history-note{font-size:11px;color:#aebdd0;line-height:1.65}
+.pg-history-winners{color:#d6e4b4;padding:12px 4px;font-weight:800}
+.pg-history-empty,.pg-history-loading{color:#aebed1;border:1px dashed #405167;border-radius:12px;
+  padding:35px 20px;text-align:center}
+.pg-history-pages{display:flex;justify-content:center;align-items:center;gap:16px;margin-top:24px}
+.pg-history-pages span{color:#c5d2df;font-size:12px}
+.pg-history-pages .btn:disabled{opacity:.35;cursor:not-allowed}
+
+/* Premium Live: partidos con marcador legible y explicación real del mercado. */
+#view-live .market-card.live-card{padding:0;border:1px solid #34485f;border-radius:15px;
+  overflow:hidden;background:linear-gradient(120deg,#13243a 0%,#0d192b 100%);
+  box-shadow:0 8px 24px #00000018}
+#view-live .live-card .market-top{padding:13px 16px 0;margin-bottom:0}
+#view-live .live-card .market-kickoff-chip{border-color:#bb4960;background:#3b2634;color:#fff}
+#view-live .live-card .sport-event-date{color:#ff9bad}
+#view-live .live-card .market-middle{font-size:25px;font-weight:900;color:#fff;
+  min-width:82px;text-align:center;font-variant-numeric:tabular-nums}
+#view-live .live-card .sport-match-teams{padding:16px 17px 4px;margin-bottom:0}
+#view-live .live-card .market-choices{padding:9px 16px 12px}
+#view-live .live-card .choice:disabled{opacity:.52;cursor:not-allowed}
+#view-live .live-card .pg-live-inline{padding:8px 16px;font-size:11px}
+.pg-live-status-tag{color:#b9c7d8}
+.pg-live-market-state{display:flex;align-items:center;gap:9px;padding:12px 16px;
+  border-top:1px solid #35455a;color:#b5c5d7;font-size:11px;line-height:1.45}
+.pg-live-market-state.is-available{color:#b4ecd4}
+.pg-live-state-dot{width:7px;height:7px;border-radius:50%;background:#9aa4b0;flex:none}
+.pg-live-market-state.is-available .pg-live-state-dot{background:#69dfa9;box-shadow:0 0 8px #69dfa980}
+#view-live .live-card .market-detail-trigger{margin-bottom:12px}
+@media(max-width:1130px){.pg-history-filters{grid-template-columns:repeat(3,minmax(0,1fr))}.pg-history-filters .btn{width:100%}}
+@media(max-width:700px){
+  #golDeadline .pg-history-open{flex-basis:100%;width:100%;justify-content:center;margin-top:4px}
+  .pg-history-heading{padding:20px}.pg-history-heading-icon{display:none}
+  .pg-history-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pg-history-filters label:first-child{grid-column:span 2}
+  .pg-history-filters .btn{grid-column:span 2}
+  .pg-history-card-top{padding:16px;align-items:flex-start;flex-direction:column}
+  .pg-history-toggle{width:100%}
+  .pg-history-dates{gap:8px 15px;padding:0 16px 14px}
+  .pg-history-match{grid-template-columns:22px minmax(0,1fr) auto;gap:8px}
+  .pg-history-result-status{grid-column:2/4;text-align:left;padding-bottom:6px}
+  .pg-history-details{padding:11px}
+  .pg-program-loader{min-height:62vh}
+}
