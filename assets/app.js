@@ -1116,12 +1116,15 @@ function footballLogoUrl(name){
     const selected=draft.slips.find(s=>s.gameId===g.id);
     const schedule=sportSchedule(g.kickoff);
     const liveLabel=g.status==='HT'?'Descanso':g.status==='SUSP'?'Suspendido':
-      Number.isFinite(Number(g.minute))?Number(g.minute)+'′':String(g.statusLabel||g.status||'En juego');
+      g.minute!==null&&g.minute!==undefined&&Number.isFinite(Number(g.minute))?
+        Number(g.minute)+'′':String(g.statusLabel||g.status||'En juego');
+    const liveStateLabel=g.status==='HT'?'DESCANSO':g.status==='SUSP'?'SUSPENDIDO':
+      g.status==='INT'?'INTERRUMPIDO':'EN VIVO';
     const marketAvailable=!live||g.bettable===true;
     return `<article class="market-card sport-premium-card ${live?'live-card':''}">
       <div class="market-top"><span class="market-league">${sportLeagueBadge(g)}</span>
       <time class="market-kickoff-chip" datetime="${esc(g.kickoff||'')}">
-        <span class="sport-event-date">${live?'EN VIVO':esc(schedule.date)}</span>
+        <span class="sport-event-date">${live?esc(liveStateLabel):esc(schedule.date)}</span>
         <span class="sport-event-time">${live?esc(liveLabel):esc(schedule.time)}</span>
       </time></div>
       <div class="market-body sport-match-teams">
