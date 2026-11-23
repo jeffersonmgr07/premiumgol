@@ -15,7 +15,7 @@
   gap:10px;width:100%;min-width:0;min-height:41px;box-sizing:border-box;
   padding:9px 11px;border-radius:9px;border:1px solid #506982;
   background:linear-gradient(180deg,#1a2c43,#122237);
-  color:#eaf3ff;font:700 12px inherit;cursor:pointer;text-align:left;
+  color:#eaf3ff;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;text-align:left;
   transition:border-color .16s,background .16s;
 }
 #view-gol-results .pg-history-field-button:hover,
@@ -50,7 +50,7 @@
 #view-gol-results .pg-history-options button{
   border:0;background:transparent;color:#dbe7f4;
   text-align:left;padding:10px 12px;border-radius:8px;cursor:pointer;
-  font:700 12px inherit;
+  font-family:inherit;font-weight:700;font-size:12px;
 }
 #view-gol-results .pg-history-options button:hover,
 #view-gol-results .pg-history-options button[aria-selected="true"]{
