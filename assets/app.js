@@ -639,7 +639,7 @@ function footballLogoUrl(name){
     }
     if(name==='gol-results')loadGolResults(golHistoryPage);
     if(name==='gol'&&(!golProgramRequested||Date.now()-golProgramLastCheck>120000)){
-      golProgramRequested=true;loadGolProgram();
+      golProgramRequested=true;loadGolProgram(true);
     }
     window.scrollTo({top:0,behavior:'smooth'});
   }
@@ -2159,11 +2159,11 @@ function footballLogoUrl(name){
       'No pudimos consultar la jornada. Intenta nuevamente.');
     const retry=$('#golProgramRetry');if(retry)retry.hidden=state==='loading'||state==='ready';
   }
-  async function loadGolProgram(){
+  async function loadGolProgram(showLoader=false){
     if(!CONFIG.appsScriptUrl){pgGolViewState_('error');return;}
     if(golProgramLoading)return;
     golProgramLoading=true;golProgramLastCheck=Date.now();
-    pgGolViewState_('loading');
+    if(showLoader||!golProgramLoaded)pgGolViewState_('loading');
     try{
       const data=await remote('golProgram',{});
       if(!data?.ok||!Array.isArray(data.games))throw Error('Respuesta de programa inválida');
@@ -2195,9 +2195,8 @@ function footballLogoUrl(name){
       renderGol();
       pgGolViewState_('ready');
     }catch(e){
-      golProgramLoaded=false;
       console.warn('PremiumGol: consulta de jornada falló:',e?.message||e);
-      pgGolViewState_('error');
+      if(showLoader||!golProgramLoaded){golProgramLoaded=false;pgGolViewState_('error');}
     }finally{golProgramLoading=false;}
   }
   function pgHistoryDate_(iso){
